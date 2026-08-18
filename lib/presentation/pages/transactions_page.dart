@@ -3,6 +3,9 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/domain/transaction_filter.dart';
+import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
+import 'package:financeiro_ai/presentation/widgets/filter_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'dart:async';
@@ -25,8 +28,11 @@ class TransactionsPage extends ConsumerStatefulWidget {
 }
 
 class _TransactionsPageState extends ConsumerState<TransactionsPage> {
-  String query = '';
+  TransactionFilter _filter = const TransactionFilter();
   Timer? _debounce;
+
+  /// Ids picked for a bulk change. Non-empty puts the list in selection mode.
+  final Set<String> _selected = {};
 
   @override
   void dispose() {
@@ -40,22 +46,21 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   void _onQueryChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
-      if (mounted) setState(() => query = value);
+      if (mounted) setState(() => _filter = _filter.copyWith(query: value));
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
-    final filtered = widget.snapshot.transactions
-        .where(
-          (item) =>
-              widget.period.contains(analyticsDate(item)) &&
-              '${item.merchant} ${item.category}'.toLowerCase().contains(
-                query.toLowerCase(),
-              ),
-        )
-        .toList();
+    final filtered = filterTransactions(
+      widget.snapshot,
+      widget.period,
+      _filter,
+    );
+    // Selecting rows and then narrowing the filter would otherwise leave
+    // invisible rows staged for a change.
+    _selected.retainWhere((id) => filtered.any((item) => item.id == id));
     final padding = EdgeInsets.symmetric(horizontal: width < 600 ? 18 : 32);
 
     // A Column of every matching row inside a ListView built all 847 rows on
@@ -72,8 +77,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
               children: [
                 PageHeading(
                   title: 'Histórico financeiro',
-                  subtitle:
-                      '${filtered.length} lançamentos em ${widget.period.label}.',
+                  subtitle: _filter.ignorePeriod
+                      ? '${filtered.length} lançamentos em todo o histórico.'
+                      : '${filtered.length} lançamentos em ${widget.period.label}.',
                 ),
                 const SizedBox(height: 18),
                 Row(
@@ -87,18 +93,19 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                         ),
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    Badge(
+                      isLabelVisible: _filter.activeCount > 0,
+                      label: Text('${_filter.activeCount}'),
+                      child: OutlinedButton.icon(
+                        onPressed: _openFilters,
+                        icon: const Icon(Icons.filter_list),
+                        label: Text(width >= 700 ? 'Filtros' : ''),
+                      ),
+                    ),
                     // Below 900px the shell's action button owns this action,
                     // so a header button here would only duplicate it.
                     if (width >= 900) ...[
-                      const SizedBox(width: 12),
-                      Tooltip(
-                        message: 'Filtrar por categoria, cartão ou status',
-                        child: OutlinedButton.icon(
-                          onPressed: () => _showFilters(context),
-                          icon: const Icon(Icons.filter_list),
-                          label: const Text('Filtros'),
-                        ),
-                      ),
                       const SizedBox(width: 8),
                       FilledButton.icon(
                         onPressed: () =>
@@ -110,6 +117,48 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   ],
                 ),
                 const SizedBox(height: 16),
+                if (_selected.isNotEmpty)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
+                    decoration: BoxDecoration(
+                      color: context.palette.brandSoft,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '${_selected.length} selecionado${_selected.length == 1 ? '' : 's'}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: context.palette.onBrandSoft,
+                            ),
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(
+                            () => _selected
+                              ..clear()
+                              ..addAll(filtered.map((item) => item.id)),
+                          ),
+                          child: const Text('Todos'),
+                        ),
+                        TextButton(
+                          onPressed: () => setState(_selected.clear),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton.icon(
+                          onPressed: _recategorizeSelection,
+                          icon: const Icon(
+                            Icons.label_outline_rounded,
+                            size: 18,
+                          ),
+                          label: const Text('Mover'),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -123,9 +172,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   padding: const EdgeInsets.symmetric(vertical: 34),
                   child: Center(
                     child: Text(
-                      query.isEmpty
-                          ? 'Nenhum lançamento neste período.'
-                          : 'Nada encontrado para “$query”.',
+                      _filter.query.trim().isEmpty
+                          ? 'Nenhum lançamento com estes filtros.'
+                          : 'Nada encontrado para “${_filter.query.trim()}”.',
                     ),
                   ),
                 ),
@@ -152,6 +201,13 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: _TransactionRow(
                     item: item,
+                    selected: _selected.contains(item.id),
+                    selecting: _selected.isNotEmpty,
+                    onToggleSelect: () => setState(
+                      () => _selected.contains(item.id)
+                          ? _selected.remove(item.id)
+                          : _selected.add(item.id),
+                    ),
                     onEdit: () => createTransaction(
                       context,
                       ref,
@@ -221,31 +277,120 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     }
   }
 
-  void _showFilters(BuildContext context) => showDetailSheet(
-    context,
-    title: 'Filtros do histórico',
-    description:
-        'O período já está aplicado. A busca acima filtra por estabelecimento e categoria.',
-    child: const Text(
-      'Filtros avançados por cartão e status serão combinados com o período selecionado.',
-    ),
-  );
+  Future<void> _openFilters() async {
+    final updated = await showFilterSheet(
+      context,
+      snapshot: widget.snapshot,
+      filter: _filter,
+    );
+    if (updated != null && mounted) setState(() => _filter = updated);
+  }
+
+  /// Applies one category to everything selected, then offers to remember it —
+  /// the moment right after a correction is when the intent is clearest.
+  Future<void> _recategorizeSelection() async {
+    final category = await showModalBottomSheet<FinanceCategory>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 20),
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+              child: Text(
+                'Mover ${_selected.length} ${_selected.length == 1 ? 'lançamento' : 'lançamentos'} para',
+                style: const TextStyle(
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                ),
+              ),
+            ),
+            ...widget.snapshot.categories.map(
+              (item) => ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: item.color.withValues(alpha: .18),
+                  child: Icon(item.icon, color: item.color, size: 20),
+                ),
+                title: Text(item.name),
+                onTap: () => Navigator.of(context).pop(item),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (category == null || !mounted) return;
+
+    final ids = _selected.toList();
+    final sample = widget.snapshot.transactions
+        .where((item) => item.id == ids.first)
+        .firstOrNull;
+    try {
+      await ref
+          .read(financeRepositoryProvider)
+          .recategorizeTransactions(ids, category.id);
+      await refreshFinanceSnapshot(ref);
+      if (!mounted) return;
+      setState(_selected.clear);
+      final pattern = sample == null ? '' : suggestRulePattern(sample.merchant);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${ids.length} ${ids.length == 1 ? 'lançamento movido' : 'lançamentos movidos'} para ${category.name}.',
+          ),
+          backgroundColor: context.palette.brand,
+          action: pattern.length < 3
+              ? null
+              : SnackBarAction(
+                  label: 'Criar regra',
+                  textColor: Colors.white,
+                  onPressed: () => editRule(
+                    context,
+                    ref,
+                    widget.snapshot,
+                    suggestedPattern: pattern,
+                  ),
+                ),
+        ),
+      );
+    } on FinanceWriteException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message),
+            backgroundColor: context.palette.danger,
+          ),
+        );
+      }
+    }
+  }
 }
 
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({
     required this.item,
+    required this.selected,
+    required this.selecting,
+    required this.onToggleSelect,
     required this.onEdit,
     required this.onDelete,
   });
   final FinanceTransaction item;
+  final bool selected;
+  final bool selecting;
+  final VoidCallback onToggleSelect;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   @override
   Widget build(BuildContext context) => InkWell(
     borderRadius: BorderRadius.circular(16),
-    onTap: () => _openDetails(context),
+    // Long press starts a selection; once one row is picked, tapping toggles
+    // instead of opening, which is how a list like this usually behaves.
+    onLongPress: onToggleSelect,
+    onTap: selecting ? onToggleSelect : () => _openDetails(context),
     child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
       child: Row(
@@ -254,17 +399,24 @@ class _TransactionRow extends StatelessWidget {
             width: 46,
             height: 46,
             decoration: BoxDecoration(
-              color: item.status == TransactionStatus.pending
+              color: selected
+                  ? context.palette.brand
+                  : item.status == TransactionStatus.pending
                   ? context.palette.warning.withValues(alpha: .18)
                   : context.palette.brandSoft,
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
-              item.status == TransactionStatus.pending
+              selected
+                  ? Icons.check_rounded
+                  : item.status == TransactionStatus.pending
                   ? Icons.priority_high_rounded
                   : Icons.check_rounded,
-              color: item.status == TransactionStatus.pending
-                  ? const Color(0xFF8D6414)
+              color: selected
+                  ? Colors.white
+                  // Was a hardcoded hex that survived the palette migration.
+                  : item.status == TransactionStatus.pending
+                  ? context.palette.onWarning
                   : context.palette.brand,
             ),
           ),

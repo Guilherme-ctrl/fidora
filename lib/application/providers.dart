@@ -18,6 +18,10 @@ abstract class FinanceRepository {
   Future<void> saveTransaction(TransactionDraft draft);
   Future<void> deleteTransaction(String id);
 
+  /// Recategorizes many rows at once. One call rather than one per row, so
+  /// correcting an import does not mean a round trip per transaction.
+  Future<void> recategorizeTransactions(List<String> ids, String categoryId);
+
   Future<List<ReviewItem>> loadReviewQueue();
 
   /// [status] is `resolved` when the entry was handled and `dismissed` when the

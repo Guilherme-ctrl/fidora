@@ -185,6 +185,41 @@ class DemoFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> recategorizeTransactions(
+    List<String> ids,
+    String categoryId,
+  ) async {
+    final category = _categories
+        .where((item) => item.id == categoryId)
+        .firstOrNull;
+    if (category == null) {
+      throw const FinanceWriteException(
+        'A categoria escolhida não existe mais.',
+      );
+    }
+    for (final id in ids) {
+      final index = _transactions.indexWhere((item) => item.id == id);
+      if (index == -1) continue;
+      final item = _transactions[index];
+      _transactions[index] = FinanceTransaction(
+        id: item.id,
+        date: item.date,
+        merchant: item.merchant,
+        amount: item.amount,
+        category: category.name,
+        cardLastFour: item.cardLastFour,
+        competence: item.competence,
+        movementType: item.movementType,
+        rawModality: item.rawModality,
+        installmentCurrent: item.installmentCurrent,
+        installmentTotal: item.installmentTotal,
+        status: item.status,
+        source: item.source,
+      );
+    }
+  }
+
+  @override
   Future<List<ReviewItem>> loadReviewQueue() async =>
       List.unmodifiable(_reviews.where((item) => item.isPending));
 

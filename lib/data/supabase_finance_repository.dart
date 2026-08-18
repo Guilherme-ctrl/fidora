@@ -110,6 +110,28 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> recategorizeTransactions(
+    List<String> ids,
+    String categoryId,
+  ) async {
+    if (ids.isEmpty) return;
+    try {
+      await _client
+          .from('transactions')
+          .update({
+            'category_id': categoryId,
+            // A hand-made correction is a decision, so it stops being a guess.
+            'confidence': 'high',
+            'reviewed': true,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .inFilter('id', ids);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
   Future<List<ReviewItem>> loadReviewQueue() async {
     final rows = await _client
         .from('review_queue')
