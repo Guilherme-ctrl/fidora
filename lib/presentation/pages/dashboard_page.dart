@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
+import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
@@ -66,6 +67,7 @@ class DashboardPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: 18),
+        _BudgetWarning(alerts: budgetAlerts(snapshot, period)),
         GridView.count(
           crossAxisCount: columns,
           mainAxisSpacing: 14,
@@ -905,6 +907,99 @@ class _DeltaRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Says a budget is running out while there is still month left to act on it.
+/// Sits above the figures on purpose: by the time you scroll to the budget
+/// section, you have already read the totals and moved on.
+class _BudgetWarning extends StatelessWidget {
+  const _BudgetWarning({required this.alerts});
+  final List<BudgetAlert> alerts;
+
+  @override
+  Widget build(BuildContext context) {
+    if (alerts.isEmpty) return const SizedBox.shrink();
+    final over = alerts.where((item) => item.level == BudgetLevel.over).length;
+    final worst = alerts.first;
+    final danger = over > 0;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Semantics(
+        button: true,
+        label: 'Ver as categorias que estouraram ou estão perto do limite',
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => showDetailSheet(
+            context,
+            title: 'Orçamentos no limite',
+            description:
+                'Categorias com 80% ou mais do orçamento mensal consumido.',
+            child: Column(
+              children: alerts
+                  .map(
+                    (item) => DetailValue(
+                      label: item.category.name,
+                      value:
+                          '${currency.format(item.spent)} de ${currency.format(item.budget)}'
+                          ' • ${(item.ratio * 100).toStringAsFixed(0)}%',
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: danger
+                  ? context.palette.danger.withValues(alpha: .12)
+                  : context.palette.warning.withValues(alpha: .16),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  danger
+                      ? Icons.error_outline_rounded
+                      : Icons.warning_amber_rounded,
+                  color: danger
+                      ? context.palette.danger
+                      : context.palette.onWarning,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    switch ((over, alerts.length)) {
+                      (0, 1) =>
+                        '${worst.category.name} usou ${(worst.ratio * 100).toStringAsFixed(0)}% do orçamento.',
+                      (0, final total) =>
+                        '$total categorias passaram de 80% do orçamento.',
+                      (1, _) =>
+                        '${worst.category.name} estourou o orçamento em ${currency.format(worst.remaining.abs())}.',
+                      (final count, _) =>
+                        '$count categorias estouraram o orçamento.',
+                    },
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: danger
+                          ? context.palette.danger
+                          : context.palette.onWarning,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: danger
+                      ? context.palette.danger
+                      : context.palette.onWarning,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

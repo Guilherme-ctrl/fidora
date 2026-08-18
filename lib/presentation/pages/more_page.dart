@@ -11,6 +11,7 @@ import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/pages/holders_page.dart';
 import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
+import 'package:financeiro_ai/presentation/pages/subscriptions_page.dart';
 import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
@@ -155,6 +156,18 @@ class MorePage extends ConsumerWidget {
                         onPeriodChanged: (_) {},
                       ),
                     ),
+                  ),
+                ),
+              ),
+              _OperationTile(
+                icon: Icons.subscriptions_rounded,
+                color: const Color(0xFF7D63A8),
+                title: 'Assinaturas',
+                subtitle: 'Quanto por mês em cobranças que se repetem',
+                tooltip: 'Ver cobranças recorrentes detectadas no histórico',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SubscriptionsPage(snapshot: snapshot),
                   ),
                 ),
               ),
