@@ -29,6 +29,18 @@ class FinancePeriod {
   FinancePeriod shiftMonth(int delta) =>
       FinancePeriod.month(DateTime(start.year, start.month + delta));
 
+  /// The comparable window immediately before this one: the previous calendar
+  /// month for a month, or a same-length range ending the day before [start].
+  FinancePeriod get previous {
+    if (isSingleMonth) return shiftMonth(-1);
+    final days = endExclusive.difference(start).inDays;
+    final end = start.subtract(const Duration(days: 1));
+    return FinancePeriod(
+      start: end.subtract(Duration(days: days - 1)),
+      endInclusive: end,
+    );
+  }
+
   String get label {
     if (isSingleMonth) {
       return DateFormat('MMMM yyyy', 'pt_BR').format(start);

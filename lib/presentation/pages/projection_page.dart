@@ -36,6 +36,7 @@ class ProjectionPage extends StatelessWidget {
         : projectedTotal / projection.length;
 
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -67,7 +68,7 @@ class ProjectionPage extends StatelessWidget {
               label: 'Média mensal projetada',
               value: currency.format(average),
               icon: Icons.auto_graph_rounded,
-              color: moss,
+              color: context.palette.brand,
               detail: 'próximos 6 meses',
               tooltip: 'Abrir a composição da média projetada',
               onTap: () => _showProjectionComposition(context, projection),
@@ -76,7 +77,7 @@ class ProjectionPage extends StatelessWidget {
               label: 'Parcelas futuras',
               value: currency.format(installments),
               icon: Icons.calendar_view_month_rounded,
-              color: coral,
+              color: context.palette.danger,
               detail: '${_activeInstallments(snapshot)} compromissos',
               tooltip: 'Ver as parcelas que ainda impactarão suas faturas',
               onTap: () => _showInstallments(context, snapshot),
@@ -102,11 +103,12 @@ class ProjectionPage extends StatelessWidget {
                 'Estimativa baseada no ritmo do período escolhido mais parcelas futuras',
             child: Icon(
               Icons.info_outline_rounded,
-              color: ink.withValues(alpha: .5),
+              color: context.palette.inkSubtle,
             ),
           ),
           child: SizedBox(
-            height: 300,
+            height:
+                300 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4),
             child: _ProjectionChart(projection: projection),
           ),
         ),
@@ -146,7 +148,7 @@ class ProjectionPage extends StatelessWidget {
                   padding: const EdgeInsets.only(bottom: 14),
                   child: Text(
                     'Base ${currency.format(item.baseline)} + parcelas ${currency.format(item.installments)}',
-                    style: TextStyle(color: ink.withValues(alpha: .6)),
+                    style: TextStyle(color: context.palette.inkMuted),
                   ),
                 ),
               ],
@@ -218,7 +220,7 @@ class _ProjectionChart extends StatelessWidget {
         gridData: FlGridData(
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              FlLine(color: ink.withValues(alpha: .06), strokeWidth: 1),
+              FlLine(color: context.palette.hairline, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
@@ -271,8 +273,8 @@ class _ProjectionChart extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(8),
                     ),
-                    gradient: const LinearGradient(
-                      colors: [moss, Color(0xFF5D65A8)],
+                    gradient: LinearGradient(
+                      colors: [context.palette.brand, const Color(0xFF5D65A8)],
                     ),
                   ),
                 ],
@@ -335,7 +337,9 @@ class _GoalsOutlook extends StatelessWidget {
                     Text(
                       '${currency.format(actual)} de ${currency.format(category.monthlyBudget)}',
                       style: TextStyle(
-                        color: over ? coral : moss,
+                        color: over
+                            ? context.palette.danger
+                            : context.palette.brand,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -345,8 +349,8 @@ class _GoalsOutlook extends StatelessWidget {
                 LinearProgressIndicator(
                   value: ratio,
                   minHeight: 9,
-                  color: over ? coral : moss,
-                  backgroundColor: mint,
+                  color: over ? context.palette.danger : context.palette.brand,
+                  backgroundColor: context.palette.brandSoft,
                   borderRadius: BorderRadius.circular(9),
                 ),
               ],

@@ -1,4 +1,5 @@
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
@@ -11,6 +12,7 @@ class CardsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -22,8 +24,8 @@ class CardsPage extends StatelessWidget {
           title: 'Cartões e faturas',
           subtitle: 'Fechamento, vencimento, parcelas e limites sem surpresas.',
           action: width > 560
-              ? Tooltip(
-                  message: 'Cadastrar um novo cartão de crédito',
+              ? Semantics(
+                  label: 'Cadastrar um novo cartão de crédito',
                   child: FilledButton.icon(
                     onPressed: () => showDetailSheet(
                       context,
@@ -49,7 +51,10 @@ class CardsPage extends StatelessWidget {
                   .map(
                     (card) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: _CreditCardView(card: card),
+                      child: _CreditCardView(
+                        card: card,
+                        usage: cardUsage(snapshot, card),
+                      ),
                     ),
                   )
                   .toList(),
@@ -73,11 +78,12 @@ class CardsPage extends StatelessWidget {
 }
 
 class _CreditCardView extends StatelessWidget {
-  const _CreditCardView({required this.card});
+  const _CreditCardView({required this.card, required this.usage});
   final CreditCard card;
+  final CardUsage usage;
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Abrir limites e datas do cartão final ${card.lastFour}',
+  Widget build(BuildContext context) => Semantics(
+    label: 'Abrir limites e datas do cartão final ${card.lastFour}',
     child: InkWell(
       borderRadius: BorderRadius.circular(24),
       onTap: () => showDetailSheet(
@@ -91,11 +97,20 @@ class _CreditCardView extends StatelessWidget {
             DetailValue(label: 'Fechamento', value: 'dia ${card.closingDay}'),
             DetailValue(label: 'Vencimento', value: 'dia ${card.dueDay}'),
             DetailValue(label: 'Limite', value: currency.format(card.limit)),
+            DetailValue(
+              label: 'Comprometido em faturas abertas',
+              value: currency.format(usage.used),
+            ),
+            DetailValue(
+              label: 'Disponível',
+              value: currency.format(usage.available),
+            ),
           ],
         ),
       ),
       child: Container(
-        height: 225,
+        // Grows with Dynamic Type; the inner Spacers need a bounded height.
+        height: 225 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -106,7 +121,7 @@ class _CreditCardView extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: moss.withValues(alpha: .18),
+              color: context.palette.brand.withValues(alpha: .18),
               blurRadius: 28,
               offset: const Offset(0, 12),
             ),
@@ -144,6 +159,20 @@ class _CreditCardView extends StatelessWidget {
                 style: const TextStyle(fontSize: 17, letterSpacing: 1.5),
               ),
               const Spacer(),
+              if (usage.hasLimit) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: usage.ratio,
+                    minHeight: 6,
+                    backgroundColor: Colors.white24,
+                    color: usage.isTight
+                        ? context.palette.warning
+                        : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -159,8 +188,11 @@ class _CreditCardView extends StatelessWidget {
                     ),
                   ),
                   _CardDetail(
-                    label: 'LIMITE',
-                    value: currency.format(card.limit),
+                    label: usage.hasLimit ? 'DISPONÍVEL' : 'LIMITE',
+                    value: currency.format(
+                      usage.hasLimit ? usage.available : card.limit,
+                    ),
+                    highlight: usage.isTight,
                   ),
                 ],
               ),
@@ -173,9 +205,14 @@ class _CreditCardView extends StatelessWidget {
 }
 
 class _CardDetail extends StatelessWidget {
-  const _CardDetail({required this.label, required this.value});
+  const _CardDetail({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
   final String label;
   final String value;
+  final bool highlight;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,7 +228,11 @@ class _CardDetail extends StatelessWidget {
       const SizedBox(height: 3),
       Text(
         value,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          color: highlight ? context.palette.warning : Colors.white,
+        ),
       ),
     ],
   );
@@ -225,8 +266,8 @@ class _InvoicesList extends StatelessWidget {
             .where((item) => item.id == invoice.cardId)
             .firstOrNull;
         final open = invoice.status == 'open';
-        return Tooltip(
-          message:
+        return Semantics(
+          label:
               'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
           child: InkWell(
             borderRadius: BorderRadius.circular(17),
@@ -253,7 +294,7 @@ class _InvoicesList extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: canvas,
+                color: context.palette.canvas,
                 borderRadius: BorderRadius.circular(17),
               ),
               child: Row(
@@ -261,14 +302,18 @@ class _InvoicesList extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: open ? coral.withValues(alpha: .12) : mint,
+                      color: open
+                          ? context.palette.danger.withValues(alpha: .12)
+                          : context.palette.brandSoft,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       open
                           ? Icons.schedule_rounded
                           : Icons.check_circle_rounded,
-                      color: open ? coral : moss,
+                      color: open
+                          ? context.palette.danger
+                          : context.palette.brand,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -283,7 +328,7 @@ class _InvoicesList extends StatelessWidget {
                         Text(
                           '${monthName.format(invoice.referenceMonth)} • vence dia ${invoice.dueDate.day}',
                           style: TextStyle(
-                            color: ink.withValues(alpha: .55),
+                            color: context.palette.inkSubtle,
                             fontSize: 12,
                           ),
                         ),
@@ -300,7 +345,9 @@ class _InvoicesList extends StatelessWidget {
                       Text(
                         open ? 'Aberta' : 'Fechada',
                         style: TextStyle(
-                          color: open ? coral : moss,
+                          color: open
+                              ? context.palette.danger
+                              : context.palette.brand,
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),

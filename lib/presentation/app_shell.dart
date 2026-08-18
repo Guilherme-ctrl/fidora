@@ -8,6 +8,7 @@ import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
+import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -108,12 +109,15 @@ class _AppShellState extends ConsumerState<AppShell> {
                         ),
                       ),
                     Expanded(
-                      child: _SelectedPage(
-                        index: index,
-                        snapshot: snapshot,
-                        period: period,
-                        onPeriodChanged: (value) =>
-                            setState(() => period = value),
+                      child: RefreshIndicator(
+                        onRefresh: () => refreshFinanceSnapshot(ref),
+                        child: _SelectedPage(
+                          index: index,
+                          snapshot: snapshot,
+                          period: period,
+                          onPeriodChanged: (value) =>
+                              setState(() => period = value),
+                        ),
                       ),
                     ),
                   ],
@@ -123,6 +127,18 @@ class _AppShellState extends ConsumerState<AppShell> {
           ),
         ],
       ),
+      // Below the wide breakpoint the pages hide their header buttons, so the
+      // floating action button is the only path to creating a transaction.
+      floatingActionButton: wide
+          ? null
+          : state.maybeWhen(
+              data: (snapshot) => FloatingActionButton.extended(
+                onPressed: () => createTransaction(context, ref, snapshot),
+                icon: const Icon(Icons.add),
+                label: const Text('Transação'),
+              ),
+              orElse: () => null,
+            ),
       bottomNavigationBar: wide
           ? null
           : NavigationBar(
@@ -187,7 +203,7 @@ class _Brand extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: moss,
+          color: context.palette.brand,
           borderRadius: BorderRadius.circular(13),
         ),
         child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
@@ -207,13 +223,13 @@ class _Brand extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: mint,
+            color: context.palette.brandSoft,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             onSignOut == null ? 'Demo' : 'Online',
-            style: const TextStyle(
-              color: moss,
+            style: TextStyle(
+              color: context.palette.brand,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -242,7 +258,11 @@ class _ErrorState extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.cloud_off_rounded, size: 48, color: coral),
+          Icon(
+            Icons.cloud_off_rounded,
+            size: 48,
+            color: context.palette.danger,
+          ),
           const SizedBox(height: 16),
           const Text(
             'Não foi possível carregar seus dados',

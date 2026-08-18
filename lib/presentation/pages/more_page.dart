@@ -5,6 +5,8 @@ import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
+import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
 import 'package:flutter/material.dart';
@@ -18,6 +20,7 @@ class MorePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -40,8 +43,8 @@ class MorePage extends ConsumerWidget {
               child: Column(
                 children: snapshot.goals
                     .map(
-                      (goal) => Tooltip(
-                        message: 'Ver detalhes da meta ${goal.name}',
+                      (goal) => Semantics(
+                        label: 'Ver detalhes da meta ${goal.name}',
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
                           onTap: () => _showGoal(context, goal),
@@ -61,8 +64,8 @@ class MorePage extends ConsumerWidget {
                                     ),
                                     Text(
                                       '${(goal.progress * 100).round()}%',
-                                      style: const TextStyle(
-                                        color: moss,
+                                      style: TextStyle(
+                                        color: context.palette.brand,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
@@ -72,8 +75,8 @@ class MorePage extends ConsumerWidget {
                                 LinearProgressIndicator(
                                   value: goal.progress,
                                   minHeight: 9,
-                                  color: moss,
-                                  backgroundColor: mint,
+                                  color: context.palette.brand,
+                                  backgroundColor: context.palette.brandSoft,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 const SizedBox(height: 6),
@@ -82,7 +85,7 @@ class MorePage extends ConsumerWidget {
                                     Text(
                                       currency.format(goal.current),
                                       style: TextStyle(
-                                        color: ink.withValues(alpha: .6),
+                                        color: context.palette.inkMuted,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -90,7 +93,7 @@ class MorePage extends ConsumerWidget {
                                     Text(
                                       currency.format(goal.target),
                                       style: TextStyle(
-                                        color: ink.withValues(alpha: .6),
+                                        color: context.palette.inkMuted,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -127,11 +130,17 @@ class MorePage extends ConsumerWidget {
             children: [
               _OperationTile(
                 icon: Icons.rule_folder_rounded,
-                color: gold,
+                color: context.palette.warning,
                 title: 'Revisões pendentes',
-                subtitle:
-                    '${snapshot.pendingReviews} transações precisam de confirmação',
+                subtitle: snapshot.pendingReviews == 0
+                    ? 'Nada aguardando sua confirmação'
+                    : '${snapshot.pendingReviews} ${snapshot.pendingReviews == 1 ? 'transação precisa' : 'transações precisam'} de confirmação',
                 tooltip: 'Abrir a fila de revisões pendentes',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ReviewQueuePage(),
+                  ),
+                ),
               ),
               _OperationTile(
                 icon: Icons.upload_file_rounded,
@@ -142,19 +151,24 @@ class MorePage extends ConsumerWidget {
                     'Selecionar o JSON e revisar a importação antes de gravar',
                 onTap: () => _pickInvoice(context, ref),
               ),
-              const _OperationTile(
+              _OperationTile(
                 icon: Icons.people_alt_rounded,
-                color: moss,
+                color: context.palette.brand,
                 title: 'Portadores',
                 subtitle: 'Defina quais gastos entram nas suas finanças',
                 tooltip: 'Gerenciar titulares e cartões adicionais',
               ),
-              const _OperationTile(
+              _OperationTile(
                 icon: Icons.psychology_alt_rounded,
-                color: coral,
+                color: context.palette.danger,
                 title: 'Regras de estabelecimento',
-                subtitle: 'Aprenda categorias recorrentes automaticamente',
+                subtitle: 'Categorize compras recorrentes automaticamente',
                 tooltip: 'Ver e editar regras de categorização',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const MerchantRulesPage(),
+                  ),
+                ),
               ),
             ],
           ),
@@ -302,7 +316,10 @@ class MorePage extends ConsumerWidget {
 
   void _message(BuildContext context, String message, {bool error = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: error ? coral : moss),
+      SnackBar(
+        content: Text(message),
+        backgroundColor: error ? context.palette.danger : context.palette.brand,
+      ),
     );
   }
 
@@ -327,8 +344,8 @@ class MorePage extends ConsumerWidget {
 class _AutomationCard extends StatelessWidget {
   const _AutomationCard();
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Abrir instruções e estado da automação do Apple Pay',
+  Widget build(BuildContext context) => Semantics(
+    label: 'Abrir instruções e estado da automação do Apple Pay',
     child: Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -353,12 +370,12 @@ class _AutomationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: mint,
+                  color: context.palette.brandSoft,
                   borderRadius: BorderRadius.circular(15),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.contactless_rounded,
-                  color: moss,
+                  color: context.palette.brand,
                   size: 28,
                 ),
               ),
@@ -370,10 +387,7 @@ class _AutomationCard extends StatelessWidget {
               const SizedBox(height: 7),
               Text(
                 'O Atalho envia estabelecimento, valor, cartão e categoria para uma Edge Function segura.',
-                style: TextStyle(
-                  color: ink.withValues(alpha: .62),
-                  height: 1.4,
-                ),
+                style: TextStyle(color: context.palette.inkMuted, height: 1.4),
               ),
               const SizedBox(height: 18),
               const _Step(number: '1', label: 'Pague com Apple Pay'),
@@ -407,7 +421,7 @@ class _Step extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: moss,
+          backgroundColor: context.palette.brand,
           child: Text(
             number,
             style: const TextStyle(
@@ -440,8 +454,8 @@ class _OperationTile extends StatelessWidget {
   final String tooltip;
   final VoidCallback? onTap;
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: tooltip,
+  Widget build(BuildContext context) => Semantics(
+    label: tooltip,
     child: ListTile(
       onTap:
           onTap ??

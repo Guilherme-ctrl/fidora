@@ -1,10 +1,14 @@
+import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class TransactionsPage extends StatefulWidget {
+class TransactionsPage extends ConsumerStatefulWidget {
   const TransactionsPage({
     super.key,
     required this.snapshot,
@@ -15,11 +19,12 @@ class TransactionsPage extends StatefulWidget {
   final FinancePeriod period;
   final ValueChanged<FinancePeriod> onPeriodChanged;
   @override
-  State<TransactionsPage> createState() => _TransactionsPageState();
+  ConsumerState<TransactionsPage> createState() => _TransactionsPageState();
 }
 
-class _TransactionsPageState extends State<TransactionsPage> {
+class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   String query = '';
+
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
@@ -33,6 +38,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
         )
         .toList();
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -61,7 +67,9 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
               ),
             ),
-            if (width > 600) ...[
+            // Below 900px the shell's floating action button owns this action,
+            // so a header button here would only duplicate it.
+            if (width >= 900) ...[
               const SizedBox(width: 12),
               Tooltip(
                 message: 'Filtrar por categoria, cartão ou status',
@@ -72,13 +80,11 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Tooltip(
-                message: 'Adicionar uma transação manual',
-                child: FilledButton.icon(
-                  onPressed: () => _showAdd(context),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Adicionar'),
-                ),
+              FilledButton.icon(
+                onPressed: () =>
+                    createTransaction(context, ref, widget.snapshot),
+                icon: const Icon(Icons.add),
+                label: const Text('Adicionar'),
               ),
             ],
           ],
@@ -87,15 +93,85 @@ class _TransactionsPageState extends State<TransactionsPage> {
         Card(
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Column(
-              children: filtered
-                  .map((item) => _TransactionRow(item: item))
-                  .toList(),
-            ),
+            child: filtered.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 34),
+                    child: Center(
+                      child: Text('Nenhum lançamento neste período.'),
+                    ),
+                  )
+                : Column(
+                    children: filtered
+                        .map(
+                          (item) => _TransactionRow(
+                            item: item,
+                            onEdit: () => createTransaction(
+                              context,
+                              ref,
+                              widget.snapshot,
+                              existing: item,
+                            ),
+                            onDelete: () => _confirmDelete(context, item),
+                          ),
+                        )
+                        .toList(),
+                  ),
           ),
         ),
       ],
     );
+  }
+
+  Future<void> _confirmDelete(
+    BuildContext context,
+    FinanceTransaction item,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Excluir lançamento?'),
+        content: Text(
+          '${item.merchant} — ${currency.format(item.amount)}.\n'
+          'Esta ação não pode ser desfeita.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: context.palette.danger,
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      await ref.read(financeRepositoryProvider).deleteTransaction(item.id);
+      await refreshFinanceSnapshot(ref);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lançamento excluído.'),
+            backgroundColor: context.palette.brand,
+          ),
+        );
+      }
+    } on FinanceWriteException catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(error.message),
+            backgroundColor: context.palette.danger,
+          ),
+        );
+      }
+    }
   }
 
   void _showFilters(BuildContext context) => showDetailSheet(
@@ -107,124 +183,145 @@ class _TransactionsPageState extends State<TransactionsPage> {
       'Filtros avançados por cartão e status serão combinados com o período selecionado.',
     ),
   );
-
-  void _showAdd(BuildContext context) => showDetailSheet(
-    context,
-    title: 'Nova transação',
-    description:
-        'Use o Atalho para captura automática ou registre manualmente.',
-    child: const Center(
-      child: Icon(Icons.add_circle_rounded, size: 52, color: moss),
-    ),
-  );
 }
 
 class _TransactionRow extends StatelessWidget {
-  const _TransactionRow({required this.item});
+  const _TransactionRow({
+    required this.item,
+    required this.onEdit,
+    required this.onDelete,
+  });
   final FinanceTransaction item;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Abrir detalhes de ${item.merchant}',
-    child: InkWell(
-      borderRadius: BorderRadius.circular(16),
-      onTap: () => showDetailSheet(
-        context,
-        title: item.merchant,
-        description: 'Detalhes completos do lançamento selecionado.',
-        child: Column(
-          children: [
-            DetailValue(
-              label: 'Data',
-              value:
-                  '${item.date.day.toString().padLeft(2, '0')}/${item.date.month.toString().padLeft(2, '0')}/${item.date.year}',
+  Widget build(BuildContext context) => InkWell(
+    borderRadius: BorderRadius.circular(16),
+    onTap: () => _openDetails(context),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            decoration: BoxDecoration(
+              color: item.status == TransactionStatus.pending
+                  ? context.palette.warning.withValues(alpha: .18)
+                  : context.palette.brandSoft,
+              borderRadius: BorderRadius.circular(15),
             ),
-            if (isCardTransaction(item) && item.competence != null)
-              DetailValue(
-                label: 'Fatura',
-                value: monthYear.format(item.competence!),
-              ),
-            DetailValue(label: 'Categoria', value: item.category),
-            DetailValue(label: 'Valor', value: currency.format(item.amount)),
-            DetailValue(label: 'Cartão', value: 'final ${item.cardLastFour}'),
-            DetailValue(
-              label: 'Modalidade',
-              value: item.isInstallment
-                  ? '${item.installmentCurrent}/${item.installmentTotal} parcelas'
-                  : (item.rawModality ?? 'À vista'),
+            child: Icon(
+              item.status == TransactionStatus.pending
+                  ? Icons.priority_high_rounded
+                  : Icons.check_rounded,
+              color: item.status == TransactionStatus.pending
+                  ? const Color(0xFF8D6414)
+                  : context.palette.brand,
             ),
-          ],
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-        child: Row(
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: item.status == TransactionStatus.pending
-                    ? gold.withValues(alpha: .18)
-                    : mint,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(
-                item.status == TransactionStatus.pending
-                    ? Icons.priority_high_rounded
-                    : Icons.check_rounded,
-                color: item.status == TransactionStatus.pending
-                    ? const Color(0xFF8D6414)
-                    : moss,
-              ),
+          ),
+          const SizedBox(width: 13),
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.merchant,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  isCardTransaction(item) && item.competence != null
+                      ? 'Compra ${shortDate.format(item.date)} • fatura ${monthName.format(item.competence!)} • ${item.category}'
+                      : '${shortDate.format(item.date)} • ${item.category}',
+                  style: TextStyle(color: context.palette.inkMuted),
+                ),
+              ],
             ),
-            const SizedBox(width: 13),
+          ),
+          if (MediaQuery.sizeOf(context).width > 650)
             Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.merchant,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    isCardTransaction(item) && item.competence != null
-                        ? 'Compra ${shortDate.format(item.date)} • fatura ${monthName.format(item.competence!)} • ${item.category}'
-                        : '${shortDate.format(item.date)} • ${item.category}',
-                    style: TextStyle(color: ink.withValues(alpha: .58)),
-                  ),
-                ],
+              child: Text(
+                item.isInstallment
+                    ? '${item.installmentCurrent}/${item.installmentTotal} parcelas'
+                    : 'À vista',
+                style: TextStyle(color: context.palette.inkMuted),
               ),
             ),
-            if (MediaQuery.sizeOf(context).width > 650)
-              Expanded(
-                child: Text(
-                  item.isInstallment
-                      ? '${item.installmentCurrent}/${item.installmentTotal} parcelas'
-                      : 'À vista',
-                  style: TextStyle(color: ink.withValues(alpha: .62)),
-                ),
+          if (MediaQuery.sizeOf(context).width > 480)
+            SizedBox(
+              width: 92,
+              child: Text(
+                '•• ${item.cardLastFour}',
+                style: TextStyle(color: context.palette.inkMuted),
               ),
-            if (MediaQuery.sizeOf(context).width > 480)
-              SizedBox(
-                width: 92,
-                child: Text(
-                  '•• ${item.cardLastFour}',
-                  style: TextStyle(color: ink.withValues(alpha: .62)),
-                ),
-              ),
-            Text(
-              currency.format(item.amount),
-              style: const TextStyle(fontWeight: FontWeight.w900),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded, color: Colors.black26),
+          Text(
+            currency.format(item.amount),
+            style: const TextStyle(fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.chevron_right_rounded, color: Colors.black26),
+        ],
+      ),
+    ),
+  );
+
+  void _openDetails(BuildContext context) => showDetailSheet(
+    context,
+    title: item.merchant,
+    description: 'Detalhes completos do lançamento selecionado.',
+    child: Column(
+      children: [
+        DetailValue(label: 'Data', value: longDate.format(item.date)),
+        if (isCardTransaction(item) && item.competence != null)
+          DetailValue(
+            label: 'Fatura',
+            value: monthYear.format(item.competence!),
+          ),
+        DetailValue(label: 'Categoria', value: item.category),
+        DetailValue(label: 'Valor', value: currency.format(item.amount)),
+        DetailValue(label: 'Cartão', value: 'final ${item.cardLastFour}'),
+        DetailValue(
+          label: 'Modalidade',
+          value: item.isInstallment
+              ? '${item.installmentCurrent}/${item.installmentTotal} parcelas'
+              : (item.rawModality ?? 'À vista'),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onEdit();
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: context.palette.danger,
+                ),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onDelete();
+                },
+                icon: const Icon(Icons.delete_outline_rounded),
+                label: const Text('Excluir'),
+              ),
+            ),
           ],
         ),
-      ),
+      ],
     ),
   );
 }
