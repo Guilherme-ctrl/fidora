@@ -111,3 +111,12 @@ recorded verbatim and is never summarized.
 
 ---
 
+## Operations — deploy of the capture function
+
+**Timestamp**: 2026-08-18T19:45:00Z
+**User Input**: "Pode fazer deploy"
+**AI Response**: Deployment was first blocked twice. The Supabase CLI was authenticated against an account without the Finora project, so linking was refused rather than guessed at; the owner switched accounts. Then `supabase link` failed parsing `config.toml`, which declares `[local_smtp]`, a key CLI 2.101.0 does not know — the repository config was ahead of the installed tool, the same shape of problem as the Flutter version at the start of the session. Upgraded the CLI to 2.114.0 (Homebrew also pulled Node to 26.7.0), linked, confirmed all five migrations are applied remotely so every column the new function writes exists, and deployed. Smoke tested without writing data: invalid token answers 401 and GET answers 405, which proves the module initialises and the new `rules.ts` import resolves.
+**Context**: Operations — deployment to the production project. The rule-firing path itself still has not executed, since that requires a capture with a valid token and writes a real transaction.
+
+---
+

@@ -165,6 +165,18 @@ This file is updated by the build workflow. A gate passes only with reproducible
 | Static quality | `flutter analyze` | Pass — no issues |
 | Full Dart suite | `flutter test` | Pass — 113 tests |
 
+## Evidence — 18 August 2026 (capture function deployed)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| CLI compatibility | `supabase link` with CLI 2.101.0 | Fail — `config.toml` uses `[local_smtp]`, a key that version does not know |
+| CLI upgrade | `brew upgrade supabase` | Pass — 2.101.0 to 2.114.0; config parses. Node was pulled to 26.7.0 as a dependency |
+| Project link | `supabase link --project-ref ddmilzlinvpxfvzyigok` | Pass — Finora, São Paulo, `ACTIVE_HEALTHY` |
+| Remote schema | `supabase migration list --linked` | Pass — all five migrations applied; local and remote match, so every column the new function writes exists |
+| Function deploy | `supabase functions deploy capture-transaction` | Pass — `index.ts` and the new `rules.ts` uploaded |
+| Function boots | POST with an invalid token | Pass — HTTP 401 `invalid_token`, which proves the module initialises and the `rules.ts` import resolves; a bundling failure would answer 500 |
+| Method guard | GET on the endpoint | Pass — HTTP 405 `method_not_allowed` |
+
 ## Open validation gates
 
 - Real-device Shortcut test: requires a deployed Supabase project, token and selected Wallet card.
@@ -191,14 +203,12 @@ This file is updated by the build workflow. A gate passes only with reproducible
   integration needs `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
   on this machine, and the browser pane cannot deliver clicks into the Flutter
   canvas.
-- **The rewritten capture function has not run against Postgres.** Its decision
-  logic is covered by Deno tests, but the queries around it — the rule lookup,
-  the `Outros` fallback lookup, the review-queue insert — have only been type
-  checked. Verifying needs `supabase start`, which needs a Docker daemon that
-  is not running on this machine, or a deploy to the remote project.
-- **Not deployed.** `supabase functions deploy capture-transaction` reaches
-  production and remains the owner's decision. Until it runs, the live capture
-  path is still the old behaviour.
+- **The rule-firing path has not run end to end.** The function is deployed and
+  boots, but no capture with a valid token has been made, so the rule lookup,
+  the `Outros` fallback and the review-queue insert have still never executed
+  against Postgres. Exercising them writes a real transaction to the production
+  ledger, which is the owner's call to make — from the Shortcut on a real
+  purchase, or from a deliberate test capture that is deleted afterwards.
 - **The 404 removal is a behaviour change for the Shortcut.** A capture whose
   category cannot be resolved now returns 200 with `needs_review: true` rather
   than 404. Any Shortcut logic keyed on the old failure needs revisiting.
