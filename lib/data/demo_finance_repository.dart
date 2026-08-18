@@ -172,6 +172,8 @@ class DemoFinanceRepository implements FinanceRepository {
       installmentCurrent: draft.installmentCurrent,
       installmentTotal: draft.installmentTotal,
       status: draft.status,
+      holderId: draft.holderId,
+      personalAmount: draft.personalAmount,
     );
     _transactions
       ..removeWhere((item) => item.id == saved.id)
@@ -215,6 +217,8 @@ class DemoFinanceRepository implements FinanceRepository {
         installmentTotal: item.installmentTotal,
         status: item.status,
         source: item.source,
+        holderId: item.holderId,
+        personalAmount: item.personalAmount,
       );
     }
   }

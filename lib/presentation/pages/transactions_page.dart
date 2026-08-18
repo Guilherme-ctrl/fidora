@@ -459,9 +459,26 @@ class _TransactionRow extends StatelessWidget {
                 style: TextStyle(color: context.palette.inkMuted),
               ),
             ),
-          Text(
-            currency.format(item.amount),
-            style: const TextStyle(fontWeight: FontWeight.w900),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                currency.format(item.amount),
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              // A shared charge shows both, so the row is never mistaken for
+              // the full amount landing in your totals.
+              if (item.isShared)
+                Text(
+                  'seu ${currency.format(item.personalShare)}',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: context.palette.brand,
+                  ),
+                ),
+            ],
           ),
           const SizedBox(width: 4),
           const Icon(Icons.chevron_right_rounded, color: Colors.black26),
@@ -484,6 +501,16 @@ class _TransactionRow extends StatelessWidget {
           ),
         DetailValue(label: 'Categoria', value: item.category),
         DetailValue(label: 'Valor', value: currency.format(item.amount)),
+        if (item.isShared) ...[
+          DetailValue(
+            label: 'Sua parte',
+            value: currency.format(item.personalShare),
+          ),
+          DetailValue(
+            label: 'De outra pessoa',
+            value: currency.format(item.amount - item.personalShare),
+          ),
+        ],
         DetailValue(label: 'Cartão', value: 'final ${item.cardLastFour}'),
         DetailValue(
           label: 'Modalidade',

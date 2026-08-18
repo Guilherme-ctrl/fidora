@@ -17,6 +17,8 @@ class FinanceTransaction {
     this.installmentTotal,
     this.status = TransactionStatus.confirmed,
     this.source = 'manual',
+    this.holderId,
+    this.personalAmount,
   });
   final String id;
   final DateTime date;
@@ -31,6 +33,19 @@ class FinanceTransaction {
   final int? installmentTotal;
   final TransactionStatus status;
   final String source;
+
+  /// Who this charge belongs to, when it is not you. Set per transaction by
+  /// the invoice import, which reads it from the statement's notes; more
+  /// precise than the card's holder, because one card can carry both.
+  final String? holderId;
+
+  /// Your share of [amount]. Null means all of it.
+  final double? personalAmount;
+
+  /// What counts as yours. The full [amount] stays the audited figure.
+  double get personalShare => personalAmount ?? amount;
+
+  bool get isShared => personalAmount != null && personalAmount! < amount;
   bool get isInstallment => installmentTotal != null && installmentTotal! > 1;
   bool get isCard => cardLastFour != '----';
   bool get isCardAdjustment =>
@@ -39,8 +54,8 @@ class FinanceTransaction {
       !isCard && (movementType == 'credit' || movementType == 'refund');
   double get expenseImpact {
     if (movementType == 'transfer' || isIncome) return 0;
-    if (isCardAdjustment) return -amount;
-    return amount;
+    if (isCardAdjustment) return -personalShare;
+    return personalShare;
   }
 
   bool get affectsExpenses => expenseImpact != 0;
@@ -63,6 +78,8 @@ class FinanceTransaction {
         installmentCurrent: json['installment_current'] as int?,
         installmentTotal: json['installment_total'] as int?,
         source: (json['source'] ?? 'manual') as String,
+        holderId: json['holder_id'] as String?,
+        personalAmount: (json['personal_amount'] as num?)?.toDouble(),
         status: switch (json['status']) {
           'pending' => TransactionStatus.pending,
           'ignored' => TransactionStatus.ignored,

@@ -69,7 +69,6 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'competence': _isoDate(competence),
       'card_id': draft.cardId,
       'invoice_id': invoiceId,
-      'holder_id': card?['holder_id'],
       'merchant_original': draft.merchant.trim(),
       'merchant_normalized': normalizeMerchant(draft.merchant),
       'amount': draft.amount,
@@ -78,6 +77,12 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'installment_current': draft.installmentCurrent,
       'installment_total': draft.installmentTotal,
       'category_id': draft.categoryId,
+      // An explicit holder on the transaction wins; otherwise it inherits the
+      // card's, which is what the capture path already does.
+      'holder_id': draft.holderId ?? card?['holder_id'],
+      // Null means the whole charge is yours; the statement total is untouched
+      // either way, since `amount` stays what the issuer charged.
+      'personal_amount': draft.personalAmount,
       'status': draft.status.name,
       'notes': draft.notes,
       'source': 'manual',

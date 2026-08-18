@@ -42,12 +42,15 @@ class _TransactionFormState extends State<_TransactionForm> {
   late final TextEditingController _amount;
   late final TextEditingController _installmentCurrent;
   late final TextEditingController _installmentTotal;
+  late final TextEditingController _share;
 
   late DateTime _date;
   String? _categoryId;
   String? _cardId;
   bool _isIncome = false;
   bool _hasInstallments = false;
+  bool _isShared = false;
+  String? _holderId;
   bool _saving = false;
   String? _failure;
   TransactionDraftErrors _errors = const TransactionDraftErrors();
@@ -68,6 +71,13 @@ class _TransactionFormState extends State<_TransactionForm> {
     _installmentTotal = TextEditingController(
       text: existing?.installmentTotal?.toString() ?? '2',
     );
+    _share = TextEditingController(
+      text: existing?.personalAmount == null
+          ? ''
+          : existing!.personalAmount!.toStringAsFixed(2).replaceAll('.', ','),
+    );
+    _isShared = existing?.isShared ?? false;
+    _holderId = existing?.holderId;
     _date = existing?.date ?? DateTime.now();
     _hasInstallments = existing?.isInstallment ?? false;
     _isIncome = existing?.isIncome ?? false;
@@ -87,6 +97,7 @@ class _TransactionFormState extends State<_TransactionForm> {
     _amount.dispose();
     _installmentCurrent.dispose();
     _installmentTotal.dispose();
+    _share.dispose();
     super.dispose();
   }
 
@@ -106,6 +117,10 @@ class _TransactionFormState extends State<_TransactionForm> {
         : null,
     installmentTotal: _hasInstallments && !_isIncome
         ? int.tryParse(_installmentTotal.text)
+        : null,
+    holderId: _holderId,
+    personalAmount: _isShared && !_isIncome
+        ? (parseAmountInput(_share.text) ?? double.nan)
         : null,
   );
 
@@ -329,6 +344,64 @@ class _TransactionFormState extends State<_TransactionForm> {
                         ),
                       ],
                     ),
+                  const SizedBox(height: 4),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _isShared,
+                    onChanged: (value) => setState(() => _isShared = value),
+                    title: const Text(
+                      'Dividir com alguém',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: const Text(
+                      'O valor cheio continua na fatura; só a sua parte entra '
+                      'nos totais.',
+                    ),
+                  ),
+                  if (_isShared) ...[
+                    TextField(
+                      controller: _share,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Quanto é seu',
+                        hintText: '0,00',
+                        prefixText: 'R\$ ',
+                        prefixIcon: const Icon(Icons.pie_chart_outline_rounded),
+                        errorText: _errors.share,
+                      ),
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    if (widget.snapshot.holders.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String?>(
+                        initialValue: _holderId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          labelText: 'De quem é o resto',
+                          helperText: 'Opcional, para saber com quem foi.',
+                          prefixIcon: Icon(Icons.people_alt_outlined),
+                        ),
+                        items: [
+                          const DropdownMenuItem<String?>(
+                            child: Text('Não informar'),
+                          ),
+                          ...widget.snapshot.holders.map(
+                            (item) => DropdownMenuItem<String?>(
+                              value: item.id,
+                              child: Text(item.name),
+                            ),
+                          ),
+                        ],
+                        onChanged: (value) => setState(() => _holderId = value),
+                      ),
+                    ],
+                    _ShareSummary(
+                      total: parseAmountInput(_amount.text),
+                      mine: parseAmountInput(_share.text),
+                    ),
+                  ],
                   if (_errors.installment != null)
                     Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -457,6 +530,48 @@ Future<void> createTransaction(
           existing == null ? 'Transação salva.' : 'Transação atualizada.',
         ),
         backgroundColor: context.palette.brand,
+      ),
+    );
+  }
+}
+
+/// Says the other half out loud. Typing "my share" and being told what is left
+/// is what makes the split obviously right or obviously wrong.
+class _ShareSummary extends StatelessWidget {
+  const _ShareSummary({required this.total, required this.mine});
+  final double? total;
+  final double? mine;
+
+  @override
+  Widget build(BuildContext context) {
+    if (total == null || mine == null || mine! > total!) {
+      return const SizedBox.shrink();
+    }
+    final others = total! - mine!;
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Row(
+        children: [
+          Icon(
+            Icons.info_outline_rounded,
+            size: 16,
+            color: context.palette.brand,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              others <= 0
+                  ? 'A compra inteira entra como sua.'
+                  : '${currency.format(others)} ficam de fora dos seus totais; '
+                        'a fatura segue com ${currency.format(total)}.',
+              style: TextStyle(
+                color: context.palette.brand,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

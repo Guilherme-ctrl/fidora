@@ -8,20 +8,24 @@ class TransactionDraftErrors {
     this.amount,
     this.category,
     this.installment,
+    this.share,
   });
 
   final String? merchant;
   final String? amount;
   final String? category;
   final String? installment;
+  final String? share;
 
   bool get isEmpty =>
       merchant == null &&
       amount == null &&
       category == null &&
-      installment == null;
+      installment == null &&
+      share == null;
 
-  String? get firstMessage => merchant ?? amount ?? category ?? installment;
+  String? get firstMessage =>
+      merchant ?? amount ?? category ?? installment ?? share;
 }
 
 /// Input for creating or editing a transaction. Editing carries [id]; creating
@@ -39,6 +43,8 @@ class TransactionDraft {
     this.installmentTotal,
     this.status = TransactionStatus.confirmed,
     this.notes,
+    this.holderId,
+    this.personalAmount,
   });
 
   final String? id;
@@ -52,6 +58,12 @@ class TransactionDraft {
   final int? installmentTotal;
   final TransactionStatus status;
   final String? notes;
+  final String? holderId;
+
+  /// Your share of [amount]; null means all of it.
+  final double? personalAmount;
+
+  bool get isShared => personalAmount != null && personalAmount! < amount;
 
   bool get isEdit => id != null;
   bool get isCard => cardId != null;
@@ -69,6 +81,15 @@ class TransactionDraft {
     },
     category: categoryId.trim().isEmpty ? 'Escolha uma categoria' : null,
     installment: _installmentError(),
+    share: switch (personalAmount) {
+      null => null,
+      final value when value.isNaN => 'Informe a sua parte',
+      < 0 => 'A sua parte não pode ser negativa',
+      // The column is constrained the same way; catching it here says why.
+      final value when value > amount =>
+        'A sua parte não pode passar do valor total',
+      _ => null,
+    },
   );
 
   String? _installmentError() {
