@@ -1,0 +1,470 @@
+import 'dart:convert';
+
+import 'package:file_selector/file_selector.dart';
+import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/invoice_import.dart';
+import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+class MorePage extends ConsumerWidget {
+  const MorePage({super.key, required this.snapshot});
+  final FinanceSnapshot snapshot;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final width = MediaQuery.sizeOf(context).width;
+    return ListView(
+      padding: EdgeInsets.fromLTRB(
+        width < 600 ? 18 : 32,
+        24,
+        width < 600 ? 18 : 32,
+        36,
+      ),
+      children: [
+        const PageHeading(
+          title: 'Planejamento e automações',
+          subtitle: 'Metas, revisões, importações e conexão com o Atalhos.',
+        ),
+        const SizedBox(height: 22),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final split = constraints.maxWidth >= 850;
+            final goals = SectionCard(
+              title: 'Metas',
+              tooltip: 'Abrir todas as metas e seus valores atuais',
+              onTap: () => _showGoals(context),
+              child: Column(
+                children: snapshot.goals
+                    .map(
+                      (goal) => Tooltip(
+                        message: 'Ver detalhes da meta ${goal.name}',
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => _showGoal(context, goal),
+                          child: Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        goal.name,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '${(goal.progress * 100).round()}%',
+                                      style: const TextStyle(
+                                        color: moss,
+                                        fontWeight: FontWeight.w900,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                LinearProgressIndicator(
+                                  value: goal.progress,
+                                  minHeight: 9,
+                                  color: moss,
+                                  backgroundColor: mint,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Text(
+                                      currency.format(goal.current),
+                                      style: TextStyle(
+                                        color: ink.withValues(alpha: .6),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    Text(
+                                      currency.format(goal.target),
+                                      style: TextStyle(
+                                        color: ink.withValues(alpha: .6),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+            );
+            final automation = const _AutomationCard();
+            return split
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: goals),
+                      const SizedBox(width: 14),
+                      Expanded(child: automation),
+                    ],
+                  )
+                : Column(
+                    children: [goals, const SizedBox(height: 14), automation],
+                  );
+          },
+        ),
+        const SizedBox(height: 14),
+        SectionCard(
+          title: 'Operação',
+          child: Column(
+            children: [
+              _OperationTile(
+                icon: Icons.rule_folder_rounded,
+                color: gold,
+                title: 'Revisões pendentes',
+                subtitle:
+                    '${snapshot.pendingReviews} transações precisam de confirmação',
+                tooltip: 'Abrir a fila de revisões pendentes',
+              ),
+              _OperationTile(
+                icon: Icons.upload_file_rounded,
+                color: Color(0xFF5D65A8),
+                title: 'Importar JSON do ChatGPT',
+                subtitle: 'Validar, conciliar e cadastrar uma fatura',
+                tooltip:
+                    'Selecionar o JSON e revisar a importação antes de gravar',
+                onTap: () => _pickInvoice(context, ref),
+              ),
+              const _OperationTile(
+                icon: Icons.people_alt_rounded,
+                color: moss,
+                title: 'Portadores',
+                subtitle: 'Defina quais gastos entram nas suas finanças',
+                tooltip: 'Gerenciar titulares e cartões adicionais',
+              ),
+              const _OperationTile(
+                icon: Icons.psychology_alt_rounded,
+                color: coral,
+                title: 'Regras de estabelecimento',
+                subtitle: 'Aprenda categorias recorrentes automaticamente',
+                tooltip: 'Ver e editar regras de categorização',
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showGoals(BuildContext context) => showDetailSheet(
+    context,
+    title: 'Metas financeiras',
+    description: 'Objetivos importados do planejamento financeiro.',
+    child: Column(
+      children: snapshot.goals
+          .map(
+            (goal) => DetailValue(
+              label: goal.name,
+              value:
+                  '${currency.format(goal.current)} / ${currency.format(goal.target)}',
+            ),
+          )
+          .toList(),
+    ),
+  );
+
+  void _showGoal(BuildContext context, Goal goal) => showDetailSheet(
+    context,
+    title: goal.name,
+    description:
+        'Acompanhe o valor atual e o quanto falta para atingir a meta.',
+    child: Column(
+      children: [
+        DetailValue(label: 'Atual', value: currency.format(goal.current)),
+        DetailValue(label: 'Meta', value: currency.format(goal.target)),
+        DetailValue(
+          label: 'Falta',
+          value: currency.format(
+            (goal.target - goal.current).clamp(0, double.infinity),
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Future<void> _pickInvoice(BuildContext context, WidgetRef ref) async {
+    var loadingOpen = false;
+    try {
+      const jsonType = XTypeGroup(
+        label: 'JSON do Finora',
+        extensions: ['json'],
+        mimeTypes: ['application/json'],
+        uniformTypeIdentifiers: ['public.json'],
+      );
+      final picked = await openFile(acceptedTypeGroups: const [jsonType]);
+      if (picked == null || !context.mounted) return;
+      final bytes = await picked.readAsBytes();
+      final document = InvoiceImportDocument.decode(utf8.decode(bytes));
+      if (!context.mounted) return;
+      _showLoading(context, 'Validando e conciliando…');
+      loadingOpen = true;
+      final preview = await ref
+          .read(financeRepositoryProvider)
+          .previewInvoiceImport(document);
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      loadingOpen = false;
+      final reviewedDocument = await showInvoiceReviewDialog(
+        context,
+        document: document,
+        preview: preview,
+        categories: snapshot.categories,
+      );
+      if (reviewedDocument == null || !context.mounted) return;
+
+      _showLoading(context, 'Conferindo revisão…');
+      loadingOpen = true;
+      final finalPreview = await ref
+          .read(financeRepositoryProvider)
+          .previewInvoiceImport(reviewedDocument);
+      final missingCategoriesApproved =
+          reviewedDocument.createMissingCategories &&
+          finalPreview.missingCategories.isNotEmpty;
+      if (finalPreview.alreadyImported ||
+          (!finalPreview.canImport && !missingCategoriesApproved)) {
+        throw const InvoiceImportException(
+          'Ainda existem categorias ou duplicidades que impedem a importação.',
+        );
+      }
+      if (!context.mounted) return;
+      final result = await ref
+          .read(financeRepositoryProvider)
+          .importInvoice(reviewedDocument);
+      ref.invalidate(financeSnapshotProvider);
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      loadingOpen = false;
+      _message(
+        context,
+        result.duplicateBatch
+            ? 'Esta fatura já havia sido importada.'
+            : 'Fatura importada: ${result.created} novos, ${result.reconciled} conciliados e ${result.reviews} para revisão.',
+      );
+    } on InvoiceImportException catch (error) {
+      if (context.mounted) {
+        if (loadingOpen) _closeLoading(context);
+        _message(context, error.message, error: true);
+      }
+    } catch (error) {
+      if (context.mounted) {
+        if (loadingOpen) _closeLoading(context);
+        _message(context, _friendlyImportError(error), error: true);
+      }
+    }
+  }
+
+  void _showLoading(BuildContext context, String label) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 3),
+            ),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _closeLoading(BuildContext context) {
+    final navigator = Navigator.of(context, rootNavigator: true);
+    if (navigator.canPop()) navigator.pop();
+  }
+
+  void _message(BuildContext context, String message, {bool error = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: error ? coral : moss),
+    );
+  }
+
+  String _friendlyImportError(Object error) {
+    final text = '$error';
+    if (text.contains('card_not_found')) {
+      return 'O cartão final informado no JSON não está cadastrado ou está inativo.';
+    }
+    if (text.contains('missing_categories')) {
+      return 'O JSON usa categorias que ainda não existem no Finora.';
+    }
+    if (text.contains('reconciled_total_mismatch')) {
+      return 'A conciliação não fechou com o total da fatura. Nada foi importado.';
+    }
+    if (text.contains('personal_total_mismatch')) {
+      return 'As decisões item a item não fecharam com o total pessoal. Nada foi importado.';
+    }
+    return 'Não foi possível importar: $text';
+  }
+}
+
+class _AutomationCard extends StatelessWidget {
+  const _AutomationCard();
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: 'Abrir instruções e estado da automação do Apple Pay',
+    child: Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => showDetailSheet(
+          context,
+          title: 'Automação Apple Pay',
+          description:
+              'Depois do pagamento, o Atalho coleta os dados e envia à função segura do Finora.',
+          child: const Column(
+            children: [
+              DetailValue(label: 'Captura', value: 'Atalhos do iOS'),
+              DetailValue(label: 'Autenticação', value: 'Token revogável'),
+              DetailValue(label: 'Destino', value: 'Supabase Edge Function'),
+            ],
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: mint,
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: const Icon(
+                  Icons.contactless_rounded,
+                  color: moss,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Apple Pay conectado',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+              ),
+              const SizedBox(height: 7),
+              Text(
+                'O Atalho envia estabelecimento, valor, cartão e categoria para uma Edge Function segura.',
+                style: TextStyle(
+                  color: ink.withValues(alpha: .62),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const _Step(number: '1', label: 'Pague com Apple Pay'),
+              const _Step(number: '2', label: 'Escolha a categoria'),
+              const _Step(number: '3', label: 'A transação aparece aqui'),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: null,
+                  icon: Icon(Icons.ios_share),
+                  label: Text('Instalar atalho'),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+class _Step extends StatelessWidget {
+  const _Step({required this.number, required this.label});
+  final String number;
+  final String label;
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 10),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 12,
+          backgroundColor: moss,
+          child: Text(
+            number,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
+}
+
+class _OperationTile extends StatelessWidget {
+  const _OperationTile({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.tooltip,
+    this.onTap,
+  });
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final String tooltip;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) => Tooltip(
+    message: tooltip,
+    child: ListTile(
+      onTap:
+          onTap ??
+          () => showDetailSheet(
+            context,
+            title: title,
+            description: subtitle,
+            child: const Text(
+              'Esta área usará os dados sincronizados do Supabase.',
+            ),
+          ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 4),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: .14),
+          borderRadius: BorderRadius.circular(13),
+        ),
+        child: Icon(icon, color: color),
+      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+      subtitle: Text(subtitle),
+      trailing: const Icon(Icons.chevron_right_rounded),
+    ),
+  );
+}
