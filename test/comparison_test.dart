@@ -3,6 +3,24 @@ import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+FinanceTransaction installment(
+  String id,
+  double amount, {
+  required int current,
+  required int total,
+  String card = '6902',
+  String merchant = 'MERCADO LIVRE',
+}) => FinanceTransaction(
+  id: id,
+  date: DateTime(2026, 8, 5),
+  merchant: merchant,
+  amount: amount,
+  category: 'Compras',
+  cardLastFour: card,
+  installmentCurrent: current,
+  installmentTotal: total,
+);
+
 FinanceTransaction spend(
   String id,
   DateTime date,
@@ -270,6 +288,92 @@ void main() {
       expect(usage.hasLimit, isFalse);
       expect(usage.isTight, isFalse);
       expect(usage.ratio, 0);
+    });
+  });
+
+  group('scheduledInstallments', () {
+    const card = CreditCard(
+      id: 'c1',
+      name: 'Uniclass',
+      bank: 'Itaú',
+      lastFour: '6902',
+      limit: 10000,
+      closingDay: 2,
+      dueDay: 9,
+      holder: 'Guilherme',
+    );
+
+    test('counts only the instalments still to come', () {
+      // 2 of 4 paid means two charges remain.
+      final usage = cardUsage(
+        snapshotWith(
+          [installment('1', 100, current: 2, total: 4)],
+          cards: const [card],
+        ),
+        card,
+      );
+      expect(usage.scheduled, 200);
+    });
+
+    test('collapses the repeated rows of one purchase', () {
+      // A four-instalment purchase appears once per instalment billed; only
+      // the furthest one describes what is left.
+      final usage = cardUsage(
+        snapshotWith(
+          [
+            installment('1', 100, current: 1, total: 4),
+            installment('2', 100, current: 2, total: 4),
+            installment('3', 100, current: 3, total: 4),
+          ],
+          cards: const [card],
+        ),
+        card,
+      );
+      expect(usage.scheduled, 100, reason: 'one charge left, not six');
+    });
+
+    test('a finished plan holds nothing', () {
+      final usage = cardUsage(
+        snapshotWith(
+          [installment('1', 100, current: 4, total: 4)],
+          cards: const [card],
+        ),
+        card,
+      );
+      expect(usage.scheduled, 0);
+    });
+
+    test('ignores instalments on another card', () {
+      final usage = cardUsage(
+        snapshotWith(
+          [installment('1', 100, current: 1, total: 3, card: '4567')],
+          cards: const [card],
+        ),
+        card,
+      );
+      expect(usage.scheduled, 0);
+    });
+
+    test('billed and scheduled add up, and availability reflects both', () {
+      final snapshot = snapshotWith(
+        [installment('1', 100, current: 1, total: 5)],
+        cards: const [card],
+        invoices: [
+          Invoice(
+            id: 'i1',
+            cardId: 'c1',
+            referenceMonth: DateTime(2026, 8),
+            total: 500,
+            dueDate: DateTime(2026, 8, 9),
+            status: 'open',
+          ),
+        ],
+      );
+      final usage = cardUsage(snapshot, card);
+      expect(usage.billed, 500);
+      expect(usage.scheduled, 400, reason: 'four of five instalments remain');
+      expect(usage.used, 900);
+      expect(usage.available, 9100);
     });
   });
 }

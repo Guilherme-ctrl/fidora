@@ -105,8 +105,13 @@ class _CreditCardView extends StatelessWidget {
             DetailValue(label: 'Limite', value: currency.format(card.limit)),
             DetailValue(
               label: 'Comprometido em faturas abertas',
-              value: currency.format(usage.used),
+              value: currency.format(usage.billed),
             ),
+            if (usage.scheduled > 0)
+              DetailValue(
+                label: 'Parcelas ainda não faturadas',
+                value: currency.format(usage.scheduled),
+              ),
             DetailValue(
               label: 'Disponível',
               value: currency.format(usage.available),

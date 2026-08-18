@@ -170,18 +170,23 @@ void main() {
       );
     });
 
-    test('paying releases the committed limit', () async {
+    test('paying releases the billed part but not the scheduled one', () async {
       final repository = DemoFinanceRepository();
       final card = (await repository.loadSnapshot()).cards.firstWhere(
         (item) => item.id == '2',
       );
       final before = cardUsage(await repository.loadSnapshot(), card);
-      expect(before.used, greaterThan(0));
+      expect(before.billed, greaterThan(0));
 
       await repository.setInvoicePaid('2', paid: true);
       final after = cardUsage(await repository.loadSnapshot(), card);
-      expect(after.used, 0);
-      expect(after.available, card.limit);
+      expect(after.billed, 0, reason: 'the invoice no longer holds limit');
+      // The demo ledger has a 2-of-4 instalment on this card; those two
+      // remaining charges are committed at the issuer whether or not the
+      // current invoice was paid.
+      expect(after.scheduled, greaterThan(0));
+      expect(after.used, after.scheduled);
+      expect(after.available, card.limit - after.scheduled);
     });
 
     test('reopening clears the date and restores the commitment', () async {
