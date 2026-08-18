@@ -27,6 +27,7 @@ class CategoriesPage extends StatelessWidget {
         : 1;
     final analytics = analyzePeriod(snapshot, period);
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -39,8 +40,8 @@ class CategoriesPage extends StatelessWidget {
           subtitle:
               'Cartão pela competência da fatura e conta pela data • ${period.label}.',
           action: width > 540
-              ? Tooltip(
-                  message: 'Criar uma categoria e definir seu orçamento',
+              ? Semantics(
+                  label: 'Criar uma categoria e definir seu orçamento',
                   child: FilledButton.icon(
                     onPressed: () => _showCreate(context),
                     icon: const Icon(Icons.add),
@@ -49,9 +50,7 @@ class CategoriesPage extends StatelessWidget {
                 )
               : null,
         ),
-        const SizedBox(height: 16),
-        PeriodFilterBar(period: period, onChanged: onPeriodChanged),
-        const SizedBox(height: 22),
+        const SizedBox(height: 18),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
@@ -69,8 +68,8 @@ class CategoriesPage extends StatelessWidget {
                 category.monthlyBudget == null || category.monthlyBudget == 0
                 ? 0.0
                 : (spend / category.monthlyBudget!).clamp(0, 1).toDouble();
-            return Tooltip(
-              message: 'Ver gastos, orçamento e saldo de ${category.name}',
+            return Semantics(
+              label: 'Ver gastos, orçamento e saldo de ${category.name}',
               child: Card(
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
@@ -92,8 +91,8 @@ class CategoriesPage extends StatelessWidget {
                               child: Icon(category.icon, color: category.color),
                             ),
                             const Spacer(),
-                            Tooltip(
-                              message: 'Abrir detalhes da categoria',
+                            Semantics(
+                              label: 'Abrir detalhes da categoria',
                               child: Icon(
                                 Icons.more_horiz,
                                 color: Colors.black26,
@@ -115,7 +114,7 @@ class CategoriesPage extends StatelessWidget {
                               ? '${currency.format(spend)} no período'
                               : '${currency.format(spend)} de ${currency.format(category.monthlyBudget)}',
                           style: TextStyle(
-                            color: ink.withValues(alpha: .58),
+                            color: context.palette.inkMuted,
                             fontSize: 12,
                           ),
                         ),

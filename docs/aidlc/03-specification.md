@@ -32,6 +32,42 @@
 - Shows invoice competence, due date, total and status.
 - Supports one-time, installment and recurring modalities in the data model.
 
+### Manual entry — write path
+
+- The repository contract exposes create, update and delete for transactions.
+- A draft is rejected before any write when the merchant is blank, the amount is
+  not a positive number, no category is chosen, or the installment fields are
+  incoherent (only one of the pair supplied, fewer than two instalments, or a
+  current instalment past the total).
+- Validation reports one message per field so a form can bind them directly.
+- A card purchase resolves its invoice competence from the card closing day and
+  is attached to that competence's invoice, creating the invoice only when it
+  does not yet exist; an invoice already closed or paid is never reopened.
+- An account, Pix or debit movement is stored without a card, without an invoice
+  and with the competence set to its own month.
+- Manual rows carry `source = 'manual'` and a dedup key that is unique per row,
+  so two identical purchases on the same day are both kept.
+- Editing replaces the existing row rather than creating a second one.
+- Write failures surface a message written for the person using the app, never a
+  raw database error.
+- Pulling down on any of the six tabs reloads the snapshot, and the indicator
+  stays visible until the new data has arrived.
+
+### Manual entry — form
+
+- A create/edit form is reachable from every screen width: an action button
+  below 900px, header buttons at 900px and above, never both at once.
+- Amounts accept `24,80`, `1.234,56`, `24.80` and `R$ 1.999,90`, and are read
+  the same way as the Shortcut reads them.
+- Each invalid field reports its own message; the form stays open and keeps
+  what was typed when a write fails.
+- Choosing a card states which invoice the purchase will land on and which
+  closing day produced that answer, before the transaction is saved.
+- Marking a movement as income hides the payment method, because income is
+  defined as a credit with no card.
+- A history row can be edited or deleted; deleting asks for confirmation and
+  names the transaction being removed.
+
 ### Operational parity
 
 - Schema represents merchant rules, imports, reviews, holders and goals.
@@ -46,11 +82,25 @@
 - Statement rows reconcile with matching Shortcut captures instead of creating duplicates.
 - Card refunds and credits reduce invoice/category spending; statement payments remain auditable but excluded.
 
+## Out of scope
+
+- **Offline operation and local caching.** Decided by the product owner on
+  18 August 2026: Finora is online only. The app may assume connectivity and
+  fail loudly when it is absent. This does not excuse the loading experience —
+  six queries in a single block behind a full-screen spinner is still worth
+  improving, and the review queue and merchant rules already load on demand
+  rather than joining the snapshot.
+
 ## Deferred from first vertical slice
 
-- UI authentication and account recovery.
+- Account recovery.
 - Real PDF/XLSX statement parser.
-- CRUD forms beyond the capture demonstration.
+- CRUD forms for **card, category, goal and holder**. The transaction form is
+  delivered; these four still open a placeholder.
+- Bulk recategorization, so a mis-categorized import can be corrected in one
+  pass rather than row by row.
 - Spreadsheet migration command.
 - Receipt OCR and attachment upload.
+- Applying `merchant_rules` at capture time: the rules are managed but the Edge
+  Function still resolves the category by name and never reads the table.
 - App Intent implemented natively in Swift.

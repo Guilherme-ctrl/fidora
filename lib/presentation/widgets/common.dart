@@ -3,10 +3,58 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-final currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+/// The money formatter, resolved from `profiles.currency` at startup rather
+/// than hardcoded to reais.
+///
+/// It is a mutable top-level on purpose: the alternative was threading a
+/// formatter through roughly forty call sites for a value that is fixed per
+/// account and settled before the first frame of data. [configureCurrency] is
+/// idempotent and called from the shell as each snapshot arrives.
+NumberFormat currency = _formatterFor('BRL');
+
+/// Locale drives grouping and decimal separators; the symbol has to be given
+/// explicitly, because intl falls back to the ISO code otherwise — which is how
+/// a first attempt at this printed "BRL 1.234,50" across the whole app.
+const _currencyFormats = <String, (String locale, String symbol)>{
+  'BRL': ('pt_BR', r'R$'),
+  'USD': ('en_US', r'$'),
+  'EUR': ('de_DE', '€'),
+  'GBP': ('en_GB', '£'),
+  'ARS': ('es_AR', r'$'),
+  'CLP': ('es_CL', r'$'),
+  'MXN': ('es_MX', r'$'),
+  'JPY': ('ja_JP', '¥'),
+};
+
+NumberFormat _formatterFor(String code) {
+  final normalized = code.toUpperCase();
+  final format = _currencyFormats[normalized];
+  // An unmapped code still formats correctly, just with the code as its symbol.
+  return format == null
+      ? NumberFormat.currency(symbol: '$normalized ')
+      : NumberFormat.currency(locale: format.$1, symbol: format.$2);
+}
+
+String _configuredCurrency = 'BRL';
+
+void configureCurrency(String code) {
+  final normalized = code.trim().toUpperCase();
+  if (normalized.isEmpty || normalized == _configuredCurrency) return;
+  _configuredCurrency = normalized;
+  currency = _formatterFor(normalized);
+}
+
 final shortDate = DateFormat('dd MMM', 'pt_BR');
 final monthName = DateFormat('MMMM', 'pt_BR');
 final monthYear = DateFormat('MMMM yyyy', 'pt_BR');
+final longDate = DateFormat("d 'de' MMMM 'de' y", 'pt_BR');
+
+/// Axis labels need the magnitude, not the cents.
+final compactCurrency = NumberFormat.compactCurrency(
+  locale: 'pt_BR',
+  symbol: r'R$',
+  decimalDigits: 0,
+);
 
 class PageHeading extends StatelessWidget {
   const PageHeading({
@@ -37,9 +85,9 @@ class PageHeading extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               subtitle,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: ink.withValues(alpha: .62),
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: context.palette.inkMuted),
             ),
           ],
         ),
@@ -59,6 +107,8 @@ class MetricCard extends StatelessWidget {
     this.detail,
     this.onTap,
     this.tooltip,
+    this.trendLabel,
+    this.trendGood,
   });
   final String label;
   final String value;
@@ -68,8 +118,16 @@ class MetricCard extends StatelessWidget {
   final VoidCallback? onTap;
   final String? tooltip;
 
+  /// Optional movement against a baseline, e.g. “12% acima de julho”.
+  final String? trendLabel;
+
+  /// Whether the movement is good news. Null keeps the label neutral, which is
+  /// the honest rendering when there is no baseline to judge against.
+  final bool? trendGood;
+
   @override
   Widget build(BuildContext context) {
+    final trend = trendLabel;
     final card = Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -109,13 +167,53 @@ class MetricCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: ink.withValues(alpha: .6))),
+              Text(label, style: TextStyle(color: context.palette.inkMuted)),
+              if (trend != null) ...[
+                const SizedBox(height: 9),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      switch (trendGood) {
+                        null => Icons.remove_rounded,
+                        true => Icons.trending_down_rounded,
+                        false => Icons.trending_up_rounded,
+                      },
+                      size: 15,
+                      color: switch (trendGood) {
+                        null => context.palette.inkSubtle,
+                        true => context.palette.brand,
+                        false => context.palette.danger,
+                      },
+                    ),
+                    const SizedBox(width: 5),
+                    Flexible(
+                      child: Text(
+                        trend,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: switch (trendGood) {
+                            null => context.palette.inkSubtle,
+                            true => context.palette.brand,
+                            false => context.palette.danger,
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
-    return tooltip == null ? card : Tooltip(message: tooltip!, child: card);
+    return tooltip == null
+        ? card
+        : Semantics(button: onTap != null, label: tooltip, child: card);
   }
 }
 
@@ -165,7 +263,9 @@ class SectionCard extends StatelessWidget {
         ),
       ),
     );
-    return tooltip == null ? card : Tooltip(message: tooltip!, child: card);
+    return tooltip == null
+        ? card
+        : Semantics(button: onTap != null, label: tooltip, child: card);
   }
 }
 
@@ -203,12 +303,10 @@ class PeriodFilterBar extends StatelessWidget {
     runSpacing: 8,
     crossAxisAlignment: WrapCrossAlignment.center,
     children: [
-      Tooltip(
-        message: 'Voltar um mês',
-        child: IconButton.filledTonal(
-          onPressed: () => onChanged(period.shiftMonth(-1)),
-          icon: const Icon(Icons.chevron_left_rounded),
-        ),
+      IconButton.filledTonal(
+        tooltip: 'Voltar um mês',
+        onPressed: () => onChanged(period.shiftMonth(-1)),
+        icon: const Icon(Icons.chevron_left_rounded),
       ),
       Tooltip(
         message: 'Período usado por todos os indicadores desta tela',
@@ -221,27 +319,19 @@ class PeriodFilterBar extends StatelessWidget {
           onPressed: () => _pickRange(context),
         ),
       ),
-      Tooltip(
-        message: 'Avançar um mês',
-        child: IconButton.filledTonal(
-          onPressed: () => onChanged(period.shiftMonth(1)),
-          icon: const Icon(Icons.chevron_right_rounded),
-        ),
+      IconButton.filledTonal(
+        tooltip: 'Avançar um mês',
+        onPressed: () => onChanged(period.shiftMonth(1)),
+        icon: const Icon(Icons.chevron_right_rounded),
       ),
-      Tooltip(
-        message: 'Mostrar o mês atual',
-        child: TextButton(
-          onPressed: () => onChanged(FinancePeriod.month(DateTime.now())),
-          child: const Text('Este mês'),
-        ),
+      TextButton(
+        onPressed: () => onChanged(FinancePeriod.month(DateTime.now())),
+        child: const Text('Este mês'),
       ),
-      Tooltip(
-        message: 'Escolher datas inicial e final livremente',
-        child: OutlinedButton.icon(
-          onPressed: () => _pickRange(context),
-          icon: const Icon(Icons.date_range_rounded),
-          label: const Text('Período'),
-        ),
+      OutlinedButton.icon(
+        onPressed: () => _pickRange(context),
+        icon: const Icon(Icons.date_range_rounded),
+        label: const Text('Período'),
       ),
       const Tooltip(
         message:
@@ -283,7 +373,7 @@ Future<void> showDetailSheet(
             const SizedBox(height: 8),
             Text(
               description,
-              style: TextStyle(color: ink.withValues(alpha: .65)),
+              style: TextStyle(color: context.palette.inkMuted),
             ),
             const SizedBox(height: 22),
             child,
@@ -305,10 +395,7 @@ class DetailValue extends StatelessWidget {
     child: Row(
       children: [
         Expanded(
-          child: Text(
-            label,
-            style: TextStyle(color: ink.withValues(alpha: .62)),
-          ),
+          child: Text(label, style: TextStyle(color: context.palette.inkMuted)),
         ),
         const SizedBox(width: 16),
         Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),

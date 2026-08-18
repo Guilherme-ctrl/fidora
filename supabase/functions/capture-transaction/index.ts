@@ -1,4 +1,9 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import {
+  decideCategory,
+  type MerchantRule,
+  normalizeMerchant,
+} from "./rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -38,12 +43,35 @@ Deno.serve(async (request) => {
     return json({ error: "invalid_payload" }, 422);
   }
 
-  const [{ data: card }, { data: category }] = await Promise.all([
-    admin.from("cards").select("*").eq("user_id", shortcutToken.user_id).eq("last_four", lastFour).eq("active", true).single(),
-    admin.from("categories").select("id").eq("user_id", shortcutToken.user_id).eq("name", categoryName).eq("active", true).maybeSingle(),
-  ]);
+  const [{ data: card }, { data: chosenCategory }, { data: ruleRows }] =
+    await Promise.all([
+      admin.from("cards").select("*").eq("user_id", shortcutToken.user_id).eq("last_four", lastFour).eq("active", true).single(),
+      categoryName
+        ? admin.from("categories").select("id").eq("user_id", shortcutToken.user_id).eq("name", categoryName).eq("active", true).maybeSingle()
+        : Promise.resolve({ data: null }),
+      admin.from("merchant_rules")
+        .select("id,pattern,category_id,subcategory,priority,active")
+        .eq("user_id", shortcutToken.user_id)
+        .eq("active", true)
+        .order("priority"),
+    ]);
+
+  // A capture on an unknown card cannot be placed on an invoice, so this one
+  // still fails. An unresolved category no longer does: the transaction is
+  // recorded and queued for review instead of being lost at the till.
   if (!card) return json({ error: "card_not_found" }, 404);
-  if (!category) return json({ error: "category_not_found" }, 404);
+
+  const { data: fallbackCategory } = await admin.from("categories")
+    .select("id").eq("user_id", shortcutToken.user_id).eq("active", true)
+    .eq("name", "Outros").maybeSingle();
+
+  const decision = decideCategory({
+    requestedCategoryId: chosenCategory?.id ?? null,
+    requestedCategoryName: categoryName,
+    rules: (ruleRows ?? []) as MerchantRule[],
+    merchant: merchantOriginal,
+    fallbackCategoryId: fallbackCategory?.id ?? null,
+  });
 
   const purchasedAt = body.purchased_at ? new Date(body.purchased_at) : new Date();
   const competence = invoiceCompetence(purchasedAt, card.closing_day);
@@ -72,18 +100,42 @@ Deno.serve(async (request) => {
     merchant_original: merchantOriginal,
     merchant_normalized: normalizedMerchant,
     amount,
-    category_id: category.id,
+    category_id: decision.categoryId,
+    subcategory: decision.subcategory,
     movement_type: "purchase",
     modality: "cash",
     status: "confirmed",
     source: "apple_pay",
-    confidence: "high",
-    reviewed: true,
+    confidence: decision.confidence,
+    reviewed: decision.reviewed,
+    notes: decision.note,
   }, { onConflict: "user_id,dedup_key", ignoreDuplicates: true }).select("id").maybeSingle();
 
   await admin.from("shortcut_tokens").update({ last_used_at: new Date().toISOString() }).eq("id", shortcutToken.id);
   if (error) return json({ error: error.message }, 500);
-  return json({ ok: true, duplicate: transaction === null, transaction_id: transaction?.id ?? null });
+
+  // Only a row that was actually created needs a review; a duplicate capture
+  // already has whatever review its original got.
+  if (decision.needsReview && transaction) {
+    await admin.from("review_queue").upsert({
+      user_id: shortcutToken.user_id,
+      transaction_id: transaction.id,
+      reason: decision.note ?? "Classificação pendente",
+      status: "pending",
+      item_type: "transaction",
+      description: merchantOriginal,
+      suggested_action: "Confirmar categoria",
+      raw_payload: body,
+    }, { onConflict: "transaction_id,reason", ignoreDuplicates: true });
+  }
+
+  return json({
+    ok: true,
+    duplicate: transaction === null,
+    transaction_id: transaction?.id ?? null,
+    category_source: decision.source,
+    needs_review: decision.needsReview,
+  });
 });
 
 function parseAmount(value: unknown): number {
@@ -91,10 +143,6 @@ function parseAmount(value: unknown): number {
   let text = String(value ?? "").replace(/[^\d,.-]/g, "");
   if (text.includes(",")) text = text.replaceAll(".", "").replace(",", ".");
   return Number(text);
-}
-
-function normalizeMerchant(value: string): string {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z0-9 ]/g, " ").replace(/\s+/g, " ").trim().toUpperCase();
 }
 
 function invoiceCompetence(date: Date, closingDay: number): Date {

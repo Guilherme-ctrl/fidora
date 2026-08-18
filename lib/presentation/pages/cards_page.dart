@@ -1,16 +1,21 @@
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/analytics.dart';
+import 'package:financeiro_ai/domain/comparison.dart';
+import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
 
 class CardsPage extends StatelessWidget {
-  const CardsPage({super.key, required this.snapshot});
+  const CardsPage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
+  final FinancePeriod period;
 
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         width < 600 ? 18 : 32,
         24,
@@ -20,10 +25,10 @@ class CardsPage extends StatelessWidget {
       children: [
         PageHeading(
           title: 'Cartões e faturas',
-          subtitle: 'Fechamento, vencimento, parcelas e limites sem surpresas.',
+          subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
-              ? Tooltip(
-                  message: 'Cadastrar um novo cartão de crédito',
+              ? Semantics(
+                  label: 'Cadastrar um novo cartão de crédito',
                   child: FilledButton.icon(
                     onPressed: () => showDetailSheet(
                       context,
@@ -49,12 +54,15 @@ class CardsPage extends StatelessWidget {
                   .map(
                     (card) => Padding(
                       padding: const EdgeInsets.only(bottom: 14),
-                      child: _CreditCardView(card: card),
+                      child: _CreditCardView(
+                        card: card,
+                        usage: cardUsage(snapshot, card),
+                      ),
                     ),
                   )
                   .toList(),
             );
-            final invoices = _InvoicesList(snapshot: snapshot);
+            final invoices = _InvoicesList(snapshot: snapshot, period: period);
             return split
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,11 +81,12 @@ class CardsPage extends StatelessWidget {
 }
 
 class _CreditCardView extends StatelessWidget {
-  const _CreditCardView({required this.card});
+  const _CreditCardView({required this.card, required this.usage});
   final CreditCard card;
+  final CardUsage usage;
   @override
-  Widget build(BuildContext context) => Tooltip(
-    message: 'Abrir limites e datas do cartão final ${card.lastFour}',
+  Widget build(BuildContext context) => Semantics(
+    label: 'Abrir limites e datas do cartão final ${card.lastFour}',
     child: InkWell(
       borderRadius: BorderRadius.circular(24),
       onTap: () => showDetailSheet(
@@ -91,11 +100,20 @@ class _CreditCardView extends StatelessWidget {
             DetailValue(label: 'Fechamento', value: 'dia ${card.closingDay}'),
             DetailValue(label: 'Vencimento', value: 'dia ${card.dueDay}'),
             DetailValue(label: 'Limite', value: currency.format(card.limit)),
+            DetailValue(
+              label: 'Comprometido em faturas abertas',
+              value: currency.format(usage.used),
+            ),
+            DetailValue(
+              label: 'Disponível',
+              value: currency.format(usage.available),
+            ),
           ],
         ),
       ),
       child: Container(
-        height: 225,
+        // Grows with Dynamic Type; the inner Spacers need a bounded height.
+        height: 225 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6),
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -106,7 +124,7 @@ class _CreditCardView extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: moss.withValues(alpha: .18),
+              color: context.palette.brand.withValues(alpha: .18),
               blurRadius: 28,
               offset: const Offset(0, 12),
             ),
@@ -144,6 +162,20 @@ class _CreditCardView extends StatelessWidget {
                 style: const TextStyle(fontSize: 17, letterSpacing: 1.5),
               ),
               const Spacer(),
+              if (usage.hasLimit) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: usage.ratio,
+                    minHeight: 6,
+                    backgroundColor: Colors.white24,
+                    color: usage.isTight
+                        ? context.palette.warning
+                        : Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               Row(
                 children: [
                   Expanded(
@@ -159,8 +191,11 @@ class _CreditCardView extends StatelessWidget {
                     ),
                   ),
                   _CardDetail(
-                    label: 'LIMITE',
-                    value: currency.format(card.limit),
+                    label: usage.hasLimit ? 'DISPONÍVEL' : 'LIMITE',
+                    value: currency.format(
+                      usage.hasLimit ? usage.available : card.limit,
+                    ),
+                    highlight: usage.isTight,
                   ),
                 ],
               ),
@@ -173,9 +208,14 @@ class _CreditCardView extends StatelessWidget {
 }
 
 class _CardDetail extends StatelessWidget {
-  const _CardDetail({required this.label, required this.value});
+  const _CardDetail({
+    required this.label,
+    required this.value,
+    this.highlight = false,
+  });
   final String label;
   final String value;
+  final bool highlight;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -191,15 +231,27 @@ class _CardDetail extends StatelessWidget {
       const SizedBox(height: 3),
       Text(
         value,
-        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+        style: TextStyle(
+          fontWeight: FontWeight.w700,
+          fontSize: 12,
+          color: highlight ? context.palette.warning : Colors.white,
+        ),
       ),
     ],
   );
 }
 
 class _InvoicesList extends StatelessWidget {
-  const _InvoicesList({required this.snapshot});
+  const _InvoicesList({required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
+  final FinancePeriod period;
+
+  /// Only the invoices whose competence falls in the selected period. The page
+  /// used to show the last twelve regardless, so navigating to another month
+  /// changed every other screen and left this one alone.
+  List<Invoice> get _visible => snapshot.invoices
+      .where((item) => period.contains(item.referenceMonth))
+      .toList();
   @override
   Widget build(BuildContext context) => SectionCard(
     title: 'Faturas recentes',
@@ -209,7 +261,7 @@ class _InvoicesList extends StatelessWidget {
       title: 'Faturas recentes',
       description: 'Faturas importadas e calculadas pelo histórico.',
       child: Column(
-        children: snapshot.invoices
+        children: _visible
             .map(
               (item) => DetailValue(
                 label: monthYear.format(item.referenceMonth),
@@ -220,99 +272,125 @@ class _InvoicesList extends StatelessWidget {
       ),
     ),
     child: Column(
-      children: snapshot.invoices.map((invoice) {
-        final card = snapshot.cards
-            .where((item) => item.id == invoice.cardId)
-            .firstOrNull;
-        final open = invoice.status == 'open';
-        return Tooltip(
-          message:
-              'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(17),
-            onTap: () => showDetailSheet(
-              context,
-              title: 'Fatura de ${monthYear.format(invoice.referenceMonth)}',
-              description: card?.name ?? 'Cartão',
-              child: Column(
-                children: [
-                  DetailValue(
-                    label: 'Total pessoal',
-                    value: currency.format(invoice.total),
-                  ),
-                  DetailValue(
-                    label: 'Vencimento',
-                    value:
-                        '${invoice.dueDate.day}/${invoice.dueDate.month}/${invoice.dueDate.year}',
-                  ),
-                  DetailValue(label: 'Status', value: invoice.status),
-                ],
+      children: _visible.isEmpty
+          ? [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Nenhuma fatura com competência em ${period.label}.',
+                  style: TextStyle(color: context.palette.inkMuted),
+                ),
               ),
-            ),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: canvas,
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: open ? coral.withValues(alpha: .12) : mint,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      open
-                          ? Icons.schedule_rounded
-                          : Icons.check_circle_rounded,
-                      color: open ? coral : moss,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+            ]
+          : _visible.map((invoice) {
+              final card = snapshot.cards
+                  .where((item) => item.id == invoice.cardId)
+                  .firstOrNull;
+              final state = invoiceState(invoice);
+              return Semantics(
+                label:
+                    'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(17),
+                  onTap: () => showDetailSheet(
+                    context,
+                    title:
+                        'Fatura de ${monthYear.format(invoice.referenceMonth)}',
+                    description: card?.name ?? 'Cartão',
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          card?.name ?? 'Cartão',
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        DetailValue(
+                          label: 'Total pessoal',
+                          value: currency.format(invoice.total),
                         ),
-                        Text(
-                          '${monthName.format(invoice.referenceMonth)} • vence dia ${invoice.dueDate.day}',
-                          style: TextStyle(
-                            color: ink.withValues(alpha: .55),
-                            fontSize: 12,
+                        DetailValue(
+                          label: 'Vencimento',
+                          value: longDate.format(invoice.dueDate),
+                        ),
+                        DetailValue(label: 'Situação', value: state.label),
+                      ],
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.palette.canvas,
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _stateColor(
+                              context,
+                              state,
+                            ).withValues(alpha: .14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Icon(switch (state) {
+                            InvoiceState.paid => Icons.check_circle_rounded,
+                            InvoiceState.overdue => Icons.error_outline_rounded,
+                            InvoiceState.closed => Icons.lock_clock_rounded,
+                            InvoiceState.open => Icons.schedule_rounded,
+                          }, color: _stateColor(context, state)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                card?.name ?? 'Cartão',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                '${monthName.format(invoice.referenceMonth)} • vence dia ${invoice.dueDate.day}',
+                                style: TextStyle(
+                                  color: context.palette.inkSubtle,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              currency.format(invoice.total),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              state.label,
+                              style: TextStyle(
+                                color: _stateColor(context, state),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        currency.format(invoice.total),
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      Text(
-                        open ? 'Aberta' : 'Fechada',
-                        style: TextStyle(
-                          color: open ? coral : moss,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+                ),
+              );
+            }).toList(),
     ),
   );
 }
+
+/// Paid is settled, overdue is the alarm, closed is awaiting payment and open
+/// is still accumulating — four states the interface used to collapse into two.
+Color _stateColor(BuildContext context, InvoiceState state) => switch (state) {
+  InvoiceState.paid => context.palette.brand,
+  InvoiceState.overdue => context.palette.danger,
+  InvoiceState.closed => context.palette.onWarning,
+  InvoiceState.open => context.palette.info,
+};

@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Local Supabase configuration. Holds the project URL and the publishable key,
+# which are client-side by design, but they identify the production project and
+# do not belong in a public repository. Copy the example and fill it in.
+/config/finora.production.json

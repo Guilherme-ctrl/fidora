@@ -223,7 +223,9 @@ class _InvoiceReviewDialogState extends State<_InvoiceReviewDialog> {
                         icon: unresolvedCount == 0
                             ? Icons.check_circle_rounded
                             : Icons.warning_amber_rounded,
-                        color: unresolvedCount == 0 ? moss : gold,
+                        color: unresolvedCount == 0
+                            ? context.palette.brand
+                            : context.palette.warning,
                       ),
                       _SummaryChip(
                         label: '$remainingValidation para validar',
@@ -234,13 +236,13 @@ class _InvoiceReviewDialogState extends State<_InvoiceReviewDialog> {
                   if (unmappedCategories.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Material(
-                      color: gold.withValues(alpha: .14),
+                      color: context.palette.warning.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(12),
                       child: ListTile(
                         dense: true,
-                        leading: const Icon(
+                        leading: Icon(
                           Icons.create_new_folder_outlined,
-                          color: gold,
+                          color: context.palette.warning,
                         ),
                         title: Text(
                           '${unmappedCategories.length} ${unmappedCategories.length == 1 ? 'categoria ainda não cadastrada' : 'categorias ainda não cadastradas'}',
@@ -426,7 +428,7 @@ class _CategoryCreationDialog extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Material(
-              color: mint.withValues(alpha: .45),
+              color: context.palette.brandSoft.withValues(alpha: .45),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -438,9 +440,9 @@ class _CategoryCreationDialog extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 5),
                         child: Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.add_circle_outline_rounded,
-                              color: moss,
+                              color: context.palette.brand,
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -462,7 +464,7 @@ class _CategoryCreationDialog extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               'Elas serão criadas junto com a importação. Se você cancelar a importação, nada será cadastrado.',
-              style: TextStyle(color: ink.withValues(alpha: .64)),
+              style: TextStyle(color: context.palette.inkMuted),
             ),
           ],
         ),
@@ -497,10 +499,10 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(24, 18, 14, 18),
-    color: mint.withValues(alpha: .55),
+    color: context.palette.brandSoft.withValues(alpha: .55),
     child: Row(
       children: [
-        const Icon(Icons.fact_check_rounded, color: moss),
+        Icon(Icons.fact_check_rounded, color: context.palette.brand),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -512,7 +514,7 @@ class _Header extends StatelessWidget {
               ),
               Text(
                 '${document.bank} • final ${document.cardLastFour} • ${currency.format(document.statementTotal)}',
-                style: TextStyle(color: ink.withValues(alpha: .64)),
+                style: TextStyle(color: context.palette.inkMuted),
               ),
             ],
           ),
@@ -528,18 +530,16 @@ class _Header extends StatelessWidget {
 }
 
 class _SummaryChip extends StatelessWidget {
-  const _SummaryChip({
-    required this.label,
-    required this.icon,
-    this.color = moss,
-  });
+  const _SummaryChip({required this.label, required this.icon, this.color});
   final String label;
   final IconData icon;
-  final Color color;
+
+  /// Null falls back to the brand colour, resolved against the active theme.
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => Chip(
-    avatar: Icon(icon, size: 17, color: color),
+    avatar: Icon(icon, size: 17, color: color ?? context.palette.brand),
     label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
   );
 }
@@ -591,11 +591,11 @@ class _TransactionReviewTile extends StatelessWidget {
     _ => 'Novo',
   };
 
-  Color get dispositionColor => switch (disposition) {
+  Color dispositionColor(BuildContext context) => switch (disposition) {
     'reconcile' => const Color(0xFF5D65A8),
-    'duplicate' => moss,
-    'payment' => gold,
-    _ => coral,
+    'duplicate' => context.palette.brand,
+    'payment' => context.palette.warning,
+    _ => context.palette.danger,
   };
 
   @override
@@ -612,9 +612,9 @@ class _TransactionReviewTile extends StatelessWidget {
     ];
     return Material(
       color: validated
-          ? mint.withValues(alpha: .35)
+          ? context.palette.brandSoft.withValues(alpha: .35)
           : !resolved
-          ? gold.withValues(alpha: .10)
+          ? context.palette.warning.withValues(alpha: .10)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
@@ -639,10 +639,10 @@ class _TransactionReviewTile extends StatelessWidget {
                         ? Icons.error_outline_rounded
                         : Icons.radio_button_unchecked_rounded,
                     color: validated
-                        ? moss
+                        ? context.palette.brand
                         : !resolved
-                        ? gold
-                        : ink.withValues(alpha: .4),
+                        ? context.palette.warning
+                        : context.palette.inkSubtle,
                   ),
                 ),
               ),
@@ -661,7 +661,7 @@ class _TransactionReviewTile extends StatelessWidget {
                       details.join(' • '),
                       style: TextStyle(
                         fontSize: 12,
-                        color: ink.withValues(alpha: .60),
+                        color: context.palette.inkMuted,
                       ),
                     ),
                   ],
@@ -680,7 +680,7 @@ class _TransactionReviewTile extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: dispositionColor,
+                      color: dispositionColor(context),
                     ),
                   ),
                 ],
@@ -753,7 +753,7 @@ class _TransactionEditDialogState extends State<_TransactionEditDialog> {
               const SizedBox(height: 4),
               Text(
                 '${DateFormat('dd/MM/yyyy').format(DateTime.parse(edited['purchased_at'] as String))} • ${currency.format(edited['amount'])}',
-                style: TextStyle(color: ink.withValues(alpha: .62)),
+                style: TextStyle(color: context.palette.inkMuted),
               ),
               const SizedBox(height: 18),
               DropdownButtonFormField<String>(

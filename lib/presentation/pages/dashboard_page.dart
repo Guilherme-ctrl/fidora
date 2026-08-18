@@ -2,13 +2,16 @@ import 'dart:math' as math;
 
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
+import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class DashboardPage extends StatelessWidget {
+class DashboardPage extends ConsumerWidget {
   const DashboardPage({
     super.key,
     required this.snapshot,
@@ -21,7 +24,7 @@ class DashboardPage extends StatelessWidget {
   final ValueChanged<FinancePeriod> onPeriodChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width >= 1250
         ? 4
@@ -29,6 +32,8 @@ class DashboardPage extends StatelessWidget {
         ? 2
         : 1;
     final analytics = analyzePeriod(snapshot, period);
+    final comparison = comparePeriods(snapshot, period);
+    final average = trailingMonthlyAverage(snapshot, period);
     final cardExpenses = analytics.transactions
         .where((item) => item.affectsExpenses && isCardTransaction(item))
         .fold<double>(0, (sum, item) => sum + item.expenseImpact);
@@ -39,167 +44,168 @@ class DashboardPage extends StatelessWidget {
         .where((item) => period.contains(item.referenceMonth))
         .fold<double>(0, (sum, item) => sum + item.total);
 
-    return RefreshIndicator(
-      onRefresh: () async {},
-      child: ListView(
-        padding: EdgeInsets.fromLTRB(
-          width < 600 ? 18 : 32,
-          24,
-          width < 600 ? 18 : 32,
-          36,
-        ),
-        children: [
-          PageHeading(
-            title: 'Seu dinheiro, com contexto.',
-            subtitle: 'Indicadores de ${period.label}',
-            action: width > 560
-                ? Tooltip(
-                    message: 'Registrar uma nova transação manualmente',
-                    child: FilledButton.icon(
-                      onPressed: () => _showCapture(context),
-                      icon: const Icon(Icons.add),
-                      label: const Text('Nova transação'),
-                    ),
-                  )
-                : null,
-          ),
-          const SizedBox(height: 18),
-          PeriodFilterBar(period: period, onChanged: onPeriodChanged),
-          const SizedBox(height: 20),
-          GridView.count(
-            crossAxisCount: columns,
-            mainAxisSpacing: 14,
-            crossAxisSpacing: 14,
-            childAspectRatio: width < 680 ? 2.15 : 1.7,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              MetricCard(
-                label: 'Saídas — faturas + conta',
-                value: currency.format(analytics.expenses),
-                icon: Icons.south_east_rounded,
-                color: coral,
-                detail:
-                    '${analytics.transactions.where((item) => item.affectsExpenses && isCardTransaction(item)).length} no cartão',
-                tooltip: 'Ver todas as saídas consideradas no período',
-                onTap: () => _showTransactions(
-                  context,
-                  'Saídas no período',
-                  analytics.transactions
-                      .where((item) => item.affectsExpenses)
-                      .toList(),
-                ),
-              ),
-              MetricCard(
-                label: 'Entradas no período',
-                value: currency.format(analytics.income),
-                icon: Icons.south_west_rounded,
-                color: moss,
-                detail:
-                    '${analytics.transactions.where((item) => item.isIncome).length} entradas',
-                tooltip: 'Ver créditos e entradas do período',
-                onTap: () => _showTransactions(
-                  context,
-                  'Entradas no período',
-                  analytics.transactions
-                      .where((item) => item.isIncome)
-                      .toList(),
-                ),
-              ),
-              MetricCard(
-                label: 'Saldo do período',
-                value: currency.format(analytics.balance),
-                icon: Icons.account_balance_wallet_rounded,
-                color: analytics.balance >= 0 ? const Color(0xFF5D65A8) : coral,
-                detail: '${analytics.savingsRate.toStringAsFixed(1)}% poupado',
-                tooltip: 'Entender como entradas e saídas formam o saldo',
-                onTap: () => showDetailSheet(
-                  context,
-                  title: 'Saldo de ${period.label}',
-                  description:
-                      'Saldo é a diferença entre entradas e saídas consideradas.',
-                  child: Column(
-                    children: [
-                      DetailValue(
-                        label: 'Entradas',
-                        value: currency.format(analytics.income),
-                      ),
-                      DetailValue(
-                        label: 'Saídas',
-                        value: currency.format(analytics.expenses),
-                      ),
-                      DetailValue(
-                        label: 'Cartão por fatura',
-                        value: currency.format(cardExpenses),
-                      ),
-                      DetailValue(
-                        label: 'Conta, Pix e débito',
-                        value: currency.format(accountExpenses),
-                      ),
-                      DetailValue(
-                        label: 'Saldo',
-                        value: currency.format(analytics.balance),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              MetricCard(
-                label: 'Faturas no período',
-                value: currency.format(invoiceTotal),
-                icon: Icons.credit_card_rounded,
-                color: gold,
-                detail:
-                    '${snapshot.invoices.where((item) => period.contains(item.referenceMonth)).length} faturas',
-                tooltip: 'Ver faturas cuja competência está no período',
-                onTap: () => _showInvoices(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final split = constraints.maxWidth >= 900;
-              final chart = _TrendCard(analytics: analytics, period: period);
-              final category = _CategoryCard(
-                snapshot: snapshot,
-                analytics: analytics,
-                period: period,
-              );
-              return split
-                  ? Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(flex: 3, child: chart),
-                        const SizedBox(width: 14),
-                        Expanded(flex: 2, child: category),
-                      ],
-                    )
-                  : Column(
-                      children: [chart, const SizedBox(height: 14), category],
-                    );
-            },
-          ),
-          const SizedBox(height: 14),
-          _BudgetComparison(
-            snapshot: snapshot,
-            analytics: analytics,
-            period: period,
-          ),
-          const SizedBox(height: 14),
-          _RecentTransactions(transactions: analytics.transactions),
-        ],
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: EdgeInsets.fromLTRB(
+        width < 600 ? 18 : 32,
+        24,
+        width < 600 ? 18 : 32,
+        36,
       ),
+      children: [
+        PageHeading(
+          title: 'Seu dinheiro, com contexto.',
+          subtitle: 'Indicadores de ${period.label}',
+          // Below 900px the shell's floating action button owns this action.
+          action: width >= 900
+              ? FilledButton.icon(
+                  onPressed: () => createTransaction(context, ref, snapshot),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Nova transação'),
+                )
+              : null,
+        ),
+        const SizedBox(height: 18),
+        GridView.count(
+          crossAxisCount: columns,
+          mainAxisSpacing: 14,
+          crossAxisSpacing: 14,
+          childAspectRatio: width < 680 ? 2.15 : 1.7,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            MetricCard(
+              label: 'Saídas — faturas + conta',
+              value: currency.format(analytics.expenses),
+              icon: Icons.south_east_rounded,
+              color: context.palette.danger,
+              detail:
+                  '${analytics.transactions.where((item) => item.affectsExpenses && isCardTransaction(item)).length} no cartão',
+              trendLabel: _expenseTrend(comparison),
+              // Spending less than the baseline is the good direction.
+              trendGood: comparison.hasBaseline ? !comparison.spentMore : null,
+              tooltip: 'Ver todas as saídas consideradas no período',
+              onTap: () => _showTransactions(
+                context,
+                'Saídas no período',
+                analytics.transactions
+                    .where((item) => item.affectsExpenses)
+                    .toList(),
+              ),
+            ),
+            MetricCard(
+              label: 'Entradas no período',
+              value: currency.format(analytics.income),
+              icon: Icons.south_west_rounded,
+              color: context.palette.brand,
+              detail:
+                  '${analytics.transactions.where((item) => item.isIncome).length} entradas',
+              tooltip: 'Ver créditos e entradas do período',
+              onTap: () => _showTransactions(
+                context,
+                'Entradas no período',
+                analytics.transactions.where((item) => item.isIncome).toList(),
+              ),
+            ),
+            MetricCard(
+              label: 'Saldo do período',
+              value: currency.format(analytics.balance),
+              icon: Icons.account_balance_wallet_rounded,
+              color: analytics.balance >= 0
+                  ? const Color(0xFF5D65A8)
+                  : context.palette.danger,
+              detail: '${analytics.savingsRate.toStringAsFixed(1)}% poupado',
+              tooltip: 'Entender como entradas e saídas formam o saldo',
+              onTap: () => showDetailSheet(
+                context,
+                title: 'Saldo de ${period.label}',
+                description:
+                    'Saldo é a diferença entre entradas e saídas consideradas.',
+                child: Column(
+                  children: [
+                    DetailValue(
+                      label: 'Entradas',
+                      value: currency.format(analytics.income),
+                    ),
+                    DetailValue(
+                      label: 'Saídas',
+                      value: currency.format(analytics.expenses),
+                    ),
+                    DetailValue(
+                      label: 'Cartão por fatura',
+                      value: currency.format(cardExpenses),
+                    ),
+                    DetailValue(
+                      label: 'Conta, Pix e débito',
+                      value: currency.format(accountExpenses),
+                    ),
+                    DetailValue(
+                      label: 'Saldo',
+                      value: currency.format(analytics.balance),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            MetricCard(
+              label: 'Faturas no período',
+              value: currency.format(invoiceTotal),
+              icon: Icons.credit_card_rounded,
+              color: context.palette.warning,
+              detail:
+                  '${snapshot.invoices.where((item) => period.contains(item.referenceMonth)).length} faturas',
+              tooltip: 'Ver faturas cuja competência está no período',
+              onTap: () => _showInvoices(context),
+            ),
+          ],
+        ),
+        const SizedBox(height: 14),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final split = constraints.maxWidth >= 900;
+            final chart = _TrendCard(analytics: analytics, period: period);
+            final category = _CategoryCard(
+              snapshot: snapshot,
+              analytics: analytics,
+              period: period,
+            );
+            return split
+                ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 3, child: chart),
+                      const SizedBox(width: 14),
+                      Expanded(flex: 2, child: category),
+                    ],
+                  )
+                : Column(
+                    children: [chart, const SizedBox(height: 14), category],
+                  );
+          },
+        ),
+        const SizedBox(height: 14),
+        _MonthOverMonth(comparison: comparison, average: average),
+        const SizedBox(height: 14),
+        _BudgetComparison(
+          snapshot: snapshot,
+          analytics: analytics,
+          period: period,
+        ),
+        const SizedBox(height: 14),
+        _RecentTransactions(transactions: analytics.transactions),
+      ],
     );
   }
 
-  void _showCapture(BuildContext context) => showDetailSheet(
-    context,
-    title: 'Captura rápida',
-    description:
-        'O Atalho envia valor, estabelecimento e cartão. A categoria pode ser escolhida no Atalho ou revisada depois.',
-    child: const Center(child: Icon(Icons.bolt_rounded, color: moss, size: 54)),
-  );
+  /// Null when the previous period spent nothing — there is no percentage
+  /// change from zero, and inventing one would be worse than saying nothing.
+  static String? _expenseTrend(PeriodComparison comparison) {
+    if (!comparison.hasBaseline) return null;
+    final ratio = comparison.expenseRatio!;
+    final direction = ratio >= 0 ? 'acima' : 'abaixo';
+    final label = monthName.format(comparison.previousPeriod.start);
+    return '${(ratio.abs() * 100).toStringAsFixed(0)}% $direction de $label';
+  }
 
   void _showTransactions(
     BuildContext context,
@@ -253,10 +259,25 @@ class _TrendCard extends StatelessWidget {
         ifAbsent: () => item.expenseImpact,
       );
     }
-    final days = totals.keys.toList()..sort();
+    // The x axis is the calendar, not the list of days that happened to have
+    // movement. Indexing by the latter collapsed the gaps, so a purchase on the
+    // 3rd and another on the 28th were drawn side by side and the "pace" the
+    // chart is named after was exactly what it hid.
+    final firstDay = DateTime(
+      period.start.year,
+      period.start.month,
+      period.start.day,
+    );
+    final span = period.endExclusive.difference(firstDay).inDays;
+    final days = List.generate(
+      span,
+      (index) => DateTime(firstDay.year, firstDay.month, firstDay.day + index),
+    );
     final spots = days.indexed
-        .map((entry) => FlSpot(entry.$1.toDouble(), totals[entry.$2]!))
+        .map((entry) => FlSpot(entry.$1.toDouble(), totals[entry.$2] ?? 0))
         .toList();
+    final daysWithMovement = totals.keys.length;
+    final peak = totals.values.isEmpty ? 0.0 : totals.values.reduce(math.max);
 
     return SectionCard(
       title: 'Ritmo de gastos',
@@ -267,7 +288,7 @@ class _TrendCard extends StatelessWidget {
         description:
             'Datas reais das compras que compõem as faturas do período, somadas às movimentações de conta nas próprias datas.',
         child: Column(
-          children: days
+          children: (totals.keys.toList()..sort())
               .map(
                 (day) => DetailValue(
                   label: DateFormat('dd/MM/yyyy').format(day),
@@ -278,40 +299,74 @@ class _TrendCard extends StatelessWidget {
         ),
       ),
       trailing: Text(
-        '${days.length} dias com movimento',
-        style: const TextStyle(color: moss, fontWeight: FontWeight.w700),
+        '$daysWithMovement de ${days.length} dias',
+        style: TextStyle(
+          color: context.palette.brand,
+          fontWeight: FontWeight.w700,
+        ),
       ),
       child: SizedBox(
-        height: 230,
+        height: 230 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.4),
         child: spots.isEmpty
             ? const Center(child: Text('Sem saídas neste período'))
             : LineChart(
                 LineChartData(
                   minY: 0,
-                  maxY: math.max(
-                    1,
-                    spots.map((item) => item.y).reduce(math.max) * 1.15,
-                  ),
+                  maxY: math.max(1, peak * 1.15),
                   borderData: FlBorderData(show: false),
                   gridData: FlGridData(
                     drawVerticalLine: false,
-                    getDrawingHorizontalLine: (_) => FlLine(
-                      color: ink.withValues(alpha: .06),
-                      strokeWidth: 1,
-                    ),
+                    getDrawingHorizontalLine: (_) =>
+                        FlLine(color: context.palette.hairline, strokeWidth: 1),
                   ),
-                  titlesData: const FlTitlesData(
-                    topTitles: AxisTitles(
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-                    rightTitles: AxisTitles(
+                    rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
                     leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 46,
+                        getTitlesWidget: (value, meta) =>
+                            value >= meta.max || value <= 0
+                            ? const SizedBox()
+                            : Text(
+                                compactCurrency.format(value),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.palette.inkSubtle,
+                                ),
+                              ),
+                      ),
                     ),
                     bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        interval: math.max(
+                          1,
+                          (days.length / 5).floorToDouble(),
+                        ),
+                        getTitlesWidget: (value, meta) {
+                          final index = value.round();
+                          if (index < 0 || index >= days.length) {
+                            return const SizedBox();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              DateFormat('d/M').format(days[index]),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: context.palette.inkSubtle,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   lineTouchData: LineTouchData(
@@ -333,12 +388,12 @@ class _TrendCard extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: moss,
+                      color: context.palette.brand,
                       barWidth: 4,
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: moss.withValues(alpha: .10),
+                        color: context.palette.brand.withValues(alpha: .10),
                       ),
                     ),
                   ],
@@ -375,8 +430,8 @@ class _CategoryCard extends StatelessWidget {
           final ratio = analytics.expenses == 0
               ? 0.0
               : (entry.value / analytics.expenses).clamp(0.0, 1.0);
-          return Tooltip(
-            message: 'Ver lançamentos de ${entry.key}',
+          return Semantics(
+            label: 'Ver lançamentos de ${entry.key}',
             child: InkWell(
               borderRadius: BorderRadius.circular(10),
               onTap: () => showDetailSheet(
@@ -397,7 +452,7 @@ class _CategoryCard extends StatelessWidget {
                       width: 10,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: category?.color ?? moss,
+                        color: category?.color ?? context.palette.brand,
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -415,8 +470,8 @@ class _CategoryCard extends StatelessWidget {
                             value: ratio,
                             minHeight: 5,
                             borderRadius: BorderRadius.circular(8),
-                            color: category?.color ?? moss,
-                            backgroundColor: ink.withValues(alpha: .06),
+                            color: category?.color ?? context.palette.brand,
+                            backgroundColor: context.palette.hairline,
                           ),
                         ],
                       ),
@@ -476,12 +531,11 @@ class _BudgetComparison extends StatelessWidget {
       tooltip:
           'Clique para comparar orçamento, realizado e saldo por categoria',
       onTap: () => _showDetails(context, items),
-      trailing: Tooltip(
-        message:
-            'Metas mensais cadastradas na planilha e realizadas no período',
+      trailing: Semantics(
+        label: 'Metas mensais cadastradas na planilha e realizadas no período',
         child: Icon(
           Icons.info_outline_rounded,
-          color: ink.withValues(alpha: .5),
+          color: context.palette.inkSubtle,
         ),
       ),
       child: items.isEmpty
@@ -494,8 +548,8 @@ class _BudgetComparison extends StatelessWidget {
                   final actual = analytics.byCategory[category.name] ?? 0;
                   final ratio = actual / category.monthlyBudget!;
                   final over = ratio > 1;
-                  return Tooltip(
-                    message: 'Abrir detalhes de ${category.name}',
+                  return Semantics(
+                    label: 'Abrir detalhes de ${category.name}',
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () => _showCategory(context, category, actual),
@@ -505,7 +559,7 @@ class _BudgetComparison extends StatelessWidget {
                             : 240,
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: canvas,
+                          color: context.palette.canvas,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Column(
@@ -521,7 +575,9 @@ class _BudgetComparison extends StatelessWidget {
                             Text(
                               '${currency.format(actual)} / ${currency.format(category.monthlyBudget)}',
                               style: TextStyle(
-                                color: over ? coral : moss,
+                                color: over
+                                    ? context.palette.danger
+                                    : context.palette.brand,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -529,7 +585,9 @@ class _BudgetComparison extends StatelessWidget {
                             LinearProgressIndicator(
                               value: ratio.clamp(0.0, 1.0),
                               minHeight: 8,
-                              color: over ? coral : category.color,
+                              color: over
+                                  ? context.palette.danger
+                                  : category.color,
                               backgroundColor: category.color.withValues(
                                 alpha: .10,
                               ),
@@ -614,7 +672,11 @@ class _RecentTransactions extends StatelessWidget {
       description: '${transactions.length} lançamentos considerados.',
       child: _TransactionDetails(transactions: transactions),
     ),
-    trailing: const Icon(Icons.open_in_new_rounded, size: 18, color: moss),
+    trailing: Icon(
+      Icons.open_in_new_rounded,
+      size: 18,
+      color: context.palette.brand,
+    ),
     child: _TransactionDetails(transactions: transactions.take(5).toList()),
   );
 }
@@ -631,19 +693,21 @@ class _TransactionDetails extends StatelessWidget {
     return Column(
       children: transactions
           .map(
-            (item) => Tooltip(
-              message: 'Ver os dados de ${item.merchant}',
+            (item) => Semantics(
+              label: 'Ver os dados de ${item.merchant}',
               child: ListTile(
                 contentPadding: EdgeInsets.zero,
                 leading: CircleAvatar(
                   backgroundColor: item.isIncome
-                      ? mint
-                      : coral.withValues(alpha: .12),
+                      ? context.palette.brandSoft
+                      : context.palette.danger.withValues(alpha: .12),
                   child: Icon(
                     item.isIncome
                         ? Icons.south_west_rounded
                         : Icons.receipt_rounded,
-                    color: item.isIncome ? moss : coral,
+                    color: item.isIncome
+                        ? context.palette.brand
+                        : context.palette.danger,
                   ),
                 ),
                 title: Text(
@@ -692,6 +756,156 @@ class _TransactionDetails extends StatelessWidget {
             ),
           )
           .toList(),
+    );
+  }
+}
+
+/// Answers “estou gastando mais que o normal?”, which nothing on the dashboard
+/// could answer before: every figure was an isolated total.
+class _MonthOverMonth extends StatelessWidget {
+  const _MonthOverMonth({required this.comparison, required this.average});
+  final PeriodComparison comparison;
+  final double? average;
+
+  @override
+  Widget build(BuildContext context) {
+    final movers = comparison.categories
+        .where((item) => item.delta.abs() >= 0.01)
+        .take(5)
+        .toList();
+    final previousLabel = monthYear.format(comparison.previousPeriod.start);
+
+    return SectionCard(
+      title: 'Comparado com $previousLabel',
+      tooltip: 'Ver o detalhe da variação por categoria',
+      onTap: () => _showAll(context),
+      trailing: average == null
+          ? null
+          : Text(
+              'média ${currency.format(average)}',
+              style: TextStyle(
+                color: context.palette.inkMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (!comparison.hasBaseline)
+            Text(
+              'Não há gastos em $previousLabel para comparar.',
+              style: TextStyle(color: context.palette.inkMuted),
+            )
+          else ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    comparison.spentMore
+                        ? 'Você gastou ${currency.format(comparison.expenseDelta.abs())} a mais'
+                        : 'Você gastou ${currency.format(comparison.expenseDelta.abs())} a menos',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: comparison.spentMore
+                          ? context.palette.danger
+                          : context.palette.brand,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${currency.format(comparison.previous.expenses)} → ${currency.format(comparison.current.expenses)}',
+                  style: TextStyle(
+                    color: context.palette.inkMuted,
+                    fontSize: 12.5,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (movers.isEmpty)
+            Text(
+              'Nenhuma categoria mudou no período.',
+              style: TextStyle(color: context.palette.inkMuted),
+            )
+          else
+            ...movers.map((item) => _DeltaRow(item: item)),
+        ],
+      ),
+    );
+  }
+
+  void _showAll(BuildContext context) => showDetailSheet(
+    context,
+    title: 'Variação por categoria',
+    description:
+        'Comparação entre ${monthYear.format(comparison.period.start)} e ${monthYear.format(comparison.previousPeriod.start)}.',
+    child: Column(
+      children: comparison.categories
+          .map(
+            (item) => DetailValue(
+              label: item.name,
+              value:
+                  '${currency.format(item.previous)} → ${currency.format(item.current)}',
+            ),
+          )
+          .toList(),
+    ),
+  );
+}
+
+class _DeltaRow extends StatelessWidget {
+  const _DeltaRow({required this.item});
+  final CategoryDelta item;
+
+  @override
+  Widget build(BuildContext context) {
+    final up = item.delta > 0;
+    final color = up ? context.palette.danger : context.palette.brand;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Icon(
+            up ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+            size: 16,
+            color: color,
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              item.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            switch (item) {
+              final value when value.isNew => 'novo',
+              final value when value.isGone => 'zerou',
+              _ =>
+                '${up ? '+' : '−'}${(item.ratio!.abs() * 100).toStringAsFixed(0)}%',
+            },
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 96,
+            child: Text(
+              '${up ? '+' : '−'}${currency.format(item.delta.abs())}',
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontWeight: FontWeight.w800),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

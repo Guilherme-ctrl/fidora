@@ -43,6 +43,8 @@ class FinanceiroApp extends StatelessWidget {
     title: 'Finora',
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
+    darkTheme: buildAppTheme(brightness: Brightness.dark),
+    themeMode: ThemeMode.system,
     home: useSupabase ? const AuthGate() : const AppShell(),
   );
 }

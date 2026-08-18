@@ -172,6 +172,7 @@ class FinanceSnapshot {
     required this.invoices,
     required this.goals,
     required this.pendingReviews,
+    this.currencyCode = 'BRL',
   });
   final List<FinanceTransaction> transactions;
   final List<FinanceCategory> categories;
@@ -179,6 +180,9 @@ class FinanceSnapshot {
   final List<Invoice> invoices;
   final List<Goal> goals;
   final int pendingReviews;
+
+  /// From `profiles.currency`; drives the money formatter.
+  final String currencyCode;
 
   double get monthSpend => transactions
       .where((item) => item.status != TransactionStatus.ignored)
