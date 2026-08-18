@@ -50,9 +50,7 @@ class CategoriesPage extends StatelessWidget {
                 )
               : null,
         ),
-        const SizedBox(height: 16),
-        PeriodFilterBar(period: period, onChanged: onPeriodChanged),
-        const SizedBox(height: 22),
+        const SizedBox(height: 18),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),

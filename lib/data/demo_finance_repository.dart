@@ -248,6 +248,7 @@ class DemoFinanceRepository implements FinanceRepository {
         Goal(name: 'Viagem', current: 4200, target: 12000),
       ],
       pendingReviews: _reviews.where((item) => item.isPending).length,
+      currencyCode: 'BRL',
     );
   }
 

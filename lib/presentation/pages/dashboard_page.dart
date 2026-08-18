@@ -66,8 +66,6 @@ class DashboardPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: 18),
-        PeriodFilterBar(period: period, onChanged: onPeriodChanged),
-        const SizedBox(height: 20),
         GridView.count(
           crossAxisCount: columns,
           mainAxisSpacing: 14,

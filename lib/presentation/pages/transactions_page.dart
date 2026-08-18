@@ -75,12 +75,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   subtitle:
                       '${filtered.length} lançamentos em ${widget.period.label}.',
                 ),
-                const SizedBox(height: 16),
-                PeriodFilterBar(
-                  period: widget.period,
-                  onChanged: widget.onPeriodChanged,
-                ),
-                const SizedBox(height: 22),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(

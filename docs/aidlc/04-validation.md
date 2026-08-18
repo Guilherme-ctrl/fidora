@@ -177,6 +177,23 @@ This file is updated by the build workflow. A gate passes only with reproducible
 | Function boots | POST with an invalid token | Pass — HTTP 401 `invalid_token`, which proves the module initialises and the `rules.ts` import resolves; a bundling failure would answer 500 |
 | Method guard | GET on the endpoint | Pass — HTTP 405 `method_not_allowed` |
 
+## Evidence — 18 August 2026 (last three findings)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full suite | `flutter test` | Pass — 121 tests, up from 113 |
+| Period equality | `FinancePeriod` value equality and hash | Pass — required to key the memo |
+| Analysis memo | Repeated call with the same snapshot and period | Pass — identical instance returned; a new snapshot bypasses the cache |
+| Currency default | Formatter with no profile override | Pass — `R$`, after a caught regression that printed `BRL` |
+| Currency switch | `configureCurrency('USD')` | Pass — `1,234.50`, no `R$` |
+| Unmapped currency | `configureCurrency('XOF')` | Pass — formats with the code as symbol |
+| Blank currency | `configureCurrency('   ')` | Pass — ignored, keeps the previous formatter |
+| Single period control | Demo build at 1280px | Pass — one bar in the shell, none inside the pages |
+| Cards honour the period | Same build, August then July | Pass — August shows its invoice, July shows the empty state |
+| Availability unfiltered | Same navigation | Pass — the two cards keep their figures across months |
+| Five destinations | Navigation rail | Pass — Projeção reachable as the first item under "Mais" |
+
 ## Open validation gates
 
 - Real-device Shortcut test: requires a deployed Supabase project, token and selected Wallet card.

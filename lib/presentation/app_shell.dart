@@ -7,8 +7,8 @@ import 'package:financeiro_ai/presentation/pages/cards_page.dart';
 import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
-import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
+import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -25,6 +25,9 @@ class _AppShellState extends ConsumerState<AppShell> {
   int index = 0;
   FinancePeriod period = FinancePeriod.month(DateTime.now());
 
+  /// Five destinations, the Material maximum. Projeção used to be the sixth;
+  /// it is derived data consulted occasionally, so it now lives behind "Mais"
+  /// instead of crowding the bar on a 360pt screen.
   static const destinations = [
     NavigationDestination(
       icon: Icon(Icons.space_dashboard_outlined),
@@ -47,21 +50,23 @@ class _AppShellState extends ConsumerState<AppShell> {
       label: 'Faturas',
     ),
     NavigationDestination(
-      icon: Icon(Icons.query_stats_outlined),
-      selectedIcon: Icon(Icons.query_stats_rounded),
-      label: 'Projeção',
-    ),
-    NavigationDestination(
       icon: Icon(Icons.tune_outlined),
       selectedIcon: Icon(Icons.tune_rounded),
       label: 'Mais',
     ),
   ];
 
+  /// The tabs whose contents depend on the selected period.
+  static const _periodAware = {0, 1, 2, 3};
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(financeSnapshotProvider);
     final wide = MediaQuery.sizeOf(context).width >= 900;
+    // Keeping the last snapshot on screen while a reload runs is what stops the
+    // whole app blanking to a spinner after every write.
+    final snapshot = state.value;
+    if (snapshot != null) configureCurrency(snapshot.currencyCode);
+
     return Scaffold(
       body: Row(
         children: [
@@ -93,28 +98,44 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
           Expanded(
             child: SafeArea(
-              child: state.when(
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (error, _) => _ErrorState(
-                  failure: LoadFailure.from(error),
+              child: switch ((snapshot, state.hasError)) {
+                (null, true) => _ErrorState(
+                  failure: LoadFailure.from(state.error!),
                   onRetry: () => ref.invalidate(financeSnapshotProvider),
                 ),
-                data: (snapshot) => Column(
+                (null, false) => const _SnapshotSkeleton(),
+                (final data?, _) => Column(
                   children: [
                     if (!wide)
                       Padding(
-                        padding: EdgeInsets.fromLTRB(20, 12, 20, 4),
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
                         child: _Brand(
                           compact: true,
                           onSignOut: widget.onSignOut,
                         ),
+                      ),
+                    // One period control for the whole app. It used to be
+                    // repeated inside four pages and missing from a fifth,
+                    // which quietly ignored the selection.
+                    if (_periodAware.contains(index))
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(wide ? 32 : 18, 8, 18, 4),
+                        child: PeriodFilterBar(
+                          period: period,
+                          onChanged: (value) => setState(() => period = value),
+                        ),
+                      ),
+                    if (state.isLoading)
+                      LinearProgressIndicator(
+                        minHeight: 2,
+                        backgroundColor: context.palette.hairline,
                       ),
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () => refreshFinanceSnapshot(ref),
                         child: _SelectedPage(
                           index: index,
-                          snapshot: snapshot,
+                          snapshot: data,
                           period: period,
                           onPeriodChanged: (value) =>
                               setState(() => period = value),
@@ -123,22 +144,19 @@ class _AppShellState extends ConsumerState<AppShell> {
                     ),
                   ],
                 ),
-              ),
+              },
             ),
           ),
         ],
       ),
       // Below the wide breakpoint the pages hide their header buttons, so the
       // floating action button is the only path to creating a transaction.
-      floatingActionButton: wide
+      floatingActionButton: wide || snapshot == null
           ? null
-          : state.maybeWhen(
-              data: (snapshot) => FloatingActionButton.extended(
-                onPressed: () => createTransaction(context, ref, snapshot),
-                icon: const Icon(Icons.add),
-                label: const Text('Transação'),
-              ),
-              orElse: () => null,
+          : FloatingActionButton.extended(
+              onPressed: () => createTransaction(context, ref, snapshot),
+              icon: const Icon(Icons.add),
+              label: const Text('Transação'),
             ),
       bottomNavigationBar: wide
           ? null
@@ -181,13 +199,8 @@ class _SelectedPage extends StatelessWidget {
         period: period,
         onPeriodChanged: onPeriodChanged,
       ),
-      CardsPage(snapshot: snapshot),
-      ProjectionPage(
-        snapshot: snapshot,
-        period: period,
-        onPeriodChanged: onPeriodChanged,
-      ),
-      MorePage(snapshot: snapshot),
+      CardsPage(snapshot: snapshot, period: period),
+      MorePage(snapshot: snapshot, period: period),
     ],
   );
 }
@@ -316,4 +329,47 @@ class _ErrorState extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Shown only on the very first load, when there is no previous snapshot to
+/// keep on screen. A shape of the dashboard reads as "almost there" in a way a
+/// centred spinner does not.
+class _SnapshotSkeleton extends StatelessWidget {
+  const _SnapshotSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget block(double height, {double width = double.infinity}) => Container(
+      height: height,
+      width: width,
+      decoration: BoxDecoration(
+        color: context.palette.hairline,
+        borderRadius: BorderRadius.circular(14),
+      ),
+    );
+
+    return Semantics(
+      label: 'Carregando seus dados',
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(18, 28, 18, 36),
+        children: [
+          block(28, width: 220),
+          const SizedBox(height: 12),
+          block(16, width: 150),
+          const SizedBox(height: 26),
+          Row(
+            children: [
+              Expanded(child: block(96)),
+              const SizedBox(width: 14),
+              Expanded(child: block(96)),
+            ],
+          ),
+          const SizedBox(height: 14),
+          block(210),
+          const SizedBox(height: 14),
+          block(150),
+        ],
+      ),
+    );
+  }
 }

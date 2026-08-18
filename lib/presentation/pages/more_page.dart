@@ -5,7 +5,9 @@ import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
+import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
@@ -13,8 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class MorePage extends ConsumerWidget {
-  const MorePage({super.key, required this.snapshot});
+  const MorePage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
+  final FinancePeriod period;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -128,6 +131,25 @@ class MorePage extends ConsumerWidget {
           title: 'Operação',
           child: Column(
             children: [
+              _OperationTile(
+                icon: Icons.query_stats_rounded,
+                color: const Color(0xFF5D65A8),
+                title: 'Projeção',
+                subtitle: 'Faturas, parcelas e conta nos próximos seis meses',
+                tooltip: 'Abrir a projeção financeira',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => Scaffold(
+                      appBar: AppBar(title: const Text('Projeção')),
+                      body: ProjectionPage(
+                        snapshot: snapshot,
+                        period: period,
+                        onPeriodChanged: (_) {},
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               _OperationTile(
                 icon: Icons.rule_folder_rounded,
                 color: context.palette.warning,

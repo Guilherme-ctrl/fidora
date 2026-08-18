@@ -1,4 +1,5 @@
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -6,8 +7,9 @@ import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
 
 class CardsPage extends StatelessWidget {
-  const CardsPage({super.key, required this.snapshot});
+  const CardsPage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
+  final FinancePeriod period;
 
   @override
   Widget build(BuildContext context) {
@@ -60,7 +62,7 @@ class CardsPage extends StatelessWidget {
                   )
                   .toList(),
             );
-            final invoices = _InvoicesList(snapshot: snapshot);
+            final invoices = _InvoicesList(snapshot: snapshot, period: period);
             return split
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,8 +242,16 @@ class _CardDetail extends StatelessWidget {
 }
 
 class _InvoicesList extends StatelessWidget {
-  const _InvoicesList({required this.snapshot});
+  const _InvoicesList({required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
+  final FinancePeriod period;
+
+  /// Only the invoices whose competence falls in the selected period. The page
+  /// used to show the last twelve regardless, so navigating to another month
+  /// changed every other screen and left this one alone.
+  List<Invoice> get _visible => snapshot.invoices
+      .where((item) => period.contains(item.referenceMonth))
+      .toList();
   @override
   Widget build(BuildContext context) => SectionCard(
     title: 'Faturas recentes',
@@ -251,7 +261,7 @@ class _InvoicesList extends StatelessWidget {
       title: 'Faturas recentes',
       description: 'Faturas importadas e calculadas pelo histórico.',
       child: Column(
-        children: snapshot.invoices
+        children: _visible
             .map(
               (item) => DetailValue(
                 label: monthYear.format(item.referenceMonth),
@@ -262,98 +272,116 @@ class _InvoicesList extends StatelessWidget {
       ),
     ),
     child: Column(
-      children: snapshot.invoices.map((invoice) {
-        final card = snapshot.cards
-            .where((item) => item.id == invoice.cardId)
-            .firstOrNull;
-        final state = invoiceState(invoice);
-        return Semantics(
-          label:
-              'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
-          child: InkWell(
-            borderRadius: BorderRadius.circular(17),
-            onTap: () => showDetailSheet(
-              context,
-              title: 'Fatura de ${monthYear.format(invoice.referenceMonth)}',
-              description: card?.name ?? 'Cartão',
-              child: Column(
-                children: [
-                  DetailValue(
-                    label: 'Total pessoal',
-                    value: currency.format(invoice.total),
-                  ),
-                  DetailValue(
-                    label: 'Vencimento',
-                    value: longDate.format(invoice.dueDate),
-                  ),
-                  DetailValue(label: 'Situação', value: state.label),
-                ],
+      children: _visible.isEmpty
+          ? [
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  'Nenhuma fatura com competência em ${period.label}.',
+                  style: TextStyle(color: context.palette.inkMuted),
+                ),
               ),
-            ),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: context.palette.canvas,
-                borderRadius: BorderRadius.circular(17),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _stateColor(context, state).withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(switch (state) {
-                      InvoiceState.paid => Icons.check_circle_rounded,
-                      InvoiceState.overdue => Icons.error_outline_rounded,
-                      InvoiceState.closed => Icons.lock_clock_rounded,
-                      InvoiceState.open => Icons.schedule_rounded,
-                    }, color: _stateColor(context, state)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
+            ]
+          : _visible.map((invoice) {
+              final card = snapshot.cards
+                  .where((item) => item.id == invoice.cardId)
+                  .firstOrNull;
+              final state = invoiceState(invoice);
+              return Semantics(
+                label:
+                    'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(17),
+                  onTap: () => showDetailSheet(
+                    context,
+                    title:
+                        'Fatura de ${monthYear.format(invoice.referenceMonth)}',
+                    description: card?.name ?? 'Cartão',
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          card?.name ?? 'Cartão',
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                        DetailValue(
+                          label: 'Total pessoal',
+                          value: currency.format(invoice.total),
                         ),
-                        Text(
-                          '${monthName.format(invoice.referenceMonth)} • vence dia ${invoice.dueDate.day}',
-                          style: TextStyle(
-                            color: context.palette.inkSubtle,
-                            fontSize: 12,
+                        DetailValue(
+                          label: 'Vencimento',
+                          value: longDate.format(invoice.dueDate),
+                        ),
+                        DetailValue(label: 'Situação', value: state.label),
+                      ],
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: context.palette.canvas,
+                      borderRadius: BorderRadius.circular(17),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: _stateColor(
+                              context,
+                              state,
+                            ).withValues(alpha: .14),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Icon(switch (state) {
+                            InvoiceState.paid => Icons.check_circle_rounded,
+                            InvoiceState.overdue => Icons.error_outline_rounded,
+                            InvoiceState.closed => Icons.lock_clock_rounded,
+                            InvoiceState.open => Icons.schedule_rounded,
+                          }, color: _stateColor(context, state)),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                card?.name ?? 'Cartão',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              Text(
+                                '${monthName.format(invoice.referenceMonth)} • vence dia ${invoice.dueDate.day}',
+                                style: TextStyle(
+                                  color: context.palette.inkSubtle,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              currency.format(invoice.total),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                            Text(
+                              state.label,
+                              style: TextStyle(
+                                color: _stateColor(context, state),
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        currency.format(invoice.total),
-                        style: const TextStyle(fontWeight: FontWeight.w900),
-                      ),
-                      Text(
-                        state.label,
-                        style: TextStyle(
-                          color: _stateColor(context, state),
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
-      }).toList(),
+                ),
+              );
+            }).toList(),
     ),
   );
 }

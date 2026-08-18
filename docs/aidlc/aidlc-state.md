@@ -5,7 +5,7 @@ application code lives at the workspace root.
 
 **Project type**: brownfield (existing Flutter + Supabase codebase)
 **Current phase**: Construction
-**Current unit**: `rules-at-capture`
+**Current unit**: `last-three-findings`
 
 ## Inception
 
@@ -396,6 +396,43 @@ stripped them, so the same merchant normalized two ways depending on the
 ingestion path. Dart now folds too. This is safe for deduplication because
 manual entries key on `manual:<uuid>` rather than a content hash, so no existing
 key changes meaning.
+
+## Construction — unit `last-three-findings`
+
+Closes the three audit findings still open after the rules unit.
+
+### Code generation checklist
+
+- [x] One period control in the shell; removed from the three pages that repeated it
+- [x] Cards screen honours the period for its invoice list, with an empty state
+- [x] Card availability deliberately **not** period-filtered — it is current state
+- [x] Previous snapshot stays on screen during a reload; skeleton only on first load
+- [x] `analyzePeriod` memoized on (snapshot identity, period); `FinancePeriod` gained value equality
+- [x] Six destinations reduced to five; Projeção moved behind "Mais"
+- [x] Currency resolved from `profiles.currency`, joining the existing parallel batch
+- [x] 10 tests
+
+### Design decisions taken in this unit
+
+**Availability ignores the period on purpose.** Every unpaid invoice holds
+limit regardless of which month is being viewed, so filtering it would print a
+wrong number. Only the invoice list follows the period.
+
+**The reload no longer blanks the app.** Because every write invalidates the
+provider, the previous `state.when(loading:)` sent the whole app back to a
+spinner after each saved transaction — a regression this work introduced in the
+first unit. The last snapshot now stays put behind a thin progress bar.
+
+**Projeção moved rather than merged.** Five is the Material maximum and the
+sixth destination was crowding a 360pt bar. Projeção is derived data consulted
+occasionally, which is what the overflow destination is for.
+
+**The currency formatter is a mutable top-level.** Threading it through roughly
+forty call sites would have cost more than it returns for a value fixed per
+account and settled before the first frame. `configureCurrency` is idempotent
+and called from the shell. A first attempt passed `name:` to `NumberFormat`,
+which overrides the symbol — the whole app would have printed `BRL 1.234,50`
+instead of `R$ 1.234,50`. A test caught it before it shipped.
 
 ## Scope
 

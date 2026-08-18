@@ -120,3 +120,12 @@ recorded verbatim and is never summarized.
 
 ---
 
+## Construction — the last three audit findings
+
+**Timestamp**: 2026-08-18T21:00:00Z
+**User Input**: "Pode resolver os 3 faltantes"
+**AI Response**: Closed the three findings still open. The period control moved into the shell as a single instance and the cards screen now honours it, while card availability deliberately does not since it is current state rather than period state. The reload stopped blanking the app — the previous snapshot stays behind a thin progress bar and the skeleton only appears on a first load — and `analyzePeriod` is memoized. Navigation went from six destinations to five with Projeção behind "Mais", and the money formatter now comes from `profiles.currency`. A test caught a regression on the way: passing `name:` to `NumberFormat` overrides the symbol, so every amount in the app would have read `BRL 1.234,50`.
+**Context**: Construction — code generation, unit `last-three-findings`. Verified on screen at desktop width.
+
+---
+

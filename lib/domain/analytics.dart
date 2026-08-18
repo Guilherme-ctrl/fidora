@@ -41,6 +41,15 @@ class FinancePeriod {
     );
   }
 
+  @override
+  bool operator ==(Object other) =>
+      other is FinancePeriod &&
+      other.start == start &&
+      other.endExclusive == endExclusive;
+
+  @override
+  int get hashCode => Object.hash(start, endExclusive);
+
   String get label {
     if (isSingleMonth) {
       return DateFormat('MMMM yyyy', 'pt_BR').format(start);
@@ -80,7 +89,26 @@ DateTime analyticsDate(FinanceTransaction transaction) {
   return transaction.date;
 }
 
+/// Small memo so the six screens do not each recompute the same period.
+///
+/// Every page called this in `build`, and the projection screen called it twice
+/// per frame. The key is the snapshot's identity — a reload produces a new
+/// object, which invalidates the cache exactly when the data changed.
+final _analysisCache = <(FinanceSnapshot, FinancePeriod), PeriodAnalytics>{};
+
 PeriodAnalytics analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
+  final key = (snapshot, period);
+  final cached = _analysisCache[key];
+  if (cached != null) return cached;
+  final computed = _analyzePeriod(snapshot, period);
+  // Bounded: a handful of periods are in play at once, and a new snapshot
+  // makes older entries unreachable anyway.
+  if (_analysisCache.length > 12) _analysisCache.clear();
+  _analysisCache[key] = computed;
+  return computed;
+}
+
+PeriodAnalytics _analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
   final transactions = snapshot.transactions
       .where(
         (item) =>

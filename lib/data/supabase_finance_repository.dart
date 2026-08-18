@@ -287,6 +287,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .limit(12),
       _client.from('goals').select().eq('active', true).order('created_at'),
       _client.from('review_queue').select('id').eq('status', 'pending'),
+      _client.from('profiles').select('currency').limit(1).maybeSingle(),
     ]);
     // Fixed seeds: a category keeps the same colour in either theme.
     final palette = <Color>[
@@ -329,6 +330,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
           )
           .toList(),
       pendingReviews: (results[5] as List).length,
+      currencyCode:
+          ((results[6] as Map<String, dynamic>?)?['currency'] as String?) ??
+          'BRL',
     );
   }
 }
