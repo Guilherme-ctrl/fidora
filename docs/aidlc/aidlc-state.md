@@ -350,6 +350,11 @@ zero, and the card reports "N de M dias" rather than only the days that moved.
 connection branch before reaching the timeout branch, so every timeout was
 reported as "no connection". The specific diagnosis now runs first.
 
+## Scope
+
+Finora is **online only** by the owner's decision of 18 August 2026. Local
+caching and offline state are out of scope; connectivity may be assumed.
+
 ## Carried forward
 
 - `normalizeMerchant` diverges between Dart (`finance_rules.dart`, keeps

@@ -82,13 +82,25 @@
 - Statement rows reconcile with matching Shortcut captures instead of creating duplicates.
 - Card refunds and credits reduce invoice/category spending; statement payments remain auditable but excluded.
 
+## Out of scope
+
+- **Offline operation and local caching.** Decided by the product owner on
+  18 August 2026: Finora is online only. The app may assume connectivity and
+  fail loudly when it is absent. This does not excuse the loading experience —
+  six queries in a single block behind a full-screen spinner is still worth
+  improving, and the review queue and merchant rules already load on demand
+  rather than joining the snapshot.
+
 ## Deferred from first vertical slice
 
 - Account recovery.
 - Real PDF/XLSX statement parser.
-- CRUD **forms**. The transaction write path exists in the repository contract
-  and is covered by tests, but no screen calls it yet; card, category, goal and
-  holder writes are not started.
+- CRUD forms for **card, category, goal and holder**. The transaction form is
+  delivered; these four still open a placeholder.
+- Bulk recategorization, so a mis-categorized import can be corrected in one
+  pass rather than row by row.
 - Spreadsheet migration command.
 - Receipt OCR and attachment upload.
+- Applying `merchant_rules` at capture time: the rules are managed but the Edge
+  Function still resolves the category by name and never reads the table.
 - App Intent implemented natively in Swift.

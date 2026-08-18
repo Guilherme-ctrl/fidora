@@ -93,3 +93,12 @@ recorded verbatim and is never summarized.
 
 ---
 
+## Scope decision — online only
+
+**Timestamp**: 2026-08-18T18:40:00Z
+**User Input**: "Lembra de atualizar o Raio X, esse sistema não tem necessidade de ser oflline, apenas online mesmo"
+**AI Response**: Recorded the owner's decision that Finora is an online-only product. Withdrew local caching and offline state from the roadmap and from the monolithic-snapshot finding; the loading-experience half of that finding stands, since six queries in one block behind a full-screen spinner is a problem whether or not the app ever works offline. Republished the audit with the decision noted in place rather than deleting the finding, and marked the four defects closed in the follow-up unit.
+**Context**: Requirements — scope reduction by the product owner.
+
+---
+
