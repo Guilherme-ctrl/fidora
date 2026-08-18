@@ -1,6 +1,7 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
+import 'package:financeiro_ai/domain/load_failure.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/pages/cards_page.dart';
 import 'package:financeiro_ai/presentation/pages/categories_page.dart';
@@ -95,7 +96,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               child: state.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
                 error: (error, _) => _ErrorState(
-                  message: '$error',
+                  failure: LoadFailure.from(error),
                   onRetry: () => ref.invalidate(financeSnapshotProvider),
                 ),
                 data: (snapshot) => Column(
@@ -248,12 +249,13 @@ class _Brand extends StatelessWidget {
 }
 
 class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-  final String message;
+  const _ErrorState({required this.failure, required this.onRetry});
+  final LoadFailure failure;
   final VoidCallback onRetry;
+
   @override
   Widget build(BuildContext context) => Center(
-    child: Padding(
+    child: SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -264,17 +266,51 @@ class _ErrorState extends StatelessWidget {
             color: context.palette.danger,
           ),
           const SizedBox(height: 16),
-          const Text(
-            'Não foi possível carregar seus dados',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
+          Text(
+            failure.message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18),
           ),
           const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh),
-            label: const Text('Tentar novamente'),
+          Text(
+            failure.hint,
+            textAlign: TextAlign.center,
+            style: TextStyle(color: context.palette.inkMuted),
+          ),
+          if (failure.canRetry) ...[
+            const SizedBox(height: 18),
+            FilledButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Tentar novamente'),
+            ),
+          ],
+          const SizedBox(height: 10),
+          // The raw error still matters to whoever has to debug it; it just
+          // does not belong in the first thing the person reads.
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
+            child: ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              shape: const Border(),
+              collapsedShape: const Border(),
+              title: Text(
+                'Detalhes técnicos',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: context.palette.inkSubtle,
+                ),
+              ),
+              children: [
+                SelectableText(
+                  failure.detail,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: context.palette.inkSubtle,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

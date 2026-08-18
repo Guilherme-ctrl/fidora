@@ -261,10 +261,25 @@ class _TrendCard extends StatelessWidget {
         ifAbsent: () => item.expenseImpact,
       );
     }
-    final days = totals.keys.toList()..sort();
+    // The x axis is the calendar, not the list of days that happened to have
+    // movement. Indexing by the latter collapsed the gaps, so a purchase on the
+    // 3rd and another on the 28th were drawn side by side and the "pace" the
+    // chart is named after was exactly what it hid.
+    final firstDay = DateTime(
+      period.start.year,
+      period.start.month,
+      period.start.day,
+    );
+    final span = period.endExclusive.difference(firstDay).inDays;
+    final days = List.generate(
+      span,
+      (index) => DateTime(firstDay.year, firstDay.month, firstDay.day + index),
+    );
     final spots = days.indexed
-        .map((entry) => FlSpot(entry.$1.toDouble(), totals[entry.$2]!))
+        .map((entry) => FlSpot(entry.$1.toDouble(), totals[entry.$2] ?? 0))
         .toList();
+    final daysWithMovement = totals.keys.length;
+    final peak = totals.values.isEmpty ? 0.0 : totals.values.reduce(math.max);
 
     return SectionCard(
       title: 'Ritmo de gastos',
@@ -275,7 +290,7 @@ class _TrendCard extends StatelessWidget {
         description:
             'Datas reais das compras que compõem as faturas do período, somadas às movimentações de conta nas próprias datas.',
         child: Column(
-          children: days
+          children: (totals.keys.toList()..sort())
               .map(
                 (day) => DetailValue(
                   label: DateFormat('dd/MM/yyyy').format(day),
@@ -286,7 +301,7 @@ class _TrendCard extends StatelessWidget {
         ),
       ),
       trailing: Text(
-        '${days.length} dias com movimento',
+        '$daysWithMovement de ${days.length} dias',
         style: TextStyle(
           color: context.palette.brand,
           fontWeight: FontWeight.w700,
@@ -299,28 +314,61 @@ class _TrendCard extends StatelessWidget {
             : LineChart(
                 LineChartData(
                   minY: 0,
-                  maxY: math.max(
-                    1,
-                    spots.map((item) => item.y).reduce(math.max) * 1.15,
-                  ),
+                  maxY: math.max(1, peak * 1.15),
                   borderData: FlBorderData(show: false),
                   gridData: FlGridData(
                     drawVerticalLine: false,
                     getDrawingHorizontalLine: (_) =>
                         FlLine(color: context.palette.hairline, strokeWidth: 1),
                   ),
-                  titlesData: const FlTitlesData(
-                    topTitles: AxisTitles(
+                  titlesData: FlTitlesData(
+                    topTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
-                    rightTitles: AxisTitles(
+                    rightTitles: const AxisTitles(
                       sideTitles: SideTitles(showTitles: false),
                     ),
                     leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 46,
+                        getTitlesWidget: (value, meta) =>
+                            value >= meta.max || value <= 0
+                            ? const SizedBox()
+                            : Text(
+                                compactCurrency.format(value),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: context.palette.inkSubtle,
+                                ),
+                              ),
+                      ),
                     ),
                     bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 24,
+                        interval: math.max(
+                          1,
+                          (days.length / 5).floorToDouble(),
+                        ),
+                        getTitlesWidget: (value, meta) {
+                          final index = value.round();
+                          if (index < 0 || index >= days.length) {
+                            return const SizedBox();
+                          }
+                          return Padding(
+                            padding: const EdgeInsets.only(top: 6),
+                            child: Text(
+                              DateFormat('d/M').format(days[index]),
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: context.palette.inkSubtle,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   ),
                   lineTouchData: LineTouchData(

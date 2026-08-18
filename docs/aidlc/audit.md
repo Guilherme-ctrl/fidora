@@ -84,3 +84,12 @@ recorded verbatim and is never summarized.
 
 ---
 
+## Construction — audit follow-ups
+
+**Timestamp**: 2026-08-18T18:10:00Z
+**User Input**: "Quero q continue as pendencias dos passos"
+**AI Response**: Closed four defects the five planned units had left open, in the audit's order of user harm: invoice states (paid and overdue both rendered as "Fechada", and the raw database status leaked into the detail sheet); load errors (still dumping a raw exception while the write path had been translated since step 1); the trend chart (x axis indexed by days-with-movement rather than the calendar, and every axis label switched off); and the history list (a Column of every matching row inside a ListView, refiltered on each keystroke). Added 13 tests, one of which caught a real ordering bug in the new error taxonomy: "Connection timed out" was being classified as a lost connection.
+**Context**: Construction — code generation, unit `audit-followups`.
+
+---
+

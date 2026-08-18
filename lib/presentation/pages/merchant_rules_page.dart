@@ -456,7 +456,7 @@ class _RuleFormState extends State<_RuleForm> {
                   decoration: const InputDecoration(
                     labelText: 'Prioridade',
                     helperText:
-                        'Menor number decide primeiro quando duas regras casam.',
+                        'O menor número decide primeiro quando duas regras casam.',
                     prefixIcon: Icon(Icons.low_priority_rounded),
                   ),
                 ),

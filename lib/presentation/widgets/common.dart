@@ -9,6 +9,13 @@ final monthName = DateFormat('MMMM', 'pt_BR');
 final monthYear = DateFormat('MMMM yyyy', 'pt_BR');
 final longDate = DateFormat("d 'de' MMMM 'de' y", 'pt_BR');
 
+/// Axis labels need the magnitude, not the cents.
+final compactCurrency = NumberFormat.compactCurrency(
+  locale: 'pt_BR',
+  symbol: r'R$',
+  decimalDigits: 0,
+);
+
 class PageHeading extends StatelessWidget {
   const PageHeading({
     super.key,

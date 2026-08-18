@@ -5,6 +5,8 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -24,6 +26,23 @@ class TransactionsPage extends ConsumerStatefulWidget {
 
 class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   String query = '';
+  Timer? _debounce;
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  /// Every keystroke used to refilter the ledger and rebuild every row. With
+  /// the 847-row production ledger that was typing latency, so the filter now
+  /// settles before it runs.
+  void _onQueryChanged(String value) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 250), () {
+      if (mounted) setState(() => query = value);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -37,87 +56,120 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
               ),
         )
         .toList();
-    return ListView(
+    final padding = EdgeInsets.symmetric(horizontal: width < 600 ? 18 : 32);
+
+    // A Column of every matching row inside a ListView built all 847 rows on
+    // each rebuild. A sliver list recycles them, so only what is on screen is
+    // ever laid out.
+    return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: EdgeInsets.fromLTRB(
-        width < 600 ? 18 : 32,
-        24,
-        width < 600 ? 18 : 32,
-        36,
-      ),
-      children: [
-        PageHeading(
-          title: 'Histórico financeiro',
-          subtitle: '${filtered.length} lançamentos em ${widget.period.label}.',
+      slivers: [
+        SliverPadding(
+          padding: padding.copyWith(top: 24),
+          sliver: SliverToBoxAdapter(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                PageHeading(
+                  title: 'Histórico financeiro',
+                  subtitle:
+                      '${filtered.length} lançamentos em ${widget.period.label}.',
+                ),
+                const SizedBox(height: 16),
+                PeriodFilterBar(
+                  period: widget.period,
+                  onChanged: widget.onPeriodChanged,
+                ),
+                const SizedBox(height: 22),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        onChanged: _onQueryChanged,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(Icons.search),
+                          hintText: 'Buscar estabelecimento ou categoria',
+                        ),
+                      ),
+                    ),
+                    // Below 900px the shell's action button owns this action,
+                    // so a header button here would only duplicate it.
+                    if (width >= 900) ...[
+                      const SizedBox(width: 12),
+                      Tooltip(
+                        message: 'Filtrar por categoria, cartão ou status',
+                        child: OutlinedButton.icon(
+                          onPressed: () => _showFilters(context),
+                          icon: const Icon(Icons.filter_list),
+                          label: const Text('Filtros'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      FilledButton.icon(
+                        onPressed: () =>
+                            createTransaction(context, ref, widget.snapshot),
+                        icon: const Icon(Icons.add),
+                        label: const Text('Adicionar'),
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
-        PeriodFilterBar(
-          period: widget.period,
-          onChanged: widget.onPeriodChanged,
-        ),
-        const SizedBox(height: 22),
-        Row(
-          children: [
-            Expanded(
-              child: TextField(
-                onChanged: (value) => setState(() => query = value),
-                decoration: const InputDecoration(
-                  prefixIcon: Icon(Icons.search),
-                  hintText: 'Buscar estabelecimento ou categoria',
+        if (filtered.isEmpty)
+          SliverPadding(
+            padding: padding,
+            sliver: SliverToBoxAdapter(
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 34),
+                  child: Center(
+                    child: Text(
+                      query.isEmpty
+                          ? 'Nenhum lançamento neste período.'
+                          : 'Nada encontrado para “$query”.',
+                    ),
+                  ),
                 ),
               ),
             ),
-            // Below 900px the shell's floating action button owns this action,
-            // so a header button here would only duplicate it.
-            if (width >= 900) ...[
-              const SizedBox(width: 12),
-              Tooltip(
-                message: 'Filtrar por categoria, cartão ou status',
-                child: OutlinedButton.icon(
-                  onPressed: () => _showFilters(context),
-                  icon: const Icon(Icons.filter_list),
-                  label: const Text('Filtros'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
-                onPressed: () =>
-                    createTransaction(context, ref, widget.snapshot),
-                icon: const Icon(Icons.add),
-                label: const Text('Adicionar'),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 16),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(8),
-            child: filtered.isEmpty
-                ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 34),
-                    child: Center(
-                      child: Text('Nenhum lançamento neste período.'),
+          )
+        else
+          SliverPadding(
+            padding: padding,
+            sliver: SliverList.builder(
+              itemCount: filtered.length,
+              itemBuilder: (context, index) {
+                final item = filtered[index];
+                return Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(index == 0 ? 22 : 0),
+                      bottom: Radius.circular(
+                        index == filtered.length - 1 ? 22 : 0,
+                      ),
                     ),
-                  )
-                : Column(
-                    children: filtered
-                        .map(
-                          (item) => _TransactionRow(
-                            item: item,
-                            onEdit: () => createTransaction(
-                              context,
-                              ref,
-                              widget.snapshot,
-                              existing: item,
-                            ),
-                            onDelete: () => _confirmDelete(context, item),
-                          ),
-                        )
-                        .toList(),
                   ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: _TransactionRow(
+                    item: item,
+                    onEdit: () => createTransaction(
+                      context,
+                      ref,
+                      widget.snapshot,
+                      existing: item,
+                    ),
+                    onDelete: () => _confirmDelete(context, item),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 36)),
       ],
     );
   }

@@ -5,7 +5,7 @@ application code lives at the workspace root.
 
 **Project type**: brownfield (existing Flutter + Supabase codebase)
 **Current phase**: Construction
-**Current unit**: `theme-and-accessibility`
+**Current unit**: `audit-followups`
 
 ## Inception
 
@@ -294,6 +294,61 @@ chip explaining that card purchases are counted by invoice competence.
 keep a bounded height because their inner `Spacer`s require one, but the bound
 now multiplies by the user's text scale, clamped so a very large setting cannot
 push a chart off the screen.
+
+## Construction — unit `audit-followups`
+
+Closing the defects the five planned units did not cover, taken in the order of
+user harm used by the audit.
+
+| Stage | Status | Notes |
+|---|---|---|
+| Functional design | Complete | Derived invoice state and error taxonomy defined below |
+| NFR requirements | Complete | History list must not lay out the whole ledger per keystroke |
+| NFR design | Complete | Sliver recycling plus a 250 ms filter debounce |
+| Infrastructure design | Skipped | No schema migration |
+| Code generation | Complete | See the checklist |
+
+### Code generation checklist
+
+- [x] `invoiceState` deriving all four states, with `overdue` from the due date
+- [x] Cards screen showing the four states with distinct colour, icon and label
+- [x] Raw database status no longer shown to the person
+- [x] `LoadFailure` translating load errors, with the raw text behind a disclosure
+- [x] Trend chart plotted against the calendar instead of days-with-movement
+- [x] Trend chart axis labels restored on both axes
+- [x] History list converted to a recycling sliver list
+- [x] Search debounced at 250 ms
+- [x] 13 tests
+
+### Files changed
+
+```text
+lib/domain/invoice_status.dart              new
+lib/domain/load_failure.dart                new
+lib/presentation/pages/cards_page.dart      four invoice states
+lib/presentation/app_shell.dart             translated load error
+lib/presentation/pages/dashboard_page.dart  calendar axis + labels
+lib/presentation/pages/transactions_page.dart slivers + debounce
+lib/presentation/widgets/common.dart        compact currency for axis labels
+test/invoice_status_test.dart               new
+```
+
+### Design decisions taken in this unit
+
+**Overdue is derived, not read.** The column exists but nothing writes it: no
+job moves an invoice to `overdue`, so an unpaid one sits at `open` or `closed`
+past its due date forever. The state shown is computed from the due date, with
+`paid` always winning. The due date itself is not yet overdue.
+
+**The calendar is the x axis.** Indexing by the days that happened to have
+movement collapsed the gaps, drawing a purchase on the 3rd next to one on the
+28th. The chart is named after pace, and the spacing between purchases was
+exactly the information it was hiding. Days with no movement are now plotted at
+zero, and the card reports "N de M dias" rather than only the days that moved.
+
+**A test found a real ordering bug.** `Connection timed out` matched the
+connection branch before reaching the timeout branch, so every timeout was
+reported as "no connection". The specific diagnosis now runs first.
 
 ## Carried forward
 

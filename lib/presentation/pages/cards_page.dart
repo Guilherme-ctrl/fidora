@@ -1,5 +1,6 @@
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
+import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +23,7 @@ class CardsPage extends StatelessWidget {
       children: [
         PageHeading(
           title: 'Cartões e faturas',
-          subtitle: 'Fechamento, vencimento, parcelas e limites sem surpresas.',
+          subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
               ? Semantics(
                   label: 'Cadastrar um novo cartão de crédito',
@@ -265,7 +266,7 @@ class _InvoicesList extends StatelessWidget {
         final card = snapshot.cards
             .where((item) => item.id == invoice.cardId)
             .firstOrNull;
-        final open = invoice.status == 'open';
+        final state = invoiceState(invoice);
         return Semantics(
           label:
               'Ver detalhes da fatura de ${monthYear.format(invoice.referenceMonth)}',
@@ -283,10 +284,9 @@ class _InvoicesList extends StatelessWidget {
                   ),
                   DetailValue(
                     label: 'Vencimento',
-                    value:
-                        '${invoice.dueDate.day}/${invoice.dueDate.month}/${invoice.dueDate.year}',
+                    value: longDate.format(invoice.dueDate),
                   ),
-                  DetailValue(label: 'Status', value: invoice.status),
+                  DetailValue(label: 'Situação', value: state.label),
                 ],
               ),
             ),
@@ -302,19 +302,15 @@ class _InvoicesList extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: open
-                          ? context.palette.danger.withValues(alpha: .12)
-                          : context.palette.brandSoft,
+                      color: _stateColor(context, state).withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(
-                      open
-                          ? Icons.schedule_rounded
-                          : Icons.check_circle_rounded,
-                      color: open
-                          ? context.palette.danger
-                          : context.palette.brand,
-                    ),
+                    child: Icon(switch (state) {
+                      InvoiceState.paid => Icons.check_circle_rounded,
+                      InvoiceState.overdue => Icons.error_outline_rounded,
+                      InvoiceState.closed => Icons.lock_clock_rounded,
+                      InvoiceState.open => Icons.schedule_rounded,
+                    }, color: _stateColor(context, state)),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -343,11 +339,9 @@ class _InvoicesList extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w900),
                       ),
                       Text(
-                        open ? 'Aberta' : 'Fechada',
+                        state.label,
                         style: TextStyle(
-                          color: open
-                              ? context.palette.danger
-                              : context.palette.brand,
+                          color: _stateColor(context, state),
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
@@ -363,3 +357,12 @@ class _InvoicesList extends StatelessWidget {
     ),
   );
 }
+
+/// Paid is settled, overdue is the alarm, closed is awaiting payment and open
+/// is still accumulating — four states the interface used to collapse into two.
+Color _stateColor(BuildContext context, InvoiceState state) => switch (state) {
+  InvoiceState.paid => context.palette.brand,
+  InvoiceState.overdue => context.palette.danger,
+  InvoiceState.closed => context.palette.onWarning,
+  InvoiceState.open => context.palette.info,
+};
