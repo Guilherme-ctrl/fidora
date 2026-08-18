@@ -5,6 +5,7 @@ import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
+import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -130,6 +131,77 @@ class SupabaseFinanceRepository implements FinanceRepository {
             'status': status,
             'resolved_at': DateTime.now().toUtc().toIso8601String(),
           })
+          .eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> setInvoicePaid(String invoiceId, {required bool paid}) async {
+    try {
+      await _client
+          .from('invoices')
+          .update({
+            // A settled invoice keeps its own status rather than falling back
+            // to the derived "overdue" the interface computes from the due date.
+            'status': paid ? 'paid' : 'closed',
+            'paid_at': paid ? DateTime.now().toUtc().toIso8601String() : null,
+          })
+          .eq('id', invoiceId);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<List<ShortcutToken>> loadShortcutTokens() async {
+    final rows = await _client
+        .from('shortcut_tokens')
+        .select()
+        .order('created_at', ascending: false);
+    return (rows as List)
+        .map((json) => ShortcutToken.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<IssuedShortcutToken> createShortcutToken(String name) async {
+    final errors = validateTokenName(name);
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const FinanceWriteException(
+        'Entre na sua conta para gerar tokens.',
+      );
+    }
+    final secret = generateShortcutSecret();
+    try {
+      final row = await _client
+          .from('shortcut_tokens')
+          .insert({
+            'user_id': userId,
+            'name': name.trim(),
+            // Only the hash is persisted; the secret leaves in memory only.
+            'token_hash': hashShortcutSecret(secret),
+          })
+          .select()
+          .single();
+      return IssuedShortcutToken(
+        secret: secret,
+        token: ShortcutToken.fromJson(row),
+      );
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> revokeShortcutToken(String id) async {
+    try {
+      await _client
+          .from('shortcut_tokens')
+          .update({'revoked_at': DateTime.now().toUtc().toIso8601String()})
           .eq('id', id);
     } on PostgrestException catch (error) {
       throw FinanceWriteException(_friendlyWriteError(error));

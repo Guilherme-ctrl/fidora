@@ -129,6 +129,7 @@ class Invoice {
     required this.total,
     required this.dueDate,
     required this.status,
+    this.paidAt,
   });
   final String id;
   final String cardId;
@@ -137,6 +138,9 @@ class Invoice {
   final DateTime dueDate;
   final String status;
 
+  /// When the invoice was settled; null while it is not.
+  final DateTime? paidAt;
+
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
     id: json['id'] as String,
     cardId: json['card_id'] as String,
@@ -144,6 +148,9 @@ class Invoice {
     total: (json['total'] as num).toDouble(),
     dueDate: DateTime.parse(json['due_date'] as String),
     status: json['status'] as String,
+    paidAt: json['paid_at'] == null
+        ? null
+        : DateTime.parse(json['paid_at'] as String).toLocal(),
   );
 }
 

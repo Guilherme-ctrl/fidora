@@ -5,6 +5,7 @@ import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
+import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
@@ -17,6 +18,25 @@ class DemoFinanceRepository implements FinanceRepository {
   List<FinanceTransaction>? _ledger;
 
   List<FinanceTransaction> get _transactions => _ledger ??= _seedTransactions();
+
+  late final List<Invoice> _invoices = [
+    Invoice(
+      id: '1',
+      cardId: '1',
+      referenceMonth: DateTime(_now.year, _now.month + 1),
+      total: 2840.72,
+      dueDate: DateTime(_now.year, _now.month + 1, 9),
+      status: 'open',
+    ),
+    Invoice(
+      id: '2',
+      cardId: '2',
+      referenceMonth: DateTime(_now.year, _now.month),
+      total: 1296.35,
+      dueDate: DateTime(_now.year, _now.month, 10),
+      status: 'closed',
+    ),
+  ];
 
   late final List<ReviewItem> _reviews = [
     ReviewItem(
@@ -170,6 +190,60 @@ class DemoFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> setInvoicePaid(String invoiceId, {required bool paid}) async {
+    final index = _invoices.indexWhere((item) => item.id == invoiceId);
+    if (index == -1) {
+      throw const FinanceWriteException('Fatura não encontrada.');
+    }
+    final invoice = _invoices[index];
+    _invoices[index] = Invoice(
+      id: invoice.id,
+      cardId: invoice.cardId,
+      referenceMonth: invoice.referenceMonth,
+      total: invoice.total,
+      dueDate: invoice.dueDate,
+      status: paid ? 'paid' : 'closed',
+      paidAt: paid ? DateTime.now() : null,
+    );
+  }
+
+  final List<ShortcutToken> _tokens = [];
+
+  @override
+  Future<List<ShortcutToken>> loadShortcutTokens() async =>
+      List.unmodifiable(_tokens);
+
+  @override
+  Future<IssuedShortcutToken> createShortcutToken(String name) async {
+    final errors = validateTokenName(name);
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final secret = generateShortcutSecret();
+    final token = ShortcutToken(
+      id: _uuid.v4(),
+      name: name.trim(),
+      createdAt: DateTime.now(),
+    );
+    _tokens.insert(0, token);
+    return IssuedShortcutToken(secret: secret, token: token);
+  }
+
+  @override
+  Future<void> revokeShortcutToken(String id) async {
+    final index = _tokens.indexWhere((item) => item.id == id);
+    if (index == -1) {
+      throw const FinanceWriteException('Token não encontrado.');
+    }
+    final token = _tokens[index];
+    _tokens[index] = ShortcutToken(
+      id: token.id,
+      name: token.name,
+      createdAt: token.createdAt,
+      lastUsedAt: token.lastUsedAt,
+      revokedAt: DateTime.now(),
+    );
+  }
+
+  @override
   Future<List<MerchantRule>> loadMerchantRules() async => List.unmodifiable(
     _rules..sort((a, b) => a.priority.compareTo(b.priority)),
   );
@@ -225,24 +299,7 @@ class DemoFinanceRepository implements FinanceRepository {
       transactions: List.unmodifiable(_transactions),
       categories: _demoCategories,
       cards: _demoCards,
-      invoices: [
-        Invoice(
-          id: '1',
-          cardId: '1',
-          referenceMonth: DateTime(_now.year, _now.month + 1),
-          total: 2840.72,
-          dueDate: DateTime(_now.year, _now.month + 1, 9),
-          status: 'open',
-        ),
-        Invoice(
-          id: '2',
-          cardId: '2',
-          referenceMonth: DateTime(_now.year, _now.month),
-          total: 1296.35,
-          dueDate: DateTime(_now.year, _now.month, 10),
-          status: 'closed',
-        ),
-      ],
+      invoices: List.unmodifiable(_invoices),
       goals: const [
         Goal(name: 'Reserva de emergência', current: 18500, target: 30000),
         Goal(name: 'Viagem', current: 4200, target: 12000),

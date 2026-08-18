@@ -2,6 +2,7 @@ import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
+import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,17 @@ abstract class FinanceRepository {
   /// [status] is `resolved` when the entry was handled and `dismissed` when the
   /// person decided it needed no change.
   Future<void> settleReview(String id, {required String status});
+
+  /// Settles an invoice or reopens it. Paying releases the committed limit,
+  /// because [cardUsage] only counts invoices that are not paid.
+  Future<void> setInvoicePaid(String invoiceId, {required bool paid});
+
+  Future<List<ShortcutToken>> loadShortcutTokens();
+
+  /// Issues a token. The secret comes back once and is never stored in full.
+  Future<IssuedShortcutToken> createShortcutToken(String name);
+
+  Future<void> revokeShortcutToken(String id);
 
   Future<List<MerchantRule>> loadMerchantRules();
   Future<void> saveMerchantRule(MerchantRuleDraft draft);
@@ -44,6 +56,9 @@ final reviewQueueProvider = FutureProvider<List<ReviewItem>>(
 final merchantRulesProvider = FutureProvider<List<MerchantRule>>(
   (ref) => ref.watch(financeRepositoryProvider).loadMerchantRules(),
 );
+final shortcutTokensProvider = FutureProvider<List<ShortcutToken>>(
+  (ref) => ref.watch(financeRepositoryProvider).loadShortcutTokens(),
+);
 
 /// Reloads the snapshot and completes only when the new data has arrived, so a
 /// `RefreshIndicator` keeps spinning for exactly as long as the reload takes.
@@ -60,4 +75,9 @@ Future<void> refreshReviewQueue(WidgetRef ref) async {
 Future<void> refreshMerchantRules(WidgetRef ref) async {
   ref.invalidate(merchantRulesProvider);
   await ref.read(merchantRulesProvider.future);
+}
+
+Future<void> refreshShortcutTokens(WidgetRef ref) async {
+  ref.invalidate(shortcutTokensProvider);
+  await ref.read(shortcutTokensProvider.future);
 }

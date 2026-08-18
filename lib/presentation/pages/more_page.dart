@@ -9,6 +9,7 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
+import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
 import 'package:flutter/material.dart';
@@ -419,9 +420,13 @@ class _AutomationCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: null,
-                  icon: Icon(Icons.ios_share),
-                  label: Text('Instalar atalho'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ShortcutTokensPage(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.key_rounded),
+                  label: const Text('Gerenciar tokens'),
                 ),
               ),
             ],
