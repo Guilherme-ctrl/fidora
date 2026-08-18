@@ -55,7 +55,131 @@ This file is updated by the build workflow. A gate passes only with reproducible
 | JSON import visual QA | Desktop and 390 × 844 local builds | Pass — item list, filters, safe bulk validation, individual edit and final confirmation fit both layouts |
 | Unknown category creation | Desktop and 390 × 844 local builds | Pass — automatic prompt approved `Presentes` without renaming it; creation remains atomic with final import |
 
+## Evidence — 18 August 2026 (toolchain and write path)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Toolchain upgrade | `flutter upgrade` | Pass — 3.35.4 / Dart 3.9.2 to 3.47.0 / Dart 3.13.0 |
+| Dependency resolution | `flutter pub get` against the unmodified `pubspec.yaml` | Pass — `sdk: ^3.11.5` satisfied; 6 transitive packages moved |
+| Static quality | `flutter analyze` | Pass — no issues |
+| Domain and write rules | `flutter test` | Pass — 30 tests, up from 15 |
+| Draft validation | Unit tests for blank merchant, non-positive and NaN amounts, missing category, and four installment cases | Pass |
+| Manual competence | Demo write of a 15 August purchase on a card closing day 2 | Pass — competence 1 September, card final 6902 |
+| Account movement | Demo write with no card | Pass — no competence, card final `----` |
+| Write idempotency | Demo edit of an existing row | Pass — row replaced, ledger length unchanged |
+| Validation ordering | Demo write with a negative amount | Pass — `FinanceWriteException` raised, ledger untouched |
+| Ledger ordering | Demo write back-dated to 2020 | Pass — newest-first order preserved |
+| Production web build | `flutter build web --release --dart-define-from-file=config/finora.production.json` | Pass — `build/web` |
+| Production iOS build | `flutter build ios --simulator --debug --dart-define-from-file=config/finora.production.json` | Pass — `Runner.app` |
+| Toolchain side effects | `git status` after the upgrade and the iOS build | Recorded — Flutter rewrote `analysis_options.yaml`, `ios/Podfile` (minimum iOS 13.0 to 15.0), `ios/Podfile.lock`, the Xcode project and scheme, and `pubspec.lock` |
+
+## Evidence — 18 August 2026 (transaction form)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full suite | `flutter test` | Pass — 44 tests, up from 30 |
+| Amount parsing | 8 unit tests: `24,80`, `1.234,56`, `24.80`, `R$ 1.999,90`, integers, empty, malformed, negative | Pass |
+| Form validation | Widget test submitting an empty form | Pass — three field messages shown, `onSave` never called |
+| Form save | Widget test typing `1.234,56` | Pass — draft carries 1234.56 and `movement_type=purchase` |
+| Income mode | Widget test selecting Entrada | Pass — payment method hidden, `movement_type=credit`, no card |
+| Competence hint | Widget test selecting the card closing on day 2 | Pass — invoice month and closing day shown |
+| Write failure | Widget test with a throwing `onSave` | Pass — message shown, form stays open |
+| Edit prefill | Widget test opening an installment purchase | Pass — merchant, amount and installment switch restored |
+| Mobile action button | Demo web build at 390 × 844 | Pass — action button renders above the navigation bar; the previous 540–600px gap is closed |
+| Browser runtime | Console errors on the demo build | Pass — none |
+
+## Evidence — 18 August 2026 (review queue and merchant rules)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full suite | `flutter test` | Pass — 62 tests, up from 44 |
+| Review title fallback | Unit tests with description, blank description and no transaction | Pass |
+| Queue lifecycle | Demo resolve and dismiss | Pass — entry leaves the pending queue either way |
+| Pending count | Snapshot count after resolving one entry | Pass — 3 becomes 2 |
+| Unknown review id | Demo settle with an id that does not exist | Pass — no-op, queue unchanged |
+| Rule matching | Case-insensitive substring against three merchant strings | Pass |
+| Rule validation | Blank, two-character and category-less drafts | Pass — each reports its own message |
+| Duplicate pattern | Demo save of `ifood` against an existing `IFOOD` | Pass — refused, list unchanged |
+| Rule edit | Demo save reusing the row's own pattern | Pass — no self-clash, category updated |
+| Rule ordering | Demo create with priority 5 | Pass — sorts ahead of the seeded rules |
+| Rule delete | Demo delete | Pass — remaining rules keep their order |
+| Production web build | `flutter build web --release --dart-define-from-file=config/finora.production.json` | Pass — `build/web` |
+
+## Evidence — 18 August 2026 (available limit and comparison)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full suite | `flutter test` | Pass — 79 tests, up from 62 |
+| Previous month | Unit tests for August, January and a 10-day custom range | Pass — January steps into December 2025; the range keeps its length |
+| Category ranking | Comparison over two months | Pass — ordered by absolute movement, Transporte first at −150 |
+| New and gone categories | Category present in only one of the periods | Pass — flagged `isNew` / `isGone`, ratio null |
+| Missing baseline | Previous period with no spending | Pass — `hasBaseline` false and `expenseRatio` null instead of a fabricated percentage |
+| Ratio with baseline | 100 then 150 | Pass — 0.5 |
+| Trailing average | Movement in two of the three prior months | Pass — 200, the empty month excluded from the divisor |
+| Trailing average, no history | Nothing before the period | Pass — null |
+| Committed limit | Open plus closed invoices | Pass — both count; a paid invoice releases its share |
+| Cross-card isolation | Invoice belonging to another card | Pass — not counted |
+| Tight card | 800 of a 1,000 limit | Pass — flagged tight, not over |
+| Over the limit | 1,400 of a 1,000 limit | Pass — available clamped to zero, ratio 1.0 |
+| Card without a limit | `credit_limit` zero | Pass — not judged; no usage bar and no tight flag |
+| Production web build | `flutter build web --release --dart-define-from-file=config/finora.production.json` | Pass — `build/web` |
+
+## Evidence — 18 August 2026 (theme and accessibility)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full suite | `flutter test` | Pass — 96 tests, up from 79 |
+| Primary text contrast | Computed ratio against canvas and surface, both themes | Pass — at or above 4.5:1 in all four combinations |
+| Secondary text contrast | Same, for `inkMuted` | Pass — replaces the 4.0:1 measured in the audit |
+| Caption contrast | Same, for `inkSubtle` | Pass — replaces the 3.2:1 measured in the audit |
+| Tint and status contrast | `onBrandSoft` on `brandSoft`; `danger` and `onWarning` on surface | Pass — all at or above 4.5:1 in both themes |
+| Theme extension wiring | `buildAppTheme` for both brightnesses | Pass — each carries its palette; scaffold follows `canvas` |
+| Palette resolution | Widget test reading `context.palette` under `ThemeMode.dark` | Pass — resolves the dark palette |
+| Palette interpolation | `lerp` at t = 0.5 | Pass — stays a `FinoraPalette`, values move |
+| Tooltip triage | Count in `lib/presentation` | 30 reduced to 11; the rest are icon-only controls or genuinely non-obvious hints |
+| Dynamic Type | Card face and both charts | Heights now multiply by `textScalerOf`, clamped at 1.6 and 1.4 |
+| Production web build | `flutter build web --release --dart-define-from-file=config/finora.production.json` | Pass — `build/web` |
+| Dark rendering | Production build at 390 × 844 with the browser in dark | Pass — ground, card, text and brand all resolve to the dark palette |
+| Light rendering | Same build reloaded in light | Pass — cream ground, white card, moss action |
+| Input field affordance | Both themes, observed | **Defect found and fixed** — fields had no boundary: the fill matched the card surface, so they read as plain rows in both themes. Fields appear on the page ground on some screens and inside a card on others, so no single fill contrasts with both; a hairline outline plus a brand focus ring was the fix. Re-verified after rebuild. |
+
 ## Open validation gates
 
 - Real-device Shortcut test: requires a deployed Supabase project, token and selected Wallet card.
 - Remote import claim: requires creating the matching Finora Auth account.
+- **Supabase write path against a live database**: `saveTransaction` and
+  `deleteTransaction` are covered only through the demo repository. The
+  Postgrest calls, the invoice-reuse branch, the RLS path and the
+  `refresh_invoice_total` trigger interaction have not been exercised against
+  Postgres. Requires a signed-in session.
+- **Pull-to-refresh on device**: the indicator is wired to the provider reload
+  but has not been observed on a running build.
+- **Committed limit ignores unbilled installments.** Future instalments of a
+  purchase already hold limit at the issuer but have no invoice yet, so the
+  available figure is optimistic for heavily instalment-funded cards.
+- **Only the sign-in screen has been seen in dark.** The production build opens
+  on authentication, so the six main screens have not been observed in the dark
+  palette — only the auth screen was. A demo-mode build would show the rest.
+- **Dynamic Type has not been exercised at scale.** The three bounded heights
+  now scale, but no run at a large text setting has confirmed the six screens
+  hold together.
+- **Interactive walkthrough of the form**: its behaviour is covered by widget
+  tests, and the action button was confirmed to render at 390 × 844, but no one
+  has driven the create, edit and delete flows by hand. The iOS Simulator
+  integration needs `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
+  on this machine, and the browser pane cannot deliver clicks into the Flutter
+  canvas.
+- **Rules are not applied at capture time.** The screens store and manage
+  `merchant_rules`, but the Edge Function still resolves the category by name
+  from the Shortcut payload and never reads the table. Managing rules that do
+  not yet fire is a half-delivered promise until that is wired.
+- **Supabase review and rule methods** have the same gap as the write path:
+  covered only through the demo repository, never executed against Postgres.
+- **Merchant normalization parity**: `normalizeMerchant` keeps accents in Dart
+  (`finance_rules.dart`) and strips them in TypeScript
+  (`capture-transaction/index.ts`), so the same merchant normalizes differently
+  depending on the ingestion path. Not addressed.
