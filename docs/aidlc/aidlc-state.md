@@ -5,7 +5,7 @@ application code lives at the workspace root.
 
 **Project type**: brownfield (existing Flutter + Supabase codebase)
 **Current phase**: Construction
-**Current unit**: `audit-followups`
+**Current unit**: `rules-at-capture`
 
 ## Inception
 
@@ -350,6 +350,53 @@ zero, and the card reports "N de M dias" rather than only the days that moved.
 connection branch before reaching the timeout branch, so every timeout was
 reported as "no connection". The specific diagnosis now runs first.
 
+## Construction — unit `rules-at-capture`
+
+| Stage | Status | Notes |
+|---|---|---|
+| Functional design | Complete | Resolution order and the no-loss rule below |
+| NFR requirements | Complete | A capture must never be lost because a category could not be resolved |
+| NFR design | Complete | Rule lookup joins the existing parallel query; one extra lookup only on fallback |
+| Infrastructure design | Skipped | No schema migration; the tables and columns already existed |
+| Code generation | Complete | See the checklist |
+
+### Code generation checklist
+
+- [x] `rules.ts` with `foldAccents`, `normalizeMerchant`, `matchesPattern`, `selectRule`, `decideCategory`
+- [x] Handler resolves category: explicit choice, then rules, then a flagged fallback
+- [x] `category_not_found` no longer rejects the capture
+- [x] Unresolved captures create a `review_queue` row, feeding the screen built earlier
+- [x] Provenance written to `transactions.notes`
+- [x] Response reports `category_source` and `needs_review`
+- [x] Dart `normalizeMerchant` folds accents, matching the function
+- [x] `MerchantRule.matches` mirrors `matchesPattern`, so the preview and the capture agree
+- [x] Rules screen states when rules apply and that an explicit choice wins
+- [x] 12 Deno tests, 5 Dart tests
+
+### Design decisions taken in this unit
+
+**An explicit choice always wins over a rule.** The Shortcut asks the person to
+pick a category at the moment of payment; a learned rule should not overrule a
+deliberate decision made seconds earlier. Rules answer the case where nothing
+was chosen, or where the chosen name no longer exists.
+
+**A capture is never lost.** The function used to return 404 when the category
+did not resolve, which threw the transaction away at the till — the one moment
+the person cannot retry. It is now recorded with the fallback category, marked
+low confidence, and queued for review. Filing something in the wrong place is
+recoverable; losing it is not.
+
+**Preview and capture share one matching rule.** The screen tells the person how
+many existing transactions a pattern would catch. If the two sides matched
+differently that number would be a promise the capture path does not keep, so
+both fold accents, ignore case and refuse patterns under three characters.
+
+**The accent divergence is closed.** Dart kept accents while the function
+stripped them, so the same merchant normalized two ways depending on the
+ingestion path. Dart now folds too. This is safe for deduplication because
+manual entries key on `manual:<uuid>` rather than a content hash, so no existing
+key changes meaning.
+
 ## Scope
 
 Finora is **online only** by the owner's decision of 18 August 2026. Local
@@ -357,15 +404,8 @@ caching and offline state are out of scope; connectivity may be assumed.
 
 ## Carried forward
 
-- `normalizeMerchant` diverges between Dart (`finance_rules.dart`, keeps
-  accents) and TypeScript (`capture-transaction/index.ts`, strips them via NFD).
-  The same merchant normalizes differently depending on the ingestion path.
-  Recorded as a finding; not addressed.
 - The history list still builds every row eagerly and the search has no
   debounce; both remain as recorded in the audit.
-- Rules are stored and managed but **not yet applied** at capture time. The
-  Edge Function still looks the category up by name from the Shortcut payload
-  and never consults `merchant_rules`; wiring that is its own unit.
 - Offering “create a rule for this merchant” right after a manual
   recategorization — the moment the intent is clearest — is designed for but
   not built. `editRule` already accepts a `suggestedPattern` for it.

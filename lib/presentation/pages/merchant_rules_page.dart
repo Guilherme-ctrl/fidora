@@ -41,7 +41,8 @@ class MerchantRulesPage extends ConsumerWidget {
                   title: 'Nenhuma regra ainda',
                   body:
                       'Uma regra diz “sempre que o nome contiver IFOOD, use Alimentação”. '
-                      'Ela poupa a categorização manual das compras que se repetem.',
+                      'Ela decide a categoria na captura do Atalho quando você não '
+                      'escolhe uma na hora, poupando a correção depois.',
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -52,7 +53,9 @@ class MerchantRulesPage extends ConsumerWidget {
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 16),
                         child: Text(
-                          'Aplicadas de cima para baixo: a primeira que casar decide a categoria.',
+                          'Aplicadas na captura do Atalho, de cima para baixo: a '
+                          'primeira que casar decide a categoria. Se você escolher '
+                          'a categoria no próprio Atalho, sua escolha prevalece.',
                           style: TextStyle(color: context.palette.inkMuted),
                         ),
                       );

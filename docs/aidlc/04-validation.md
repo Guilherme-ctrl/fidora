@@ -147,6 +147,24 @@ This file is updated by the build workflow. A gate passes only with reproducible
 | Light rendering | Same build reloaded in light | Pass — cream ground, white card, moss action |
 | Input field affordance | Both themes, observed | **Defect found and fixed** — fields had no boundary: the fill matched the card surface, so they read as plain rows in both themes. Fields appear on the page ground on some screens and inside a card on others, so no single fill contrasts with both; a hairline outline plus a brand focus ring was the fix. Re-verified after rebuild. |
 
+## Evidence — 18 August 2026 (rules at capture time)
+
+| Gate | Evidence | Result |
+|---|---|---|
+| Function type check | `deno check index.ts` | Pass |
+| Function lint | `deno lint index.ts rules.ts` | Pass |
+| Rule matching | 12 Deno tests over `rules.ts` | Pass |
+| Priority order | Two rules on the same merchant, priorities 10 and 50 | Pass — lowest number wins |
+| Tie break | Same priority, patterns `IFOOD` and `IFOOD *MERCADO` | Pass — the longer, more specific pattern wins |
+| Inactive rules | A rule with `active=false` | Pass — never selected |
+| Explicit choice | Shortcut sends a valid category while a rule also matches | Pass — the person's choice wins, no review raised |
+| Unknown category name | Shortcut sends a name that does not exist | Pass — falls through to the rules instead of failing |
+| No resolution | No category, no matching rule | Pass — capture kept, confidence low, review queued |
+| Accent parity | `FARMÁCIA` against pattern `farmacia` and the reverse | Pass — both match, on both sides |
+| Dart/TypeScript parity | 5 Dart tests over `normalizeMerchant`, `foldAccents` and `matches` | Pass — the screen's preview and the capture path agree |
+| Static quality | `flutter analyze` | Pass — no issues |
+| Full Dart suite | `flutter test` | Pass — 113 tests |
+
 ## Open validation gates
 
 - Real-device Shortcut test: requires a deployed Supabase project, token and selected Wallet card.
@@ -173,13 +191,16 @@ This file is updated by the build workflow. A gate passes only with reproducible
   integration needs `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer`
   on this machine, and the browser pane cannot deliver clicks into the Flutter
   canvas.
-- **Rules are not applied at capture time.** The screens store and manage
-  `merchant_rules`, but the Edge Function still resolves the category by name
-  from the Shortcut payload and never reads the table. Managing rules that do
-  not yet fire is a half-delivered promise until that is wired.
+- **The rewritten capture function has not run against Postgres.** Its decision
+  logic is covered by Deno tests, but the queries around it — the rule lookup,
+  the `Outros` fallback lookup, the review-queue insert — have only been type
+  checked. Verifying needs `supabase start`, which needs a Docker daemon that
+  is not running on this machine, or a deploy to the remote project.
+- **Not deployed.** `supabase functions deploy capture-transaction` reaches
+  production and remains the owner's decision. Until it runs, the live capture
+  path is still the old behaviour.
+- **The 404 removal is a behaviour change for the Shortcut.** A capture whose
+  category cannot be resolved now returns 200 with `needs_review: true` rather
+  than 404. Any Shortcut logic keyed on the old failure needs revisiting.
 - **Supabase review and rule methods** have the same gap as the write path:
   covered only through the demo repository, never executed against Postgres.
-- **Merchant normalization parity**: `normalizeMerchant` keeps accents in Dart
-  (`finance_rules.dart`) and strips them in TypeScript
-  (`capture-transaction/index.ts`), so the same merchant normalizes differently
-  depending on the ingestion path. Not addressed.

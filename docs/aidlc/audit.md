@@ -102,3 +102,12 @@ recorded verbatim and is never summarized.
 
 ---
 
+## Construction — rules at capture time
+
+**Timestamp**: 2026-08-18T19:15:00Z
+**User Input**: "Faz as regras dispararem na captura"
+**AI Response**: Made `merchant_rules` decide the category in the capture Edge Function, closing the half-delivered promise from the review-and-rules unit. Extracted the decision into a pure `rules.ts` so it could be tested without a database: explicit Shortcut choice wins, then the matching rule with the lowest priority number, then a fallback that keeps the capture and queues it for review rather than the previous 404 that discarded it. Aligned the Dart matcher and `normalizeMerchant` with the function, which also closes the accent divergence recorded since step 1. 12 Deno tests and 5 Dart tests; suite at 113 Dart plus 12 Deno.
+**Context**: Construction — code generation, unit `rules-at-capture`. Not deployed: `supabase functions deploy` reaches production and is the owner's call.
+
+---
+

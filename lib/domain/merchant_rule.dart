@@ -1,3 +1,5 @@
+import 'package:financeiro_ai/domain/finance_rules.dart';
+
 /// A learned categorization rule: when a merchant name matches [pattern], the
 /// transaction takes [categoryId]. Lower [priority] wins first.
 class MerchantRule {
@@ -29,10 +31,19 @@ class MerchantRule {
     active: (json['active'] ?? true) as bool,
   );
 
-  /// Case-insensitive substring match, the same shape the rule editor promises
-  /// in its help text.
-  bool matches(String merchant) =>
-      merchant.toLowerCase().contains(pattern.toLowerCase());
+  /// Case- and accent-insensitive substring match.
+  ///
+  /// Mirrors `matchesPattern` in the capture Edge Function on purpose: the
+  /// preview that tells the person how many transactions a pattern catches
+  /// would be a lie if the two sides disagreed. Patterns under three characters
+  /// never match, matching the editor's own rule.
+  bool matches(String merchant) {
+    final trimmed = pattern.trim();
+    if (trimmed.length < 3) return false;
+    return foldAccents(
+      merchant,
+    ).toUpperCase().contains(foldAccents(trimmed).toUpperCase());
+  }
 }
 
 class MerchantRuleErrors {

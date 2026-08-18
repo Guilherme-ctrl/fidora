@@ -1,4 +1,5 @@
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
+import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -49,6 +50,29 @@ void main() {
       expect(rule.matches('IFOOD *RESTAURANTE'), isTrue);
       expect(rule.matches('ifood delivery'), isTrue);
       expect(rule.matches('UBER EATS'), isFalse);
+    });
+
+    test('matches across accents, like the capture path does', () {
+      // The screen's preview and the Edge Function must agree, or the count it
+      // shows before saving is a promise the capture path will not keep.
+      const rule = MerchantRule(
+        id: '1',
+        pattern: 'farmácia',
+        categoryId: '4',
+        categoryName: 'Saúde',
+      );
+      expect(rule.matches('FARMACIA SAO JOAO'), isTrue);
+      expect(rule.matches('FARMÁCIA SÃO JOÃO'), isTrue);
+    });
+
+    test('a pattern under three characters never matches', () {
+      const rule = MerchantRule(
+        id: '1',
+        pattern: 'UB',
+        categoryId: '2',
+        categoryName: 'Transporte',
+      );
+      expect(rule.matches('UBER TRIP'), isFalse);
     });
 
     test('rejects a blank or too-short pattern', () {
@@ -190,6 +214,22 @@ void main() {
       await repository.deleteMerchantRule('m2');
       final rules = await repository.loadMerchantRules();
       expect(rules.map((item) => item.pattern), ['IFOOD', 'GOOGLE']);
+    });
+  });
+
+  group('normalizeMerchant parity with the Edge Function', () {
+    test('strips accents, symbols and case', () {
+      expect(normalizeMerchant('  farmácia  são joão '), 'FARMACIA SAO JOAO');
+      expect(normalizeMerchant('IFOOD *RESTAURANTE'), 'IFOOD RESTAURANTE');
+    });
+
+    test('folds every accented character Portuguese uses', () {
+      expect(foldAccents('ÁÀÂÃÉÊÍÓÔÕÚÜÇ'), 'AAAAEEIOOOUUC');
+      expect(foldAccents('áàâãéêíóôõúüç'), 'aaaaeeiooouuc');
+    });
+
+    test('leaves unaccented text untouched', () {
+      expect(foldAccents('UBER TRIP'), 'UBER TRIP');
     });
   });
 }
