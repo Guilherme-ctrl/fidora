@@ -96,6 +96,7 @@ class CreditCard {
     required this.closingDay,
     required this.dueDay,
     required this.holder,
+    this.holderId,
     this.includeInTotals = true,
   });
   final String id;
@@ -106,6 +107,10 @@ class CreditCard {
   final int closingDay;
   final int dueDay;
   final String holder;
+  final String? holderId;
+
+  /// Whether this card's spending is your own. A card can also be excluded by
+  /// its holder — see `cardCountsInTotals`.
   final bool includeInTotals;
 
   factory CreditCard.fromJson(Map<String, dynamic> json) => CreditCard(
@@ -117,6 +122,7 @@ class CreditCard {
     closingDay: json['closing_day'] as int,
     dueDay: json['due_day'] as int,
     holder: (json['holder_name'] ?? '') as String,
+    holderId: json['holder_id'] as String?,
     includeInTotals: (json['include_in_totals'] ?? true) as bool,
   );
 }
@@ -164,11 +170,57 @@ DateTime _parseReferenceMonth(String value) {
 }
 
 class Goal {
-  const Goal({required this.name, required this.current, required this.target});
+  const Goal({
+    required this.id,
+    required this.name,
+    required this.current,
+    required this.target,
+    this.targetDate,
+  });
+  final String id;
   final String name;
   final double current;
   final double target;
+
+  /// `goals.target_date` has existed since the first migration and never
+  /// reached the app. Without a date, a goal is a number with no deadline.
+  final DateTime? targetDate;
+
   double get progress => target == 0 ? 0 : (current / target).clamp(0, 1);
+  double get remaining =>
+      (target - current).clamp(0, double.infinity).toDouble();
+
+  int? get daysLeft => targetDate?.difference(DateTime.now()).inDays;
+
+  bool get isLate => (daysLeft ?? 1) < 0 && progress < 1;
+
+  factory Goal.fromJson(Map<String, dynamic> json) => Goal(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    current: (json['current_amount'] as num).toDouble(),
+    target: (json['target_amount'] as num).toDouble(),
+    targetDate: json['target_date'] == null
+        ? null
+        : DateTime.parse(json['target_date'] as String),
+  );
+}
+
+/// A person whose card spending may or may not belong to your own finances.
+class Holder {
+  const Holder({
+    required this.id,
+    required this.name,
+    this.includeInTotals = true,
+  });
+  final String id;
+  final String name;
+  final bool includeInTotals;
+
+  factory Holder.fromJson(Map<String, dynamic> json) => Holder(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    includeInTotals: (json['include_in_totals'] ?? true) as bool,
+  );
 }
 
 class FinanceSnapshot {
@@ -179,6 +231,7 @@ class FinanceSnapshot {
     required this.invoices,
     required this.goals,
     required this.pendingReviews,
+    this.holders = const [],
     this.currencyCode = 'BRL',
   });
   final List<FinanceTransaction> transactions;
@@ -186,6 +239,7 @@ class FinanceSnapshot {
   final List<CreditCard> cards;
   final List<Invoice> invoices;
   final List<Goal> goals;
+  final List<Holder> holders;
   final int pendingReviews;
 
   /// From `profiles.currency`; drives the money formatter.

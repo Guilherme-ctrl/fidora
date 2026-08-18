@@ -9,7 +9,9 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
+import 'package:financeiro_ai/presentation/pages/holders_page.dart';
 import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
+import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
 import 'package:flutter/material.dart';
@@ -42,8 +44,13 @@ class MorePage extends ConsumerWidget {
             final split = constraints.maxWidth >= 850;
             final goals = SectionCard(
               title: 'Metas',
-              tooltip: 'Abrir todas as metas e seus valores atuais',
-              onTap: () => _showGoals(context),
+              tooltip: 'Criar uma meta',
+              onTap: () => editGoal(context, ref),
+              trailing: IconButton(
+                tooltip: 'Nova meta',
+                onPressed: () => editGoal(context, ref),
+                icon: const Icon(Icons.add_rounded),
+              ),
               child: Column(
                 children: snapshot.goals
                     .map(
@@ -51,7 +58,7 @@ class MorePage extends ConsumerWidget {
                         label: 'Ver detalhes da meta ${goal.name}',
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => _showGoal(context, goal),
+                          onTap: () => editGoal(context, ref, existing: goal),
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 18),
                             child: Column(
@@ -178,8 +185,15 @@ class MorePage extends ConsumerWidget {
                 icon: Icons.people_alt_rounded,
                 color: context.palette.brand,
                 title: 'Portadores',
-                subtitle: 'Defina quais gastos entram nas suas finanças',
+                subtitle: snapshot.holders.isEmpty
+                    ? 'Defina quais gastos entram nas suas finanças'
+                    : '${snapshot.holders.length} cadastrados',
                 tooltip: 'Gerenciar titulares e cartões adicionais',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => HoldersPage(snapshot: snapshot),
+                  ),
+                ),
               ),
               _OperationTile(
                 icon: Icons.psychology_alt_rounded,
@@ -199,42 +213,6 @@ class MorePage extends ConsumerWidget {
       ],
     );
   }
-
-  void _showGoals(BuildContext context) => showDetailSheet(
-    context,
-    title: 'Metas financeiras',
-    description: 'Objetivos importados do planejamento financeiro.',
-    child: Column(
-      children: snapshot.goals
-          .map(
-            (goal) => DetailValue(
-              label: goal.name,
-              value:
-                  '${currency.format(goal.current)} / ${currency.format(goal.target)}',
-            ),
-          )
-          .toList(),
-    ),
-  );
-
-  void _showGoal(BuildContext context, Goal goal) => showDetailSheet(
-    context,
-    title: goal.name,
-    description:
-        'Acompanhe o valor atual e o quanto falta para atingir a meta.',
-    child: Column(
-      children: [
-        DetailValue(label: 'Atual', value: currency.format(goal.current)),
-        DetailValue(label: 'Meta', value: currency.format(goal.target)),
-        DetailValue(
-          label: 'Falta',
-          value: currency.format(
-            (goal.target - goal.current).clamp(0, double.infinity),
-          ),
-        ),
-      ],
-    ),
-  );
 
   Future<void> _pickInvoice(BuildContext context, WidgetRef ref) async {
     var loadingOpen = false;

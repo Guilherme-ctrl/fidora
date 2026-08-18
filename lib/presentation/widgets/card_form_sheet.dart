@@ -12,6 +12,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 Future<void> editCard(
   BuildContext context,
   WidgetRef ref, {
+  required List<Holder> holders,
   CreditCard? existing,
 }) async {
   final saved = await showModalBottomSheet<bool>(
@@ -20,6 +21,7 @@ Future<void> editCard(
     showDragHandle: true,
     builder: (context) => _CardForm(
       existing: existing,
+      holders: holders,
       onSave: (draft) async {
         await ref.read(financeRepositoryProvider).saveCard(draft);
         await refreshFinanceSnapshot(ref);
@@ -39,8 +41,9 @@ Future<void> editCard(
 }
 
 class _CardForm extends StatefulWidget {
-  const _CardForm({required this.onSave, this.existing});
+  const _CardForm({required this.onSave, required this.holders, this.existing});
   final Future<void> Function(CardDraft draft) onSave;
+  final List<Holder> holders;
   final CreditCard? existing;
 
   @override
@@ -52,7 +55,7 @@ class _CardFormState extends State<_CardForm> {
   late final TextEditingController _bank;
   late final TextEditingController _lastFour;
   late final TextEditingController _limit;
-  late final TextEditingController _holder;
+  String? _holderId;
   late int _closingDay;
   late int _dueDay;
   late bool _includeInTotals;
@@ -72,7 +75,7 @@ class _CardFormState extends State<_CardForm> {
           ? ''
           : card.limit.toStringAsFixed(2).replaceAll('.', ','),
     );
-    _holder = TextEditingController(text: card?.holder ?? '');
+    _holderId = card?.holderId;
     _closingDay = card?.closingDay ?? 1;
     _dueDay = card?.dueDay ?? 10;
     _includeInTotals = card?.includeInTotals ?? true;
@@ -80,7 +83,7 @@ class _CardFormState extends State<_CardForm> {
 
   @override
   void dispose() {
-    for (final controller in [_name, _bank, _lastFour, _limit, _holder]) {
+    for (final controller in [_name, _bank, _lastFour, _limit]) {
       controller.dispose();
     }
     super.dispose();
@@ -94,7 +97,13 @@ class _CardFormState extends State<_CardForm> {
     closingDay: _closingDay,
     dueDay: _dueDay,
     limit: parseAmountInput(_limit.text) ?? 0,
-    holder: _holder.text,
+    holderId: _holderId,
+    holder:
+        widget.holders
+            .where((item) => item.id == _holderId)
+            .firstOrNull
+            ?.name ??
+        '',
     includeInTotals: _includeInTotals,
   );
 
@@ -225,14 +234,29 @@ class _CardFormState extends State<_CardForm> {
                 ),
               ),
               const SizedBox(height: 14),
-              TextField(
-                controller: _holder,
-                textCapitalization: TextCapitalization.words,
+              DropdownButtonFormField<String?>(
+                initialValue: _holderId,
+                isExpanded: true,
                 decoration: const InputDecoration(
                   labelText: 'Portador',
-                  helperText: 'Opcional. Útil para cartões adicionais.',
+                  helperText: 'Opcional. Cadastre portadores em Mais.',
                   prefixIcon: Icon(Icons.person_outline_rounded),
                 ),
+                items: [
+                  const DropdownMenuItem<String?>(child: Text('Sem portador')),
+                  ...widget.holders.map(
+                    (item) => DropdownMenuItem<String?>(
+                      value: item.id,
+                      child: Text(
+                        item.includeInTotals
+                            ? item.name
+                            : '${item.name} — fora dos totais',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                ],
+                onChanged: (value) => setState(() => _holderId = value),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,

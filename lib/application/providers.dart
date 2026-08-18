@@ -37,6 +37,12 @@ abstract class FinanceRepository {
   Future<void> saveCategory(CategoryDraft draft);
   Future<void> setCategoryActive(String id, {required bool active});
 
+  Future<void> saveGoal(GoalDraft draft);
+  Future<void> setGoalActive(String id, {required bool active});
+
+  Future<void> saveHolder(HolderDraft draft);
+  Future<void> deleteHolder(String id);
+
   Future<List<ShortcutToken>> loadShortcutTokens();
 
   /// Issues a token. The secret comes back once and is never stored in full.

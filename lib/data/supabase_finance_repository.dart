@@ -167,6 +167,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'closing_day': draft.closingDay,
       'due_day': draft.dueDay,
       'credit_limit': draft.limit,
+      'holder_id': draft.holderId,
       'holder_name': draft.holder.trim().isEmpty ? null : draft.holder.trim(),
       'include_in_totals': draft.includeInTotals,
       'active': draft.active,
@@ -251,6 +252,74 @@ class SupabaseFinanceRepository implements FinanceRepository {
       '${error.code} ${error.message}'.contains('categories_user_id_name_key')
       ? 'Já existe uma categoria com esse nome.'
       : _friendlyWriteError(error);
+
+  @override
+  Future<void> saveGoal(GoalDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final payload = {
+      'user_id': _requireUser(),
+      'name': draft.name.trim(),
+      'target_amount': draft.target,
+      'current_amount': draft.current,
+      'target_date': draft.targetDate == null
+          ? null
+          : _isoDate(draft.targetDate!),
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('goals').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('goals').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> setGoalActive(String id, {required bool active}) async {
+    try {
+      await _client.from('goals').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> saveHolder(HolderDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final payload = {
+      'user_id': _requireUser(),
+      'name': draft.name.trim(),
+      'include_in_totals': draft.includeInTotals,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('holders').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('holders').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(
+        '${error.code} ${error.message}'.contains('holders_user_id_name_key')
+            ? 'Já existe um portador com esse nome.'
+            : _friendlyWriteError(error),
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteHolder(String id) async {
+    try {
+      // Cards keep working: the foreign key is `on delete set null`.
+      await _client.from('holders').delete().eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
 
   @override
   Future<List<ShortcutToken>> loadShortcutTokens() async {
@@ -458,6 +527,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
       _client.from('goals').select().eq('active', true).order('created_at'),
       _client.from('review_queue').select('id').eq('status', 'pending'),
       _client.from('profiles').select('currency').limit(1).maybeSingle(),
+      _client.from('holders').select().order('name'),
     ]);
     // The stored colour and icon are read now. They were written by the
     // schema's defaults from the first migration and ignored ever since: the
@@ -487,13 +557,10 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
           .toList(),
       goals: (results[4] as List)
-          .map(
-            (json) => Goal(
-              name: json['name'] as String,
-              current: (json['current_amount'] as num).toDouble(),
-              target: (json['target_amount'] as num).toDouble(),
-            ),
-          )
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      holders: (results[7] as List)
+          .map((json) => Holder.fromJson(json as Map<String, dynamic>))
           .toList(),
       pendingReviews: (results[5] as List).length,
       currencyCode:

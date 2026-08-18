@@ -42,6 +42,7 @@ class CardDraft {
     this.id,
     this.limit = 0,
     this.holder = '',
+    this.holderId,
     this.includeInTotals = true,
     this.active = true,
   });
@@ -54,6 +55,7 @@ class CardDraft {
   final int dueDay;
   final double limit;
   final String holder;
+  final String? holderId;
   final bool includeInTotals;
   final bool active;
 
@@ -74,6 +76,70 @@ class CardDraft {
 
   static String? _day(int value, String label) =>
       value >= 1 && value <= 31 ? null : 'O dia de $label vai de 1 a 31';
+}
+
+class GoalDraftErrors {
+  const GoalDraftErrors({this.name, this.target, this.current});
+  final String? name;
+  final String? target;
+  final String? current;
+  bool get isEmpty => name == null && target == null && current == null;
+  String? get firstMessage => name ?? target ?? current;
+}
+
+class GoalDraft {
+  const GoalDraft({
+    required this.name,
+    required this.target,
+    this.id,
+    this.current = 0,
+    this.targetDate,
+    this.active = true,
+  });
+
+  final String? id;
+  final String name;
+  final double target;
+  final double current;
+  final DateTime? targetDate;
+  final bool active;
+
+  bool get isEdit => id != null;
+
+  GoalDraftErrors validate() => GoalDraftErrors(
+    name: name.trim().isEmpty ? 'Dê um nome à meta' : null,
+    // The column checks target_amount > 0, so a zero target is refused by the
+    // database anyway; catching it here says why.
+    target: switch (target) {
+      final value when value.isNaN => 'Informe um valor',
+      <= 0 => 'A meta precisa ser maior que zero',
+      _ => null,
+    },
+    current: switch (current) {
+      final value when value.isNaN => 'Informe um valor',
+      < 0 => 'O valor atual não pode ser negativo',
+      _ => null,
+    },
+  );
+}
+
+class HolderDraftErrors {
+  const HolderDraftErrors({this.name});
+  final String? name;
+  bool get isEmpty => name == null;
+  String? get firstMessage => name;
+}
+
+class HolderDraft {
+  const HolderDraft({required this.name, this.id, this.includeInTotals = true});
+  final String? id;
+  final String name;
+  final bool includeInTotals;
+  bool get isEdit => id != null;
+
+  HolderDraftErrors validate() => HolderDraftErrors(
+    name: name.trim().isEmpty ? 'Informe o nome do portador' : null,
+  );
 }
 
 class CategoryDraftErrors {

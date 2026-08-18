@@ -108,11 +108,34 @@ PeriodAnalytics analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
   return computed;
 }
 
+/// Whether a card's spending belongs to your own finances.
+///
+/// Two switches can exclude it and both were dead: `cards.include_in_totals`
+/// was parsed into the model and never consulted by any calculation, and
+/// `holders.include_in_totals` had no model at all. A card is counted only when
+/// the card says so and its holder does too.
+bool cardCountsInTotals(FinanceSnapshot snapshot, CreditCard card) {
+  if (!card.includeInTotals) return false;
+  final holder = snapshot.holders
+      .where((item) => item.id == card.holderId)
+      .firstOrNull;
+  return holder?.includeInTotals ?? true;
+}
+
+/// The card finals whose spending is not yours — an additional card handed to
+/// someone else, most often.
+Set<String> excludedCardFinals(FinanceSnapshot snapshot) => snapshot.cards
+    .where((card) => !cardCountsInTotals(snapshot, card))
+    .map((card) => card.lastFour)
+    .toSet();
+
 PeriodAnalytics _analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
+  final excluded = excludedCardFinals(snapshot);
   final transactions = snapshot.transactions
       .where(
         (item) =>
             item.status != TransactionStatus.ignored &&
+            !excluded.contains(item.cardLastFour) &&
             period.contains(analyticsDate(item)),
       )
       .toList();

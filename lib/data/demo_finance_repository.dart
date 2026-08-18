@@ -21,6 +21,19 @@ class DemoFinanceRepository implements FinanceRepository {
 
   List<FinanceTransaction> get _transactions => _ledger ??= _seedTransactions();
 
+  late final List<Goal> _goals = [
+    Goal(
+      id: 'g1',
+      name: 'Reserva de emergência',
+      current: 18500,
+      target: 30000,
+      targetDate: DateTime(_now.year + 1, _now.month),
+    ),
+    Goal(id: 'g2', name: 'Viagem', current: 4200, target: 12000),
+  ];
+
+  final List<Holder> _holders = [const Holder(id: 'h1', name: 'Guilherme')];
+
   late final List<FinanceCategory> _categories = [..._seedCategories];
   late final List<CreditCard> _cards = [..._seedCards];
 
@@ -231,6 +244,7 @@ class DemoFinanceRepository implements FinanceRepository {
       closingDay: draft.closingDay,
       dueDay: draft.dueDay,
       holder: draft.holder.trim(),
+      holderId: draft.holderId,
       includeInTotals: draft.includeInTotals,
     );
     final index = _cards.indexWhere((item) => item.id == saved.id);
@@ -279,6 +293,60 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> setCategoryActive(String id, {required bool active}) async {
     if (!active) _categories.removeWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<void> saveGoal(GoalDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final saved = Goal(
+      id: draft.id ?? _uuid.v4(),
+      name: draft.name.trim(),
+      current: draft.current,
+      target: draft.target,
+      targetDate: draft.targetDate,
+    );
+    final index = _goals.indexWhere((item) => item.id == saved.id);
+    if (index == -1) {
+      _goals.add(saved);
+    } else {
+      _goals[index] = saved;
+    }
+  }
+
+  @override
+  Future<void> setGoalActive(String id, {required bool active}) async {
+    if (!active) _goals.removeWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<void> saveHolder(HolderDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final clash = _holders.any(
+      (item) =>
+          item.id != draft.id &&
+          item.name.toLowerCase() == draft.name.trim().toLowerCase(),
+    );
+    if (clash) {
+      throw const FinanceWriteException('Já existe um portador com esse nome.');
+    }
+    final saved = Holder(
+      id: draft.id ?? _uuid.v4(),
+      name: draft.name.trim(),
+      includeInTotals: draft.includeInTotals,
+    );
+    final index = _holders.indexWhere((item) => item.id == saved.id);
+    if (index == -1) {
+      _holders.add(saved);
+    } else {
+      _holders[index] = saved;
+    }
+  }
+
+  @override
+  Future<void> deleteHolder(String id) async {
+    _holders.removeWhere((item) => item.id == id);
   }
 
   @override
@@ -372,10 +440,8 @@ class DemoFinanceRepository implements FinanceRepository {
       categories: List.unmodifiable(_categories),
       cards: List.unmodifiable(_cards),
       invoices: List.unmodifiable(_invoices),
-      goals: const [
-        Goal(name: 'Reserva de emergência', current: 18500, target: 30000),
-        Goal(name: 'Viagem', current: 4200, target: 12000),
-      ],
+      goals: List.unmodifiable(_goals),
+      holders: List.unmodifiable(_holders),
       pendingReviews: _reviews.where((item) => item.isPending).length,
       currencyCode: 'BRL',
     );

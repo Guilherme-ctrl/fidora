@@ -32,7 +32,8 @@ class CardsPage extends ConsumerWidget {
           subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
               ? FilledButton.icon(
-                  onPressed: () => editCard(context, ref),
+                  onPressed: () =>
+                      editCard(context, ref, holders: snapshot.holders),
                   icon: const Icon(Icons.add_card),
                   label: const Text('Adicionar cartão'),
                 )
@@ -50,7 +51,12 @@ class CardsPage extends ConsumerWidget {
                       child: _CreditCardView(
                         card: card,
                         usage: cardUsage(snapshot, card),
-                        onEdit: () => editCard(context, ref, existing: card),
+                        onEdit: () => editCard(
+                          context,
+                          ref,
+                          holders: snapshot.holders,
+                          existing: card,
+                        ),
                       ),
                     ),
                   )
