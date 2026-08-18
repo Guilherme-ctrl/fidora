@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
@@ -26,6 +27,15 @@ abstract class FinanceRepository {
   /// Settles an invoice or reopens it. Paying releases the committed limit,
   /// because [cardUsage] only counts invoices that are not paid.
   Future<void> setInvoicePaid(String invoiceId, {required bool paid});
+
+  Future<void> saveCard(CardDraft draft);
+
+  /// Cards are deactivated, never deleted: transactions point at them and the
+  /// history would lose its card once the row went away.
+  Future<void> setCardActive(String id, {required bool active});
+
+  Future<void> saveCategory(CategoryDraft draft);
+  Future<void> setCategoryActive(String id, {required bool active});
 
   Future<List<ShortcutToken>> loadShortcutTokens();
 

@@ -3,19 +3,20 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/widgets/card_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CardsPage extends StatelessWidget {
+class CardsPage extends ConsumerWidget {
   const CardsPage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -30,21 +31,10 @@ class CardsPage extends StatelessWidget {
           title: 'Cartões e faturas',
           subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
-              ? Semantics(
-                  label: 'Cadastrar um novo cartão de crédito',
-                  child: FilledButton.icon(
-                    onPressed: () => showDetailSheet(
-                      context,
-                      title: 'Adicionar cartão',
-                      description:
-                          'Cadastre banco, final, fechamento, vencimento e limite.',
-                      child: const Text(
-                        'O formulário será salvo no Supabase e usado pelo Atalho.',
-                      ),
-                    ),
-                    icon: const Icon(Icons.add_card),
-                    label: const Text('Adicionar cartão'),
-                  ),
+              ? FilledButton.icon(
+                  onPressed: () => editCard(context, ref),
+                  icon: const Icon(Icons.add_card),
+                  label: const Text('Adicionar cartão'),
                 )
               : null,
         ),
@@ -60,6 +50,7 @@ class CardsPage extends StatelessWidget {
                       child: _CreditCardView(
                         card: card,
                         usage: cardUsage(snapshot, card),
+                        onEdit: () => editCard(context, ref, existing: card),
                       ),
                     ),
                   )
@@ -84,9 +75,14 @@ class CardsPage extends StatelessWidget {
 }
 
 class _CreditCardView extends StatelessWidget {
-  const _CreditCardView({required this.card, required this.usage});
+  const _CreditCardView({
+    required this.card,
+    required this.usage,
+    required this.onEdit,
+  });
   final CreditCard card;
   final CardUsage usage;
+  final VoidCallback onEdit;
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'Abrir limites e datas do cartão final ${card.lastFour}',
@@ -115,6 +111,18 @@ class _CreditCardView extends StatelessWidget {
             DetailValue(
               label: 'Disponível',
               value: currency.format(usage.available),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onEdit();
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar cartão'),
+              ),
             ),
           ],
         ),

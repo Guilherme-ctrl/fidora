@@ -1,13 +1,13 @@
 import 'package:financeiro_ai/application/providers.dart';
-import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
+import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -153,6 +153,104 @@ class SupabaseFinanceRepository implements FinanceRepository {
       throw FinanceWriteException(_friendlyWriteError(error));
     }
   }
+
+  @override
+  Future<void> saveCard(CardDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _requireUser();
+    final payload = {
+      'user_id': userId,
+      'name': draft.name.trim(),
+      'bank': draft.bank.trim(),
+      'last_four': draft.lastFour.trim(),
+      'closing_day': draft.closingDay,
+      'due_day': draft.dueDay,
+      'credit_limit': draft.limit,
+      'holder_name': draft.holder.trim().isEmpty ? null : draft.holder.trim(),
+      'include_in_totals': draft.includeInTotals,
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('cards').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('cards').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyCardError(error));
+    }
+  }
+
+  @override
+  Future<void> setCardActive(String id, {required bool active}) async {
+    try {
+      await _client.from('cards').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> saveCategory(CategoryDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _requireUser();
+    final payload = {
+      'user_id': userId,
+      'name': draft.name.trim(),
+      'color': categoryColorHex(draft.color),
+      'icon': draft.iconName,
+      'monthly_budget': draft.monthlyBudget,
+      'sort_order': draft.sortOrder,
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('categories').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('categories').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyCategoryError(error));
+    }
+  }
+
+  @override
+  Future<void> setCategoryActive(String id, {required bool active}) async {
+    try {
+      await _client.from('categories').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  String _requireUser() {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const FinanceWriteException('Entre na sua conta para salvar.');
+    }
+    return userId;
+  }
+
+  String _friendlyCardError(PostgrestException error) {
+    final text = '${error.code} ${error.message}';
+    if (text.contains('cards_user_id_last_four_key')) {
+      return 'Já existe um cartão com esse final.';
+    }
+    if (text.contains('last_four_check')) {
+      return 'O final precisa ter exatamente 4 dígitos.';
+    }
+    if (text.contains('closing_day_check') || text.contains('due_day_check')) {
+      return 'Os dias de fechamento e vencimento vão de 1 a 31.';
+    }
+    return _friendlyWriteError(error);
+  }
+
+  String _friendlyCategoryError(PostgrestException error) =>
+      '${error.code} ${error.message}'.contains('categories_user_id_name_key')
+      ? 'Já existe uma categoria com esse nome.'
+      : _friendlyWriteError(error);
 
   @override
   Future<List<ShortcutToken>> loadShortcutTokens() async {
@@ -361,21 +459,17 @@ class SupabaseFinanceRepository implements FinanceRepository {
       _client.from('review_queue').select('id').eq('status', 'pending'),
       _client.from('profiles').select('currency').limit(1).maybeSingle(),
     ]);
-    // Fixed seeds: a category keeps the same colour in either theme.
-    final palette = <Color>[
-      coral,
-      moss,
-      const Color(0xFF5D65A8),
-      const Color(0xFFBF5C7A),
-      gold,
-    ];
-    final categories = (results[1] as List).indexed.map((entry) {
-      final json = entry.$2 as Map<String, dynamic>;
+    // The stored colour and icon are read now. They were written by the
+    // schema's defaults from the first migration and ignored ever since: the
+    // colour came from list position, so it changed whenever a category was
+    // added, and every category drew the same icon.
+    final categories = (results[1] as List).map((row) {
+      final json = row as Map<String, dynamic>;
       return FinanceCategory(
         id: json['id'] as String,
         name: json['name'] as String,
-        icon: Icons.category_rounded,
-        color: palette[entry.$1 % palette.length],
+        icon: categoryIconFor(json['icon'] as String?),
+        color: parseCategoryColor(json['color'] as String?),
         monthlyBudget: (json['monthly_budget'] as num?)?.toDouble(),
       );
     }).toList();

@@ -1,6 +1,8 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
+import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
@@ -18,6 +20,9 @@ class DemoFinanceRepository implements FinanceRepository {
   List<FinanceTransaction>? _ledger;
 
   List<FinanceTransaction> get _transactions => _ledger ??= _seedTransactions();
+
+  late final List<FinanceCategory> _categories = [..._seedCategories];
+  late final List<CreditCard> _cards = [..._seedCards];
 
   late final List<Invoice> _invoices = [
     Invoice(
@@ -131,7 +136,7 @@ class DemoFinanceRepository implements FinanceRepository {
     if (!errors.isEmpty) {
       throw FinanceWriteException(errors.firstMessage!);
     }
-    final category = _demoCategories
+    final category = _categories
         .where((item) => item.id == draft.categoryId)
         .firstOrNull;
     if (category == null) {
@@ -139,9 +144,7 @@ class DemoFinanceRepository implements FinanceRepository {
         'A categoria escolhida não existe mais.',
       );
     }
-    final card = _demoCards
-        .where((item) => item.id == draft.cardId)
-        .firstOrNull;
+    final card = _cards.where((item) => item.id == draft.cardId).firstOrNull;
     final saved = FinanceTransaction(
       id: draft.id ?? _uuid.v4(),
       date: draft.purchasedAt,
@@ -210,6 +213,75 @@ class DemoFinanceRepository implements FinanceRepository {
   final List<ShortcutToken> _tokens = [];
 
   @override
+  Future<void> saveCard(CardDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final clash = _cards.any(
+      (item) => item.id != draft.id && item.lastFour == draft.lastFour.trim(),
+    );
+    if (clash) {
+      throw const FinanceWriteException('Já existe um cartão com esse final.');
+    }
+    final saved = CreditCard(
+      id: draft.id ?? _uuid.v4(),
+      name: draft.name.trim(),
+      bank: draft.bank.trim(),
+      lastFour: draft.lastFour.trim(),
+      limit: draft.limit,
+      closingDay: draft.closingDay,
+      dueDay: draft.dueDay,
+      holder: draft.holder.trim(),
+      includeInTotals: draft.includeInTotals,
+    );
+    final index = _cards.indexWhere((item) => item.id == saved.id);
+    if (index == -1) {
+      _cards.add(saved);
+    } else {
+      _cards[index] = saved;
+    }
+  }
+
+  @override
+  Future<void> setCardActive(String id, {required bool active}) async {
+    // The demo snapshot only carries active cards, so deactivating removes it.
+    if (!active) _cards.removeWhere((item) => item.id == id);
+  }
+
+  @override
+  Future<void> saveCategory(CategoryDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final clash = _categories.any(
+      (item) =>
+          item.id != draft.id &&
+          item.name.toLowerCase() == draft.name.trim().toLowerCase(),
+    );
+    if (clash) {
+      throw const FinanceWriteException(
+        'Já existe uma categoria com esse nome.',
+      );
+    }
+    final saved = FinanceCategory(
+      id: draft.id ?? _uuid.v4(),
+      name: draft.name.trim(),
+      icon: categoryIconFor(draft.iconName),
+      color: draft.color,
+      monthlyBudget: draft.monthlyBudget,
+    );
+    final index = _categories.indexWhere((item) => item.id == saved.id);
+    if (index == -1) {
+      _categories.add(saved);
+    } else {
+      _categories[index] = saved;
+    }
+  }
+
+  @override
+  Future<void> setCategoryActive(String id, {required bool active}) async {
+    if (!active) _categories.removeWhere((item) => item.id == id);
+  }
+
+  @override
   Future<List<ShortcutToken>> loadShortcutTokens() async =>
       List.unmodifiable(_tokens);
 
@@ -254,7 +326,7 @@ class DemoFinanceRepository implements FinanceRepository {
     if (!errors.isEmpty) {
       throw FinanceWriteException(errors.firstMessage!);
     }
-    final category = _demoCategories
+    final category = _categories
         .where((item) => item.id == draft.categoryId)
         .firstOrNull;
     if (category == null) {
@@ -297,8 +369,8 @@ class DemoFinanceRepository implements FinanceRepository {
     await Future<void>.delayed(const Duration(milliseconds: 180));
     return FinanceSnapshot(
       transactions: List.unmodifiable(_transactions),
-      categories: _demoCategories,
-      cards: _demoCards,
+      categories: List.unmodifiable(_categories),
+      cards: List.unmodifiable(_cards),
       invoices: List.unmodifiable(_invoices),
       goals: const [
         Goal(name: 'Reserva de emergência', current: 18500, target: 30000),
@@ -383,7 +455,7 @@ class DemoFinanceRepository implements FinanceRepository {
     ),
   ];
 
-  static const _demoCategories = <FinanceCategory>[
+  static const _seedCategories = <FinanceCategory>[
     FinanceCategory(
       id: '1',
       name: 'Alimentação',
@@ -465,7 +537,7 @@ class DemoFinanceRepository implements FinanceRepository {
     ),
   ];
 
-  static const _demoCards = <CreditCard>[
+  static const _seedCards = <CreditCard>[
     CreditCard(
       id: '1',
       name: 'Uniclass Black',
