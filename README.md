@@ -37,18 +37,27 @@ flutter run -d <device-id>
 O projeto remoto **Finora** está criado em São Paulo e vinculado ao ref
 `ddmilzlinvpxfvzyigok`. As migrations e a Edge Function já estão publicadas.
 
-1. Crie a conta `guilhermesoaresluis@gmail.com` pelo app; cartões, histórico, faturas, regras e metas serão importados automaticamente.
-2. Gere o token para o Atalho conforme `docs/SHORTCUT.md` após a primeira entrada.
-3. Execute:
+1. Crie seu arquivo local de configuração a partir do exemplo:
+
+```bash
+cp config/finora.production.example.json config/finora.production.json
+```
+
+   Preencha `SUPABASE_URL` e `SUPABASE_ANON_KEY` com os dados do seu projeto.
+   Esse arquivo é ignorado pelo Git: a chave publicável foi feita para rodar no
+   cliente e é protegida por RLS, mas ela identifica o projeto de produção e não
+   deve ficar num repositório público. Nunca coloque a `service_role` no
+   Flutter; ela existe somente no ambiente protegido da Edge Function.
+
+2. Crie a conta pelo app; cartões, histórico, faturas, regras e metas serão
+   importados automaticamente.
+3. Gere o token para o Atalho conforme `docs/SHORTCUT.md` após a primeira entrada.
+4. Execute:
 
 ```bash
 flutter run -d chrome \
   --dart-define-from-file=config/finora.production.json
 ```
-
-O arquivo contém somente a chave publicável, criada para uso em clientes. Nunca
-coloque a `service_role` no Flutter; ela existe somente no ambiente protegido da
-Edge Function.
 
 ## Importar uma fatura classificada pelo ChatGPT
 
