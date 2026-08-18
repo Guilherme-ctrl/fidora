@@ -108,11 +108,49 @@ PeriodAnalytics analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
   return computed;
 }
 
+/// Whether a card's spending belongs to your own finances.
+///
+/// Two switches can exclude it and both were dead: `cards.include_in_totals`
+/// was parsed into the model and never consulted by any calculation, and
+/// `holders.include_in_totals` had no model at all. A card is counted only when
+/// the card says so and its holder does too.
+bool cardCountsInTotals(FinanceSnapshot snapshot, CreditCard card) {
+  if (!card.includeInTotals) return false;
+  final holder = snapshot.holders
+      .where((item) => item.id == card.holderId)
+      .firstOrNull;
+  return holder?.includeInTotals ?? true;
+}
+
+/// Whether a single transaction belongs to your own finances.
+///
+/// A transaction can name its own holder — the invoice import writes it from
+/// the statement's notes — and that is more precise than the card's, because
+/// one card carries charges from several people. The transaction's holder wins
+/// when present; otherwise the card's answer stands.
+bool transactionCountsInTotals(
+  FinanceSnapshot snapshot,
+  FinanceTransaction item,
+) {
+  final card = snapshot.cards
+      .where((entry) => entry.lastFour == item.cardLastFour)
+      .firstOrNull;
+  if (card != null && !card.includeInTotals) return false;
+
+  final holderId = item.holderId ?? card?.holderId;
+  if (holderId == null) return true;
+  final holder = snapshot.holders
+      .where((entry) => entry.id == holderId)
+      .firstOrNull;
+  return holder?.includeInTotals ?? true;
+}
+
 PeriodAnalytics _analyzePeriod(FinanceSnapshot snapshot, FinancePeriod period) {
   final transactions = snapshot.transactions
       .where(
         (item) =>
             item.status != TransactionStatus.ignored &&
+            transactionCountsInTotals(snapshot, item) &&
             period.contains(analyticsDate(item)),
       )
       .toList();

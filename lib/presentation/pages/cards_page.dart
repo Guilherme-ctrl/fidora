@@ -3,16 +3,20 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/widgets/card_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CardsPage extends StatelessWidget {
+class CardsPage extends ConsumerWidget {
   const CardsPage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -27,21 +31,11 @@ class CardsPage extends StatelessWidget {
           title: 'Cartões e faturas',
           subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
-              ? Semantics(
-                  label: 'Cadastrar um novo cartão de crédito',
-                  child: FilledButton.icon(
-                    onPressed: () => showDetailSheet(
-                      context,
-                      title: 'Adicionar cartão',
-                      description:
-                          'Cadastre banco, final, fechamento, vencimento e limite.',
-                      child: const Text(
-                        'O formulário será salvo no Supabase e usado pelo Atalho.',
-                      ),
-                    ),
-                    icon: const Icon(Icons.add_card),
-                    label: const Text('Adicionar cartão'),
-                  ),
+              ? FilledButton.icon(
+                  onPressed: () =>
+                      editCard(context, ref, holders: snapshot.holders),
+                  icon: const Icon(Icons.add_card),
+                  label: const Text('Adicionar cartão'),
                 )
               : null,
         ),
@@ -57,6 +51,12 @@ class CardsPage extends StatelessWidget {
                       child: _CreditCardView(
                         card: card,
                         usage: cardUsage(snapshot, card),
+                        onEdit: () => editCard(
+                          context,
+                          ref,
+                          holders: snapshot.holders,
+                          existing: card,
+                        ),
                       ),
                     ),
                   )
@@ -81,9 +81,14 @@ class CardsPage extends StatelessWidget {
 }
 
 class _CreditCardView extends StatelessWidget {
-  const _CreditCardView({required this.card, required this.usage});
+  const _CreditCardView({
+    required this.card,
+    required this.usage,
+    required this.onEdit,
+  });
   final CreditCard card;
   final CardUsage usage;
+  final VoidCallback onEdit;
   @override
   Widget build(BuildContext context) => Semantics(
     label: 'Abrir limites e datas do cartão final ${card.lastFour}',
@@ -102,11 +107,28 @@ class _CreditCardView extends StatelessWidget {
             DetailValue(label: 'Limite', value: currency.format(card.limit)),
             DetailValue(
               label: 'Comprometido em faturas abertas',
-              value: currency.format(usage.used),
+              value: currency.format(usage.billed),
             ),
+            if (usage.scheduled > 0)
+              DetailValue(
+                label: 'Parcelas ainda não faturadas',
+                value: currency.format(usage.scheduled),
+              ),
             DetailValue(
               label: 'Disponível',
               value: currency.format(usage.available),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  onEdit();
+                },
+                icon: const Icon(Icons.edit_outlined),
+                label: const Text('Editar cartão'),
+              ),
             ),
           ],
         ),
@@ -241,7 +263,7 @@ class _CardDetail extends StatelessWidget {
   );
 }
 
-class _InvoicesList extends StatelessWidget {
+class _InvoicesList extends ConsumerWidget {
   const _InvoicesList({required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
@@ -253,7 +275,7 @@ class _InvoicesList extends StatelessWidget {
       .where((item) => period.contains(item.referenceMonth))
       .toList();
   @override
-  Widget build(BuildContext context) => SectionCard(
+  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
     title: 'Faturas recentes',
     tooltip: 'Abrir todas as faturas e suas competências',
     onTap: () => showDetailSheet(
@@ -308,6 +330,38 @@ class _InvoicesList extends StatelessWidget {
                           value: longDate.format(invoice.dueDate),
                         ),
                         DetailValue(label: 'Situação', value: state.label),
+                        if (invoice.paidAt != null)
+                          DetailValue(
+                            label: 'Paga em',
+                            value: longDate.format(invoice.paidAt!),
+                          ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          child: state.isSettled
+                              ? OutlinedButton.icon(
+                                  onPressed: () => _setPaid(
+                                    context,
+                                    ref,
+                                    invoice,
+                                    paid: false,
+                                  ),
+                                  icon: const Icon(Icons.undo_rounded),
+                                  label: const Text('Reabrir fatura'),
+                                )
+                              : FilledButton.icon(
+                                  onPressed: () => _setPaid(
+                                    context,
+                                    ref,
+                                    invoice,
+                                    paid: true,
+                                  ),
+                                  icon: const Icon(
+                                    Icons.check_circle_outline_rounded,
+                                  ),
+                                  label: const Text('Marcar como paga'),
+                                ),
+                        ),
                       ],
                     ),
                   ),
@@ -394,3 +448,40 @@ Color _stateColor(BuildContext context, InvoiceState state) => switch (state) {
   InvoiceState.closed => context.palette.onWarning,
   InvoiceState.open => context.palette.info,
 };
+
+/// Settling an invoice also frees the limit it was holding, because
+/// [cardUsage] only counts invoices that are not paid — so the snapshot has to
+/// reload for the card face to catch up.
+Future<void> _setPaid(
+  BuildContext context,
+  WidgetRef ref,
+  Invoice invoice, {
+  required bool paid,
+}) async {
+  Navigator.of(context).pop();
+  try {
+    await ref
+        .read(financeRepositoryProvider)
+        .setInvoicePaid(invoice.id, paid: paid);
+    await refreshFinanceSnapshot(ref);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            paid ? 'Fatura marcada como paga.' : 'Fatura reaberta.',
+          ),
+          backgroundColor: context.palette.brand,
+        ),
+      );
+    }
+  } on FinanceWriteException catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.message),
+          backgroundColor: context.palette.danger,
+        ),
+      );
+    }
+  }
+}

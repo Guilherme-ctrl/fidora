@@ -104,13 +104,29 @@ double? trailingMonthlyAverage(
   return counted == 0 ? null : total / counted;
 }
 
-/// How much of a card's limit is committed. Anything not settled still holds
-/// limit, so every invoice that is not `paid` counts.
+/// How much of a card's limit is committed.
+///
+/// Two things hold limit, and the interface used to count only the first:
+/// invoices that have not been paid, and instalments already agreed with the
+/// issuer that have not reached an invoice yet. Ignoring the second made the
+/// available figure optimistic for anyone who uses instalments — the whole
+/// point of the number is to be safe to spend against.
 class CardUsage {
-  const CardUsage({required this.card, required this.used});
+  const CardUsage({
+    required this.card,
+    required this.billed,
+    required this.scheduled,
+  });
 
   final CreditCard card;
-  final double used;
+
+  /// Sum of invoices that are not paid.
+  final double billed;
+
+  /// Instalments already committed but not yet billed.
+  final double scheduled;
+
+  double get used => billed + scheduled;
 
   bool get hasLimit => card.limit > 0;
   double get available => math.max(0, card.limit - used);
@@ -121,8 +137,42 @@ class CardUsage {
 }
 
 CardUsage cardUsage(FinanceSnapshot snapshot, CreditCard card) {
-  final used = snapshot.invoices
+  final billed = snapshot.invoices
       .where((item) => item.cardId == card.id && item.status != 'paid')
       .fold<double>(0, (sum, item) => sum + item.total);
-  return CardUsage(card: card, used: used);
+  return CardUsage(
+    card: card,
+    billed: billed,
+    scheduled: scheduledInstallments(snapshot, card),
+  );
+}
+
+/// Instalments still to be charged on this card.
+///
+/// A purchase appears once per instalment already billed, so the same key is
+/// collapsed to its furthest instalment — the same key the projection uses, on
+/// purpose, so the two screens cannot disagree about what is outstanding. Only
+/// the instalments beyond that one are counted; the ones already billed are
+/// inside an invoice and would otherwise be counted twice.
+double scheduledInstallments(FinanceSnapshot snapshot, CreditCard card) {
+  final furthest = <String, FinanceTransaction>{};
+  for (final item in snapshot.transactions) {
+    if (item.status == TransactionStatus.ignored) continue;
+    if (!item.isInstallment || item.movementType != 'purchase') continue;
+    if (item.cardLastFour != card.lastFour) continue;
+    if (item.installmentCurrent == null) continue;
+    final key = '${item.merchant}|${item.amount}|${item.installmentTotal}';
+    final existing = furthest[key];
+    if (existing == null ||
+        item.installmentCurrent! > existing.installmentCurrent!) {
+      furthest[key] = item;
+    }
+  }
+  return furthest.values.fold<double>(0, (sum, item) {
+    final remaining = (item.installmentTotal! - item.installmentCurrent!).clamp(
+      0,
+      item.installmentTotal!,
+    );
+    return sum + remaining * item.amount;
+  });
 }

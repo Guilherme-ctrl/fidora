@@ -1,12 +1,13 @@
 import 'package:financeiro_ai/application/providers.dart';
-import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
+import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
+import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
-import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -68,7 +69,6 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'competence': _isoDate(competence),
       'card_id': draft.cardId,
       'invoice_id': invoiceId,
-      'holder_id': card?['holder_id'],
       'merchant_original': draft.merchant.trim(),
       'merchant_normalized': normalizeMerchant(draft.merchant),
       'amount': draft.amount,
@@ -77,6 +77,12 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'installment_current': draft.installmentCurrent,
       'installment_total': draft.installmentTotal,
       'category_id': draft.categoryId,
+      // An explicit holder on the transaction wins; otherwise it inherits the
+      // card's, which is what the capture path already does.
+      'holder_id': draft.holderId ?? card?['holder_id'],
+      // Null means the whole charge is yours; the statement total is untouched
+      // either way, since `amount` stays what the issuer charged.
+      'personal_amount': draft.personalAmount,
       'status': draft.status.name,
       'notes': draft.notes,
       'source': 'manual',
@@ -109,6 +115,28 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> recategorizeTransactions(
+    List<String> ids,
+    String categoryId,
+  ) async {
+    if (ids.isEmpty) return;
+    try {
+      await _client
+          .from('transactions')
+          .update({
+            'category_id': categoryId,
+            // A hand-made correction is a decision, so it stops being a guess.
+            'confidence': 'high',
+            'reviewed': true,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .inFilter('id', ids);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
   Future<List<ReviewItem>> loadReviewQueue() async {
     final rows = await _client
         .from('review_queue')
@@ -130,6 +158,244 @@ class SupabaseFinanceRepository implements FinanceRepository {
             'status': status,
             'resolved_at': DateTime.now().toUtc().toIso8601String(),
           })
+          .eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> setInvoicePaid(String invoiceId, {required bool paid}) async {
+    try {
+      await _client
+          .from('invoices')
+          .update({
+            // A settled invoice keeps its own status rather than falling back
+            // to the derived "overdue" the interface computes from the due date.
+            'status': paid ? 'paid' : 'closed',
+            'paid_at': paid ? DateTime.now().toUtc().toIso8601String() : null,
+          })
+          .eq('id', invoiceId);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> saveCard(CardDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _requireUser();
+    final payload = {
+      'user_id': userId,
+      'name': draft.name.trim(),
+      'bank': draft.bank.trim(),
+      'last_four': draft.lastFour.trim(),
+      'closing_day': draft.closingDay,
+      'due_day': draft.dueDay,
+      'credit_limit': draft.limit,
+      'holder_id': draft.holderId,
+      'holder_name': draft.holder.trim().isEmpty ? null : draft.holder.trim(),
+      'include_in_totals': draft.includeInTotals,
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('cards').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('cards').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyCardError(error));
+    }
+  }
+
+  @override
+  Future<void> setCardActive(String id, {required bool active}) async {
+    try {
+      await _client.from('cards').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> saveCategory(CategoryDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _requireUser();
+    final payload = {
+      'user_id': userId,
+      'name': draft.name.trim(),
+      'color': categoryColorHex(draft.color),
+      'icon': draft.iconName,
+      'monthly_budget': draft.monthlyBudget,
+      'sort_order': draft.sortOrder,
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('categories').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('categories').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyCategoryError(error));
+    }
+  }
+
+  @override
+  Future<void> setCategoryActive(String id, {required bool active}) async {
+    try {
+      await _client.from('categories').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  String _requireUser() {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const FinanceWriteException('Entre na sua conta para salvar.');
+    }
+    return userId;
+  }
+
+  String _friendlyCardError(PostgrestException error) {
+    final text = '${error.code} ${error.message}';
+    if (text.contains('cards_user_id_last_four_key')) {
+      return 'Já existe um cartão com esse final.';
+    }
+    if (text.contains('last_four_check')) {
+      return 'O final precisa ter exatamente 4 dígitos.';
+    }
+    if (text.contains('closing_day_check') || text.contains('due_day_check')) {
+      return 'Os dias de fechamento e vencimento vão de 1 a 31.';
+    }
+    return _friendlyWriteError(error);
+  }
+
+  String _friendlyCategoryError(PostgrestException error) =>
+      '${error.code} ${error.message}'.contains('categories_user_id_name_key')
+      ? 'Já existe uma categoria com esse nome.'
+      : _friendlyWriteError(error);
+
+  @override
+  Future<void> saveGoal(GoalDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final payload = {
+      'user_id': _requireUser(),
+      'name': draft.name.trim(),
+      'target_amount': draft.target,
+      'current_amount': draft.current,
+      'target_date': draft.targetDate == null
+          ? null
+          : _isoDate(draft.targetDate!),
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('goals').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('goals').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> setGoalActive(String id, {required bool active}) async {
+    try {
+      await _client.from('goals').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> saveHolder(HolderDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final payload = {
+      'user_id': _requireUser(),
+      'name': draft.name.trim(),
+      'include_in_totals': draft.includeInTotals,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('holders').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('holders').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(
+        '${error.code} ${error.message}'.contains('holders_user_id_name_key')
+            ? 'Já existe um portador com esse nome.'
+            : _friendlyWriteError(error),
+      );
+    }
+  }
+
+  @override
+  Future<void> deleteHolder(String id) async {
+    try {
+      // Cards keep working: the foreign key is `on delete set null`.
+      await _client.from('holders').delete().eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<List<ShortcutToken>> loadShortcutTokens() async {
+    final rows = await _client
+        .from('shortcut_tokens')
+        .select()
+        .order('created_at', ascending: false);
+    return (rows as List)
+        .map((json) => ShortcutToken.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
+  Future<IssuedShortcutToken> createShortcutToken(String name) async {
+    final errors = validateTokenName(name);
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const FinanceWriteException(
+        'Entre na sua conta para gerar tokens.',
+      );
+    }
+    final secret = generateShortcutSecret();
+    try {
+      final row = await _client
+          .from('shortcut_tokens')
+          .insert({
+            'user_id': userId,
+            'name': name.trim(),
+            // Only the hash is persisted; the secret leaves in memory only.
+            'token_hash': hashShortcutSecret(secret),
+          })
+          .select()
+          .single();
+      return IssuedShortcutToken(
+        secret: secret,
+        token: ShortcutToken.fromJson(row),
+      );
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
+  Future<void> revokeShortcutToken(String id) async {
+    try {
+      await _client
+          .from('shortcut_tokens')
+          .update({'revoked_at': DateTime.now().toUtc().toIso8601String()})
           .eq('id', id);
     } on PostgrestException catch (error) {
       throw FinanceWriteException(_friendlyWriteError(error));
@@ -288,22 +554,19 @@ class SupabaseFinanceRepository implements FinanceRepository {
       _client.from('goals').select().eq('active', true).order('created_at'),
       _client.from('review_queue').select('id').eq('status', 'pending'),
       _client.from('profiles').select('currency').limit(1).maybeSingle(),
+      _client.from('holders').select().order('name'),
     ]);
-    // Fixed seeds: a category keeps the same colour in either theme.
-    final palette = <Color>[
-      coral,
-      moss,
-      const Color(0xFF5D65A8),
-      const Color(0xFFBF5C7A),
-      gold,
-    ];
-    final categories = (results[1] as List).indexed.map((entry) {
-      final json = entry.$2 as Map<String, dynamic>;
+    // The stored colour and icon are read now. They were written by the
+    // schema's defaults from the first migration and ignored ever since: the
+    // colour came from list position, so it changed whenever a category was
+    // added, and every category drew the same icon.
+    final categories = (results[1] as List).map((row) {
+      final json = row as Map<String, dynamic>;
       return FinanceCategory(
         id: json['id'] as String,
         name: json['name'] as String,
-        icon: Icons.category_rounded,
-        color: palette[entry.$1 % palette.length],
+        icon: categoryIconFor(json['icon'] as String?),
+        color: parseCategoryColor(json['color'] as String?),
         monthlyBudget: (json['monthly_budget'] as num?)?.toDouble(),
       );
     }).toList();
@@ -321,13 +584,10 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
           .toList(),
       goals: (results[4] as List)
-          .map(
-            (json) => Goal(
-              name: json['name'] as String,
-              current: (json['current_amount'] as num).toDouble(),
-              target: (json['target_amount'] as num).toDouble(),
-            ),
-          )
+          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      holders: (results[7] as List)
+          .map((json) => Holder.fromJson(json as Map<String, dynamic>))
           .toList(),
       pendingReviews: (results[5] as List).length,
       currencyCode:

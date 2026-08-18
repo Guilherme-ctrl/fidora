@@ -1,10 +1,12 @@
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/widgets/category_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CategoriesPage extends StatelessWidget {
+class CategoriesPage extends ConsumerWidget {
   const CategoriesPage({
     super.key,
     required this.snapshot,
@@ -16,7 +18,7 @@ class CategoriesPage extends StatelessWidget {
   final ValueChanged<FinancePeriod> onPeriodChanged;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width >= 1200
         ? 4
@@ -43,7 +45,7 @@ class CategoriesPage extends StatelessWidget {
               ? Semantics(
                   label: 'Criar uma categoria e definir seu orçamento',
                   child: FilledButton.icon(
-                    onPressed: () => _showCreate(context),
+                    onPressed: () => editCategory(context, ref),
                     icon: const Icon(Icons.add),
                     label: const Text('Nova categoria'),
                   ),
@@ -74,7 +76,7 @@ class CategoriesPage extends StatelessWidget {
                 clipBehavior: Clip.antiAlias,
                 child: InkWell(
                   onTap: () =>
-                      _showCategory(context, category, spend, analytics),
+                      _showCategory(context, ref, category, spend, analytics),
                   child: Padding(
                     padding: const EdgeInsets.all(18),
                     child: Column(
@@ -140,18 +142,9 @@ class CategoriesPage extends StatelessWidget {
     );
   }
 
-  void _showCreate(BuildContext context) => showDetailSheet(
-    context,
-    title: 'Nova categoria',
-    description:
-        'Categorias podem ter orçamento mensal e regras automáticas de estabelecimento.',
-    child: const Text(
-      'A criação será salva no Supabase e aparecerá nos filtros.',
-    ),
-  );
-
   void _showCategory(
     BuildContext context,
+    WidgetRef ref,
     FinanceCategory category,
     double spend,
     PeriodAnalytics analytics,
@@ -174,6 +167,17 @@ class CategoriesPage extends StatelessWidget {
               label: spend <= budget ? 'Disponível' : 'Excedente',
               value: currency.format((budget - spend).abs()),
             ),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                editCategory(context, ref, existing: category);
+              },
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Editar categoria'),
+            ),
+          ),
           const Divider(height: 28),
           ...transactions
               .take(30)
