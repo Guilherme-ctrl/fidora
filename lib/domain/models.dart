@@ -19,6 +19,7 @@ class FinanceTransaction {
     this.source = 'manual',
     this.holderId,
     this.personalAmount,
+    this.accountId,
   });
   final String id;
   final DateTime date;
@@ -41,6 +42,9 @@ class FinanceTransaction {
 
   /// Your share of [amount]. Null means all of it.
   final double? personalAmount;
+
+  /// Where the money moved, when it was not a card.
+  final String? accountId;
 
   /// What counts as yours. The full [amount] stays the audited figure.
   double get personalShare => personalAmount ?? amount;
@@ -80,6 +84,7 @@ class FinanceTransaction {
         source: (json['source'] ?? 'manual') as String,
         holderId: json['holder_id'] as String?,
         personalAmount: (json['personal_amount'] as num?)?.toDouble(),
+        accountId: json['account_id'] as String?,
         status: switch (json['status']) {
           'pending' => TransactionStatus.pending,
           'ignored' => TransactionStatus.ignored,
@@ -222,6 +227,81 @@ class Goal {
   );
 }
 
+/// One statement import: what came in, and what it produced.
+class ImportBatch {
+  const ImportBatch({
+    required this.id,
+    required this.fileName,
+    required this.createdAt,
+    this.rowsRead = 0,
+    this.rowsCreated = 0,
+    this.rowsUpdated = 0,
+    this.rowsDuplicated = 0,
+    this.rowsToReview = 0,
+  });
+
+  final String id;
+  final String fileName;
+  final DateTime createdAt;
+  final int rowsRead;
+  final int rowsCreated;
+  final int rowsUpdated;
+  final int rowsDuplicated;
+  final int rowsToReview;
+
+  factory ImportBatch.fromJson(Map<String, dynamic> json) => ImportBatch(
+    id: json['id'] as String,
+    fileName: json['file_name'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+    rowsRead: (json['rows_read'] as num?)?.toInt() ?? 0,
+    rowsCreated: (json['rows_created'] as num?)?.toInt() ?? 0,
+    rowsUpdated: (json['rows_updated'] as num?)?.toInt() ?? 0,
+    rowsDuplicated: (json['rows_duplicated'] as num?)?.toInt() ?? 0,
+    rowsToReview: (json['rows_to_review'] as num?)?.toInt() ?? 0,
+  );
+}
+
+/// A place money sits: checking, savings, a wallet.
+///
+/// `accounts` and `transactions.account_id` have been in the schema since the
+/// spreadsheet migration and had no code at all, so anything that was not a
+/// card showed as the literal "----".
+class Account {
+  const Account({
+    required this.id,
+    required this.name,
+    this.bank = '',
+    this.type = 'checking',
+    this.openingBalance = 0,
+    this.includeInTotals = true,
+  });
+
+  final String id;
+  final String name;
+  final String bank;
+  final String type;
+
+  /// What the account held before the first recorded transaction.
+  final double openingBalance;
+  final bool includeInTotals;
+
+  String get typeLabel => switch (type) {
+    'savings' => 'Poupança',
+    'wallet' => 'Carteira',
+    'investment' => 'Investimento',
+    _ => 'Conta corrente',
+  };
+
+  factory Account.fromJson(Map<String, dynamic> json) => Account(
+    id: json['id'] as String,
+    name: json['name'] as String,
+    bank: (json['bank'] ?? '') as String,
+    type: (json['account_type'] ?? 'checking') as String,
+    openingBalance: (json['opening_balance'] as num?)?.toDouble() ?? 0,
+    includeInTotals: (json['include_in_totals'] ?? true) as bool,
+  );
+}
+
 /// A person whose card spending may or may not belong to your own finances.
 class Holder {
   const Holder({
@@ -249,6 +329,7 @@ class FinanceSnapshot {
     required this.goals,
     required this.pendingReviews,
     this.holders = const [],
+    this.accounts = const [],
     this.currencyCode = 'BRL',
   });
   final List<FinanceTransaction> transactions;
@@ -257,6 +338,7 @@ class FinanceSnapshot {
   final List<Invoice> invoices;
   final List<Goal> goals;
   final List<Holder> holders;
+  final List<Account> accounts;
   final int pendingReviews;
 
   /// From `profiles.currency`; drives the money formatter.

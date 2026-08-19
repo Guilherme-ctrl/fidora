@@ -45,6 +45,7 @@ class TransactionDraft {
     this.notes,
     this.holderId,
     this.personalAmount,
+    this.accountId,
   });
 
   final String? id;
@@ -62,6 +63,9 @@ class TransactionDraft {
 
   /// Your share of [amount]; null means all of it.
   final double? personalAmount;
+
+  /// Where the money moved, when it was not a card.
+  final String? accountId;
 
   bool get isShared => personalAmount != null && personalAmount! < amount;
 

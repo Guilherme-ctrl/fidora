@@ -9,8 +9,11 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
+import 'package:financeiro_ai/presentation/pages/accounts_page.dart';
+import 'package:financeiro_ai/presentation/pages/data_page.dart';
 import 'package:financeiro_ai/presentation/pages/holders_page.dart';
 import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
+import 'package:financeiro_ai/presentation/pages/subscriptions_page.dart';
 import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
@@ -159,6 +162,32 @@ class MorePage extends ConsumerWidget {
                 ),
               ),
               _OperationTile(
+                icon: Icons.account_balance_rounded,
+                color: const Color(0xFF477D9B),
+                title: 'Contas',
+                subtitle: snapshot.accounts.isEmpty
+                    ? 'Onde o dinheiro fica fora do cartão'
+                    : '${snapshot.accounts.length} cadastradas',
+                tooltip: 'Gerenciar contas e ver saldos',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AccountsPage(snapshot: snapshot),
+                  ),
+                ),
+              ),
+              _OperationTile(
+                icon: Icons.subscriptions_rounded,
+                color: const Color(0xFF7D63A8),
+                title: 'Assinaturas',
+                subtitle: 'Quanto por mês em cobranças que se repetem',
+                tooltip: 'Ver cobranças recorrentes detectadas no histórico',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SubscriptionsPage(snapshot: snapshot),
+                  ),
+                ),
+              ),
+              _OperationTile(
                 icon: Icons.rule_folder_rounded,
                 color: context.palette.warning,
                 title: 'Revisões pendentes',
@@ -180,6 +209,18 @@ class MorePage extends ConsumerWidget {
                 tooltip:
                     'Selecionar o JSON e revisar a importação antes de gravar',
                 onTap: () => _pickInvoice(context, ref),
+              ),
+              _OperationTile(
+                icon: Icons.download_rounded,
+                color: const Color(0xFF6B7B58),
+                title: 'Seus dados',
+                subtitle: 'Exportar CSV e ver o histórico de importações',
+                tooltip: 'Exportar seus lançamentos e revisar importações',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => DataPage(snapshot: snapshot),
+                  ),
+                ),
               ),
               _OperationTile(
                 icon: Icons.people_alt_rounded,

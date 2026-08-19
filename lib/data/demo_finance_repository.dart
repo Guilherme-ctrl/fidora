@@ -32,6 +32,15 @@ class DemoFinanceRepository implements FinanceRepository {
     Goal(id: 'g2', name: 'Viagem', current: 4200, target: 12000),
   ];
 
+  final List<Account> _accounts = [
+    const Account(
+      id: 'a1',
+      name: 'Conta corrente',
+      bank: 'Itaú',
+      openingBalance: 3200,
+    ),
+  ];
+
   final List<Holder> _holders = [const Holder(id: 'h1', name: 'Guilherme')];
 
   late final List<FinanceCategory> _categories = [..._seedCategories];
@@ -174,6 +183,7 @@ class DemoFinanceRepository implements FinanceRepository {
       status: draft.status,
       holderId: draft.holderId,
       personalAmount: draft.personalAmount,
+      accountId: draft.accountId,
     );
     _transactions
       ..removeWhere((item) => item.id == saved.id)
@@ -359,6 +369,39 @@ class DemoFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> saveAccount(AccountDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final clash = _accounts.any(
+      (item) =>
+          item.id != draft.id &&
+          item.name.toLowerCase() == draft.name.trim().toLowerCase(),
+    );
+    if (clash) {
+      throw const FinanceWriteException('Já existe uma conta com esse nome.');
+    }
+    final saved = Account(
+      id: draft.id ?? _uuid.v4(),
+      name: draft.name.trim(),
+      bank: draft.bank.trim(),
+      type: draft.type,
+      openingBalance: draft.openingBalance,
+      includeInTotals: draft.includeInTotals,
+    );
+    final index = _accounts.indexWhere((item) => item.id == saved.id);
+    if (index == -1) {
+      _accounts.add(saved);
+    } else {
+      _accounts[index] = saved;
+    }
+  }
+
+  @override
+  Future<void> setAccountActive(String id, {required bool active}) async {
+    if (!active) _accounts.removeWhere((item) => item.id == id);
+  }
+
+  @override
   Future<void> saveHolder(HolderDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
@@ -387,6 +430,19 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<void> deleteHolder(String id) async {
     _holders.removeWhere((item) => item.id == id);
   }
+
+  @override
+  Future<List<ImportBatch>> loadImportBatches() async => [
+    ImportBatch(
+      id: 'b1',
+      fileName: 'itau-2026-07.json',
+      createdAt: _now.subtract(const Duration(days: 12)),
+      rowsRead: 67,
+      rowsCreated: 66,
+      rowsUpdated: 1,
+      rowsToReview: 2,
+    ),
+  ];
 
   @override
   Future<List<ShortcutToken>> loadShortcutTokens() async =>
@@ -481,6 +537,7 @@ class DemoFinanceRepository implements FinanceRepository {
       invoices: List.unmodifiable(_invoices),
       goals: List.unmodifiable(_goals),
       holders: List.unmodifiable(_holders),
+      accounts: List.unmodifiable(_accounts),
       pendingReviews: _reviews.where((item) => item.isPending).length,
       currencyCode: 'BRL',
     );

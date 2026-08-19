@@ -44,8 +44,15 @@ abstract class FinanceRepository {
   Future<void> saveGoal(GoalDraft draft);
   Future<void> setGoalActive(String id, {required bool active});
 
+  Future<void> saveAccount(AccountDraft draft);
+
+  /// Accounts are deactivated, never deleted: transactions point at them.
+  Future<void> setAccountActive(String id, {required bool active});
+
   Future<void> saveHolder(HolderDraft draft);
   Future<void> deleteHolder(String id);
+
+  Future<List<ImportBatch>> loadImportBatches();
 
   Future<List<ShortcutToken>> loadShortcutTokens();
 
@@ -78,6 +85,9 @@ final merchantRulesProvider = FutureProvider<List<MerchantRule>>(
 );
 final shortcutTokensProvider = FutureProvider<List<ShortcutToken>>(
   (ref) => ref.watch(financeRepositoryProvider).loadShortcutTokens(),
+);
+final importBatchesProvider = FutureProvider<List<ImportBatch>>(
+  (ref) => ref.watch(financeRepositoryProvider).loadImportBatches(),
 );
 
 /// Reloads the snapshot and completes only when the new data has arrived, so a

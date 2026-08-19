@@ -126,7 +126,14 @@ void main() {
   ) async {
     await pumpForm(tester, snapshot: snapshot, onSave: (_) async {});
 
-    await tester.tap(find.byType(DropdownButtonFormField<String?>));
+    // Two nullable dropdowns exist now — payment method and account — so the
+    // finder has to name the one under test.
+    await tester.tap(
+      find.widgetWithText(
+        DropdownButtonFormField<String?>,
+        'Conta, Pix ou débito',
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.textContaining('Uniclass Black').last);
     await tester.pumpAndSettle();

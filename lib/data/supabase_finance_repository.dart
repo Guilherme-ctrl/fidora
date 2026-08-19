@@ -68,6 +68,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
       'purchased_at': draft.purchasedAt.toUtc().toIso8601String(),
       'competence': _isoDate(competence),
       'card_id': draft.cardId,
+      'account_id': draft.accountId,
       'invoice_id': invoiceId,
       'merchant_original': draft.merchant.trim(),
       'merchant_normalized': normalizeMerchant(draft.merchant),
@@ -315,6 +316,43 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<void> saveAccount(AccountDraft draft) async {
+    final errors = draft.validate();
+    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    final payload = {
+      'user_id': _requireUser(),
+      'name': draft.name.trim(),
+      'bank': draft.bank.trim().isEmpty ? null : draft.bank.trim(),
+      'account_type': draft.type,
+      'opening_balance': draft.openingBalance,
+      'include_in_totals': draft.includeInTotals,
+      'active': draft.active,
+    };
+    try {
+      if (draft.isEdit) {
+        await _client.from('accounts').update(payload).eq('id', draft.id!);
+      } else {
+        await _client.from('accounts').insert(payload);
+      }
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(
+        '${error.code} ${error.message}'.contains('accounts_user_id_name_key')
+            ? 'Já existe uma conta com esse nome.'
+            : _friendlyWriteError(error),
+      );
+    }
+  }
+
+  @override
+  Future<void> setAccountActive(String id, {required bool active}) async {
+    try {
+      await _client.from('accounts').update({'active': active}).eq('id', id);
+    } on PostgrestException catch (error) {
+      throw FinanceWriteException(_friendlyWriteError(error));
+    }
+  }
+
+  @override
   Future<void> saveHolder(HolderDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
@@ -346,6 +384,18 @@ class SupabaseFinanceRepository implements FinanceRepository {
     } on PostgrestException catch (error) {
       throw FinanceWriteException(_friendlyWriteError(error));
     }
+  }
+
+  @override
+  Future<List<ImportBatch>> loadImportBatches() async {
+    final rows = await _client
+        .from('import_batches')
+        .select()
+        .order('created_at', ascending: false)
+        .limit(200);
+    return (rows as List)
+        .map((json) => ImportBatch.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   @override
@@ -555,6 +605,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
       _client.from('review_queue').select('id').eq('status', 'pending'),
       _client.from('profiles').select('currency').limit(1).maybeSingle(),
       _client.from('holders').select().order('name'),
+      _client.from('accounts').select().eq('active', true).order('name'),
     ]);
     // The stored colour and icon are read now. They were written by the
     // schema's defaults from the first migration and ignored ever since: the
@@ -588,6 +639,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .toList(),
       holders: (results[7] as List)
           .map((json) => Holder.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      accounts: (results[8] as List)
+          .map((json) => Account.fromJson(json as Map<String, dynamic>))
           .toList(),
       pendingReviews: (results[5] as List).length,
       currencyCode:
