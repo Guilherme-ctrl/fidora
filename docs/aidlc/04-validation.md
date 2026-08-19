@@ -1158,3 +1158,59 @@ comportamento quebraram só porque a demo cresceu; eles leem o tamanho agora.
 | `flutter analyze --fatal-infos` | sem problemas |
 | `flutter test --exclude-tags golden` | **588 passam, 0 adiados** |
 | `flutter test --tags golden` | 33 passam, com a fila entre elas |
+
+## Spike — dá para descobrir o ramo pelo Pix? (2026-08-19)
+
+Pergunta do dono: existe API grátis para pegar o nome do Pix e inferir o ramo de
+atuação.
+
+### A parte que a pesquisa fechou
+
+**Chave Pix → nome não tem caminho grátis.** O DICT faz exatamente isso, mas o
+acesso é restrito a participantes do arranjo, auditado transação a transação e
+limitado por bucket de token por usuário final. O desenho é deliberadamente
+hostil a quem quer montar base de nomes. Precisaria ser cliente de um PSP com
+CNPJ.
+
+**Nome → ramo, com CNPJ em mãos, é grátis e bom.** O CNAE vem da Receita
+Federal, exposto por OpenCNPJ (sem autenticação, 50 req/s), BrasilAPI, ou
+Minha Receita — este último auto-hospedável a partir do dump mensal da Receita,
+que é a única forma de não contar a um terceiro quais empresas o dono paga.
+
+### O que o spike construiu
+
+A pergunta que decide tudo não é "existe API", é **"quantos lançamentos meus
+trazem CNPJ"**. Sem esse número a discussão é opinião.
+
+| Arquivo | O que faz |
+|---|---|
+| `lib/domain/merchant_identity.dart` | lê a descrição do extrato e classifica quem foi pago: empresa (CNPJ válido), pessoa (CPF), documento mascarado, Pix só com nome, ou outro |
+| `tool/statement_coverage.dart` | roda num extrato CSV e imprime só percentuais |
+| `test/merchant_identity_test.dart` | 10 casos nos formatos reais dos bancos |
+
+**Os dígitos verificadores são o ponto.** Uma sequência de catorze dígitos num
+extrato é mais frequentemente um id de transação do que uma empresa; contá-la
+como CNPJ tornaria o número de cobertura mentira, que é a única coisa que este
+spike não pode ser.
+
+**Nenhum extrato real entrou no repositório**, e não deve entrar — `AGENTS.md`
+proíbe. Os testes usam linhas sintéticas nos formatos reais, com documentos que
+passam no próprio dígito verificador e não pertencem a ninguém. A ferramenta
+roda na máquina do dono, imprime só contagem, e a amostra opcional troca dígitos
+e nomes por `#` antes de mostrar formato.
+
+### O número que ainda falta
+
+O do dono. A ferramenta existe justamente porque eu não tenho — e não deveria
+ter — o extrato dele.
+
+### O que o spike já indica
+
+O CNPJ, quando aparece, aparece **uma vez por empresa**. Duas compras na mesma
+padaria são uma consulta, não duas. Isso encaixa com `merchant_rules`: a
+sugestão de CNAE alimentaria a fila de revisão com confiança, e a regra aceita
+faz aquele estabelecimento nunca mais voltar.
+
+E há um caminho melhor para cartão que não depende de nada disso: o **MCC**, que
+a bandeira já atribui. Vale conferir se o extrato traz antes de investir em
+casar nome com empresa.
