@@ -5,8 +5,14 @@ import 'package:financeiro_ai/presentation/widgets/statement_context_sheet.dart'
 import 'package:flutter_test/flutter_test.dart';
 
 CreditCard _card({int closingDay = 20}) => CreditCard(
-  id: 'c', name: 'Nubank', bank: 'Nu', lastFour: '1234',
-  limit: 10000, closingDay: closingDay, dueDay: 27, holder: 'Você',
+  id: 'c',
+  name: 'Nubank',
+  bank: 'Nu',
+  lastFour: '1234',
+  limit: 10000,
+  closingDay: closingDay,
+  dueDay: 27,
+  holder: 'Você',
 );
 
 StatementParse _parse(String csv) =>

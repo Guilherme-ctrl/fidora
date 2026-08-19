@@ -578,7 +578,9 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<String> receiptUrl(String path) async {
     final url = _receipts[path];
-    if (url == null) throw const FinanceWriteException('Comprovante não encontrado.');
+    if (url == null) {
+      throw const FinanceWriteException('Comprovante não encontrado.');
+    }
     return url;
   }
 

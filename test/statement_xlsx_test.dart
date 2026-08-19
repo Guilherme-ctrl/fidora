@@ -19,7 +19,11 @@ Uint8List _xlsx(List<List<CellValue?>> rows) {
 void main() {
   test('reads a sheet the parser then understands', () {
     final bytes = _xlsx([
-      [TextCellValue('Data'), TextCellValue('Descrição'), TextCellValue('Valor')],
+      [
+        TextCellValue('Data'),
+        TextCellValue('Descrição'),
+        TextCellValue('Valor'),
+      ],
       [
         TextCellValue('15/08/2026'),
         TextCellValue('PADARIA CENTRAL'),
@@ -38,7 +42,11 @@ void main() {
     // XLSX carries dates as a type, not a string. Handing the parser whatever
     // toString() produced would make it guess a locale.
     final bytes = _xlsx([
-      [TextCellValue('Data'), TextCellValue('Descrição'), TextCellValue('Valor')],
+      [
+        TextCellValue('Data'),
+        TextCellValue('Descrição'),
+        TextCellValue('Valor'),
+      ],
       [
         DateCellValue(year: 2026, month: 8, day: 15),
         TextCellValue('MERCADO'),
@@ -52,7 +60,11 @@ void main() {
 
   test('reads a numeric amount cell', () {
     final bytes = _xlsx([
-      [TextCellValue('Data'), TextCellValue('Descrição'), TextCellValue('Valor')],
+      [
+        TextCellValue('Data'),
+        TextCellValue('Descrição'),
+        TextCellValue('Valor'),
+      ],
       [
         TextCellValue('15/08/2026'),
         TextCellValue('MERCADO'),
@@ -66,7 +78,11 @@ void main() {
 
   test('treats an empty cell as empty rather than as the word null', () {
     final bytes = _xlsx([
-      [TextCellValue('Data'), TextCellValue('Descrição'), TextCellValue('Valor')],
+      [
+        TextCellValue('Data'),
+        TextCellValue('Descrição'),
+        TextCellValue('Valor'),
+      ],
       [TextCellValue('15/08/2026'), null, TextCellValue('10,00')],
       [
         TextCellValue('16/08/2026'),

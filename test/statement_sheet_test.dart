@@ -60,18 +60,21 @@ void main() {
       expect(parse.rows, hasLength(1));
     });
 
-    test('binds the amount column to the exact header, not a totals column', () {
-      // "valor" is contained in "valor total"; a contains-first search would
-      // read every row's amount from the wrong column.
-      final parse = parseStatementSheet(
-        _sheet([
-          ['Data', 'Descrição', 'Valor total acumulado', 'Valor'],
-          ['15/08/2026', 'MERCADO', '9999,00', '42,00'],
-        ]),
-      );
+    test(
+      'binds the amount column to the exact header, not a totals column',
+      () {
+        // "valor" is contained in "valor total"; a contains-first search would
+        // read every row's amount from the wrong column.
+        final parse = parseStatementSheet(
+          _sheet([
+            ['Data', 'Descrição', 'Valor total acumulado', 'Valor'],
+            ['15/08/2026', 'MERCADO', '9999,00', '42,00'],
+          ]),
+        );
 
-      expect(parse.rows.single.amount, 42);
-    });
+        expect(parse.rows.single.amount, 42);
+      },
+    );
 
     test('says what is missing when the columns are not there', () {
       expect(

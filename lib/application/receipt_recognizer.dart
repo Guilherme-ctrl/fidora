@@ -57,8 +57,7 @@ class UnavailableReceiptRecognizer implements ReceiptRecognizer {
   bool get isSupported => false;
 
   @override
-  Future<ReceiptScan> scan(String imagePath) async =>
-      const ReceiptScan.empty();
+  Future<ReceiptScan> scan(String imagePath) async => const ReceiptScan.empty();
 
   @override
   Future<void> dispose() async {}

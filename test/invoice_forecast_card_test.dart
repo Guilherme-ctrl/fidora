@@ -200,7 +200,10 @@ void main() {
           _tx(date: DateTime(2026, 9, 3), amount: 100),
           _tx(date: DateTime(2026, 9, 4), amount: 900, lastFour: '5678'),
         ],
-        cards: [_card(), _card(lastFour: '5678', name: 'Itaú')],
+        cards: [
+          _card(),
+          _card(lastFour: '5678', name: 'Itaú'),
+        ],
       ),
       today,
     );
@@ -238,7 +241,9 @@ void main() {
     expect(bar, findsWidgets);
 
     final flexes = tester
-        .widgetList<Expanded>(find.descendant(of: bar.first, matching: find.byType(Expanded)))
+        .widgetList<Expanded>(
+          find.descendant(of: bar.first, matching: find.byType(Expanded)),
+        )
         .map((e) => e.flex)
         .toList();
     expect(flexes, [571, 286, 143]);

@@ -145,6 +145,9 @@ void main() {
       _snapshot([..._baseline(), _tx(date: DateTime(2026, 9, 5), amount: 800)]),
     );
 
-    expect(find.textContaining('Nada aqui é estimado por texto'), findsOneWidget);
+    expect(
+      find.textContaining('Nada aqui é estimado por texto'),
+      findsOneWidget,
+    );
   });
 }

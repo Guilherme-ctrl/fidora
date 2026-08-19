@@ -124,7 +124,9 @@ List<InvoiceForecast> forecastInvoices(
   int cycles = 3,
 }) =>
     snapshot.cards
-        .map((card) => forecastInvoice(snapshot, card, now: now, cycles: cycles))
+        .map(
+          (card) => forecastInvoice(snapshot, card, now: now, cycles: cycles),
+        )
         .whereType<InvoiceForecast>()
         .toList()
       ..sort((a, b) => b.total.compareTo(a.total));

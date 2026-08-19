@@ -21,8 +21,7 @@ class _FakeRecognizer implements ReceiptRecognizer {
   bool get isSupported => true;
 
   @override
-  Future<ReceiptScan> scan(String imagePath) async =>
-      const ReceiptScan.empty();
+  Future<ReceiptScan> scan(String imagePath) async => const ReceiptScan.empty();
 
   @override
   Future<void> dispose() async {}
@@ -137,7 +136,10 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('Li na nota: PADARIA CENTRAL'), findsOneWidget);
+      expect(
+        find.textContaining('Li na nota: PADARIA CENTRAL'),
+        findsOneWidget,
+      );
       expect(find.text('Preencher os campos vazios'), findsOneWidget);
     });
 

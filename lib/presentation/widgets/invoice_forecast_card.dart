@@ -219,11 +219,7 @@ class _Bar extends StatelessWidget {
 }
 
 class _Part extends StatelessWidget {
-  const _Part({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _Part({required this.label, required this.value, required this.color});
   final String label;
   final double value;
   final Color color;

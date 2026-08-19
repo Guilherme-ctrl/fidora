@@ -201,20 +201,23 @@ void main() {
       expect(insights, isEmpty);
     });
 
-    test('does not invent a percentage from a category that was never used', () {
-      final insights = buildInsights(
-        _snapshot([
-          ..._baseline(),
-          _tx(date: DateTime(2026, 9, 5), amount: 400),
-          _tx(date: DateTime(2026, 9, 6), amount: 900, category: 'Viagem'),
-        ]),
-        september,
-        money: _money,
-      );
+    test(
+      'does not invent a percentage from a category that was never used',
+      () {
+        final insights = buildInsights(
+          _snapshot([
+            ..._baseline(),
+            _tx(date: DateTime(2026, 9, 5), amount: 400),
+            _tx(date: DateTime(2026, 9, 6), amount: 900, category: 'Viagem'),
+          ]),
+          september,
+          money: _money,
+        );
 
-      // Viagem has no baseline to be a percentage of, so it is left alone.
-      expect(insights.where((e) => e.category == 'Viagem'), isEmpty);
-    });
+        // Viagem has no baseline to be a percentage of, so it is left alone.
+        expect(insights.where((e) => e.category == 'Viagem'), isEmpty);
+      },
+    );
   });
 
   group('price changes', () {
@@ -396,9 +399,9 @@ void main() {
       expect(insights.first.category, 'Alimentação');
       expect(
         insights.map((e) => e.weight).toList(),
-        orderedEquals([
-          for (final e in insights) e.weight,
-        ]..sort((a, b) => b.compareTo(a))),
+        orderedEquals(
+          [for (final e in insights) e.weight]..sort((a, b) => b.compareTo(a)),
+        ),
       );
     });
 
@@ -443,6 +446,9 @@ void main() {
   });
 
   test('says nothing at all on an empty ledger', () {
-    expect(buildInsights(_snapshot(const []), september, money: _money), isEmpty);
+    expect(
+      buildInsights(_snapshot(const []), september, money: _money),
+      isEmpty,
+    );
   });
 }

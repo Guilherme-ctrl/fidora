@@ -359,11 +359,7 @@ void main() {
     });
 
     test('forecastInvoices skips them and sorts heaviest first', () {
-      final cards = [
-        _card(),
-        _card(lastFour: '5678'),
-        _card(lastFour: '0000'),
-      ];
+      final cards = [_card(), _card(lastFour: '5678'), _card(lastFour: '0000')];
       final forecasts = forecastInvoices(
         _snapshot([
           _tx(date: DateTime(2026, 9, 3), amount: 100),

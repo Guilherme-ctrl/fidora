@@ -102,8 +102,10 @@ void main() {
     final service = _FakeReminderService();
     await _pump(tester, service);
 
-    expect(tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
-        isFalse);
+    expect(
+      tester.widget<SwitchListTile>(find.byType(SwitchListTile)).value,
+      isFalse,
+    );
     expect(find.textContaining('avisa antes de cada fatura'), findsOneWidget);
     expect(service.syncs, isEmpty);
   });
@@ -187,7 +189,10 @@ void main() {
     await _pump(tester, service);
 
     expect(find.text('O que está agendado'), findsOneWidget);
-    expect(find.textContaining('Fatura Nubank vence em 3 dias'), findsOneWidget);
+    expect(
+      find.textContaining('Fatura Nubank vence em 3 dias'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the knobs are inert while reminders are off', (tester) async {

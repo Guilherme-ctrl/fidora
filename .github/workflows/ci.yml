@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: Analyze and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 3.47.0
+          channel: stable
+          cache: true
+
+      - run: flutter pub get
+
+      - name: Formatting
+        # `--set-exit-if-changed` rather than a reformat commit: the diff a
+        # formatter produces on someone else's branch is noise in review.
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - run: flutter analyze --fatal-infos
+
+      - run: flutter test
+
+  database:
+    name: Database tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Starts Postgres, Auth and Storage in containers and applies every
+      # migration in order. This is the point of the job: the SQL below has
+      # never been exercised anywhere else — the app's own tests run against an
+      # in-memory repository and cannot reach a constraint, a policy or an RPC.
+      - name: Start Supabase
+        run: supabase start --exclude studio,realtime,inbucket,imgproxy,edge-runtime
+
+      - name: Migrations apply from scratch
+        # A migration that only works against the current production database
+        # is a migration that cannot be replayed. `supabase start` has already
+        # applied them; this proves the reset path too.
+        run: supabase db reset
+
+      - name: pgTAP
+        run: supabase test db
+
+      - name: Edge function tests
+        run: |
+          deno test supabase/functions/capture-transaction/rules_test.ts
+
+      - name: Show logs on failure
+        if: failure()
+        run: supabase status || true
