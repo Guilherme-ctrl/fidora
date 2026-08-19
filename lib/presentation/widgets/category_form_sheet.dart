@@ -129,11 +129,10 @@ class _CategoryFormState extends State<_CategoryForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                widget.existing == null ? 'Nova categoria' : 'Editar categoria',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+              SheetHeader(
+                title: widget.existing == null
+                    ? 'Nova categoria'
+                    : 'Editar categoria',
               ),
               const SizedBox(height: 20),
               // A live preview, because the colour and icon are what make a

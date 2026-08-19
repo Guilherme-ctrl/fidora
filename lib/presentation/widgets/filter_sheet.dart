@@ -77,25 +77,17 @@ class _FilterSheetState extends State<_FilterSheet> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'Filtros',
-                        style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(fontWeight: FontWeight.w900),
+                const SheetHeader(title: 'Filtros'),
+                if (!_draft.isClear)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton(
+                      onPressed: () => setState(
+                        () => _draft = TransactionFilter(query: _draft.query),
                       ),
+                      child: const Text('Limpar filtros'),
                     ),
-                    if (!_draft.isClear)
-                      TextButton(
-                        onPressed: () => setState(
-                          () => _draft = TransactionFilter(query: _draft.query),
-                        ),
-                        child: const Text('Limpar'),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
+                  ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
                   value: _draft.ignorePeriod,

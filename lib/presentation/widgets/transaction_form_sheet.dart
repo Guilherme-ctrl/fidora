@@ -255,13 +255,10 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  widget.existing == null
+                SheetHeader(
+                  title: widget.existing == null
                       ? 'Nova transação'
                       : 'Editar transação',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
                 ),
                 const SizedBox(height: 20),
                 SegmentedButton<bool>(

@@ -148,11 +148,10 @@ class _CardFormState extends State<_CardForm> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                widget.existing == null ? 'Novo cartão' : 'Editar cartão',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+              SheetHeader(
+                title: widget.existing == null
+                    ? 'Novo cartão'
+                    : 'Editar cartão',
               ),
               const SizedBox(height: 8),
               Text(

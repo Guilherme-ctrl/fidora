@@ -1274,3 +1274,21 @@ inconsistente, e vale ver antes de decidir.
 
 **E o card passou a dizer o que "Corrigir" faz num grupo:** resolve um, os
 outros continuam. Antes o botão não contava isso e o comportamento surpreendia.
+
+### Nenhuma saída dos formulários (2026-08-19)
+
+O dono: a tela de editar/criar transação não tem botão de voltar.
+
+Não tinha, e nem ela nem outras quatro. `showResponsiveSurface` entrega a
+superfície e nenhuma moldura, e cinco dos seis formulários desenhavam um título
+e mais nada. **No telefone a alça de arrastar escondia a falha**; no dialog e no
+painel lateral não havia saída visível nenhuma — só `Esc` ou um toque na
+barreira, e nenhum dos dois é coisa que alguém veja.
+
+`SheetHeader` resolve nos cinco de uma vez, e o rótulo é **"Fechar sem salvar"**,
+não "Fechar": num formulário de lançamento, o que acontece com o que já foi
+digitado é a única pergunta que importa.
+
+`sheet_exit_test.dart` abre e fecha nas três larguras, porque foi justamente a
+largura em que eu testei — o telefone, com alça — que escondeu o problema das
+outras duas.

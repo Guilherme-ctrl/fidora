@@ -134,11 +134,8 @@ class _GoalFormState extends State<_GoalForm> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              widget.existing == null ? 'Nova meta' : 'Editar meta',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+            SheetHeader(
+              title: widget.existing == null ? 'Nova meta' : 'Editar meta',
             ),
             const SizedBox(height: 20),
             TextField(

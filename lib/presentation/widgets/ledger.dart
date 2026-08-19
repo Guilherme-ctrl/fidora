@@ -944,3 +944,68 @@ Future<T?> showResponsiveSurface<T>(
     ),
   );
 }
+
+/// The head of a form, with the way out.
+///
+/// `showResponsiveSurface` gives a form the surface and no chrome, and five of
+/// the six forms then drew a title and nothing else. On a phone the drag handle
+/// hid the omission; in a dialog and in the side panel there was no visible way
+/// to leave a half-typed transaction at all — only Escape or a tap on the
+/// barrier, neither of which is a thing anyone can see.
+class SheetHeader extends StatelessWidget {
+  const SheetHeader({
+    super.key,
+    required this.title,
+    this.subtitle,
+    this.onClose,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  /// Defaults to popping the route, which is what every one of these wants.
+  final VoidCallback? onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.md),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(title, style: context.type.titleLg),
+                if (subtitle != null) ...[
+                  const SizedBox(height: Space.xxs),
+                  Text(
+                    subtitle!,
+                    style: context.type.bodySm.copyWith(
+                      color: palette.inkMuted,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: Space.xs),
+          Semantics(
+            button: true,
+            label: 'Fechar sem salvar',
+            child: IconButton(
+              tooltip: 'Fechar sem salvar',
+              iconSize: 18,
+              visualDensity: VisualDensity.compact,
+              onPressed: onClose ?? () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
