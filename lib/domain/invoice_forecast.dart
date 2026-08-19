@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/domain/models.dart';
 
@@ -74,7 +75,7 @@ InvoiceForecast? forecastInvoice(
   DateTime? now,
   int cycles = 3,
 }) {
-  final moment = now ?? DateTime.now();
+  final moment = now ?? clock.now();
   final today = DateTime(moment.year, moment.month, moment.day);
   final competence = invoiceCompetence(today, card.closingDay);
   final closingDate = _closingDate(competence, card.closingDay);

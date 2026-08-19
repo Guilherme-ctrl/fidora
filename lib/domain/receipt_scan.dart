@@ -1,3 +1,5 @@
+import 'package:clock/clock.dart';
+
 /// What could be read off a photographed receipt.
 ///
 /// Every field is nullable, and that is the design. Prefilling a wrong amount
@@ -156,7 +158,7 @@ String? _findMerchant(List<String> lines) {
 }
 
 DateTime? _findDate(List<String> lines, {DateTime? now}) {
-  final today = now ?? DateTime.now();
+  final today = now ?? clock.now();
   final pattern = RegExp(r'(\d{2})/(\d{2})/(\d{2,4})');
 
   for (final line in lines) {

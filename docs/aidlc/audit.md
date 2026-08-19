@@ -209,3 +209,27 @@ recorded verbatim and is never summarized.
 **Context**: Operations — primeira aplicação em produção nesta sessão. Projeto ddmilzlinvpxfvzyigok (Finora), sa-east-1.
 
 ---
+
+## Inception — Requirements Analysis (segunda correção de paleta)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Bem melhor, mas esse bege/amarelo precisa sair"
+**AI Response**: "Correto duas vezes: o latão reintroduzia por trás a mesma temperatura quente que o bege do fundo tinha acabado de perder. Amarelo, ocre e âmbar saíram do sistema inteiro. O acento vira azul-caneta — `#1D4E89` no claro, `#7FB0E8` no escuro, 8.0:1 e 8.5:1 — e só aparece onde há ação: pauta ativa, foco e item em revisão. Como consequência, `pending` deixou de ser cor de alarme e passou a ser a mesma tinta: um lançamento aguardando revisão é tarefa, não problema; vermelho fica só para problema de verdade. A paleta categórica perdeu o ocre `#B8892E` e foi refeita espalhando também a claridade (L* 42, 32, 58, 42, 65, 28), que é o que de fato mantém as seis distinguíveis em deuteranopia. O nome do design system volta a ser Ledger, coerente com o título do protótipo e com 'Razão', a primeira opção do documento de naming."
+**Context**: Inception / Requirements Analysis — segunda iteração de direção visual. Nenhum código de aplicação alterado.
+
+---
+
+## Inception — Workflow Planning (aplicação do design system no código)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Pode fazer um plano de como aplicar esse design system no código"
+**AI Response**: "`docs/design/07-implementation-plan.md`, com o tamanho medido no código e não estimado: 270 chamadas a `context.palette`, 199 `TextStyle` literais, 165 `EdgeInsets`, 88 `currency.format`, 30 `Card` brutos na apresentação, 22 sheets/dialogs, 24 `Chip`, 39 `FilledButton`. Duas descobertas mudam a ordem do trabalho. A primeira: `common.dart` já concentra cinco classes com 80 pontos de uso somados — `DetailValue` sozinho tem 49 — então reescrever esses cinco muda a maior parte da aparência sem tocar em página nenhuma. A segunda: nenhum teste procura por `Card`, `NavigationBar`, `NavigationRail`, `ListTile`, `FilledButton` ou `Chip`, e `theme_test.dart` já é um arnês genérico de contraste WCAG que só precisa ser estendido — a troca de componentes não briga com os 378 testes, exceto dois `find.byIcon` em `insights_card_test.dart`. A parte que não é mecânica está isolada e nomeada: `palette.brand` (71) e `palette.danger` (74) precisam ser divididos entre ação/ênfase e saída-comum/problema, ~145 decisões semânticas — a tática é fazer `AmountText` absorver a maioria antes de migrar, por isso a camada de componentes vem antes da migração de tokens. Oito PRs, cada um compilando e publicável sozinho, ~12 dias; os três primeiros (~3,5 dias) já entregam a maior parte da mudança visual. Ponte de migração por getters `@Deprecated` no PR 1, removidos no PR 5, com `dart analyze` limpo como critério. PR 4 (roteamento) é independente do visual e pode correr em paralelo."
+**Context**: Inception / Workflow Planning — plano de execução. Nenhum código alterado; aguardando aprovação para iniciar o PR 0.
+
+---
+
+## Construction — Code Generation (PR 0: rede de segurança do remake)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Sim, pode começar pelo PR 0"
+**AI Response**: "PR 0 entregue, e ele fez mais do que devia. Primeiro um bloqueio que o plano não previa: golden só vale se for determinístico, e a demo mais quatro derivações do domínio liam `DateTime.now()` direto — a fatura 'fecha em N dias' mudaria de valor todo dia. Introduzi `package:clock` como costura única; os cinco `DateTime.now()` que ficaram estão no repositório Supabase e escrevem carimbo real no banco, então devem mesmo seguir o relógio de parede. Isso me obrigou a tocar `lib/domain`, que o plano dizia não tocar — é mudança de comportamento nula (`clock.now()` é `DateTime.now()` sem sobrescrita) e sem ela o PR 0 não existe. Depois, a linha de base encontrou cinco overflows já em produção, todos em telefone e nenhum com teste: rótulo do passo Apple Pay (66px a 390pt), par realizado/meta na projeção (28px), `Spacer` entre dois valores nas metas (66px a 1.3x), legenda da previsão (30px a 1.3x) e o total previsto (42px a 2.0x). Corrigi os cinco. Restaram dois estruturais — `MetricCard` e a grade de categorias, ambos de proporção fixa, ambos substituídos nos PRs 2 e 3 — marcados como `skip` com o motivo no nome do teste em vez de silenciados, porque corrigir agora seria corrigir duas vezes. Entreguei 24 goldens, o arnês de contraste extraído para `test/support/contrast.dart` e `page_overflow_test.dart` com 36 casos que rodam no CI, já que golden de macOS não bate com golden de Linux. Fixei a densidade em 1:1 no lugar do 3x padrão: as mesmas imagens caíram de 5,7 MB para 1,3 MB e a suíte de 20s para 7s. Verificação: format 97 arquivos sem mudança, analyze limpo, 457 testes passam e 6 adiados, goldens estáveis em duas execuções. Limite conhecido e registrado: o texto renderiza como retângulo até as fontes entrarem no PR 1."
+**Context**: Construction / Code Generation — PR 0. Nada enviado ao remoto; nenhum commit feito.
+
+---

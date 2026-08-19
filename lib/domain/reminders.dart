@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
 
@@ -43,7 +44,7 @@ List<DueReminder> dueReminders(
   required int hour,
   DateTime? now,
 }) {
-  final moment = now ?? DateTime.now();
+  final moment = now ?? clock.now();
   final reminders = <DueReminder>[];
 
   for (final invoice in snapshot.invoices) {

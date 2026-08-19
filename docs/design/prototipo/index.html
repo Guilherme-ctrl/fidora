@@ -4,7 +4,7 @@
 :root{
   --c-bg:#EBECE9; --c-panel:#FBFBF9; --c-ink:#0E1112; --c-muted:#565E5F;
   --c-faint:#7C8586; --c-line:#DCDEDA; --c-line2:#C3C7C2;
-  --c-accent:#8A6A18; --c-accent-ink:#5E4810; --c-accent-soft:#F2EBD7;
+  --c-accent:#1D4E89; --c-accent-ink:#143A67; --c-accent-soft:#E6EDF7;
   --c-onaccent:#FFFFFF; --c-flag:#A33A1F; --c-shadow:0 1px 2px rgba(20,30,25,.06),0 12px 34px -12px rgba(20,30,25,.22);
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
   --ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
@@ -13,14 +13,14 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --c-bg:#090B0B; --c-panel:#121514; --c-ink:#EDEFEC; --c-muted:#98A1A0;
   --c-faint:#798382; --c-line:#212625; --c-line2:#333937;
-  --c-accent:#D9B860; --c-accent-ink:#E9D296; --c-accent-soft:#221D0F;
-  --c-onaccent:#151206; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
+  --c-accent:#7FB0E8; --c-accent-ink:#A8CBF2; --c-accent-soft:#111A24;
+  --c-onaccent:#08111C; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
 }}
 :root[data-theme="dark"]{
   --c-bg:#090B0B; --c-panel:#121514; --c-ink:#EDEFEC; --c-muted:#98A1A0;
   --c-faint:#798382; --c-line:#212625; --c-line2:#333937;
-  --c-accent:#D9B860; --c-accent-ink:#E9D296; --c-accent-soft:#221D0F;
-  --c-onaccent:#151206; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
+  --c-accent:#7FB0E8; --c-accent-ink:#A8CBF2; --c-accent-soft:#111A24;
+  --c-onaccent:#08111C; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
 }
 
 /* ============ APP TOKENS — "Fólio": tinta sobre papel, pautado a latão ============ */
@@ -29,22 +29,22 @@
   --a-ink:#0E1112; --a-muted:#525A5B; --a-subtle:#6B7476;
   --a-rule:#E3E5E1; --a-rule2:#C7CBC6; --a-rule3:#0E1112;
   --a-brand:#0E1112; --a-onbrand:#FBFBF9;
-  --a-accent:#8A6A18; --a-accent-soft:#F4EDD9;
-  --a-income:#0B6B4F; --a-negative:#A33A1F; --a-pending:#8A6A18;
-  --a-pendbg:#F4EDD9; --a-ignored:#8B9394;
+  --a-accent:#1D4E89; --a-accent-soft:#E8EEF7;
+  --a-income:#0B6B4F; --a-negative:#A33A1F; --a-pending:#1D4E89;
+  --a-pendbg:#E8EEF7; --a-ignored:#8B9394;
   --a-card:linear-gradient(148deg,#14181A 0%,#252E2E 55%,#3A4441 100%);
-  --a-c1:#2F6F5B; --a-c2:#3B5C8A; --a-c3:#B8892E; --a-c4:#A8452F; --a-c5:#5A7D8C; --a-c6:#7A5A8C;
+  --a-c1:#2F6F5B; --a-c2:#2A4779; --a-c3:#9B7BB8; --a-c4:#A8452F; --a-c5:#7FA0B0; --a-c6:#6E2F45;
 }
 [data-app="dark"]{
   --a-canvas:#0E1112; --a-surface:#161A1B; --a-sunken:#0A0D0D;
   --a-ink:#EDEFEC; --a-muted:#9AA3A2; --a-subtle:#7F8988;
   --a-rule:#232827; --a-rule2:#343A39; --a-rule3:#EDEFEC;
   --a-brand:#EDEFEC; --a-onbrand:#0E1112;
-  --a-accent:#D9B860; --a-accent-soft:#241E10;
-  --a-income:#5CC79B; --a-negative:#E5836A; --a-pending:#D9B860;
-  --a-pendbg:#241E10; --a-ignored:#6E7877;
+  --a-accent:#7FB0E8; --a-accent-soft:#121A24;
+  --a-income:#5CC79B; --a-negative:#E5836A; --a-pending:#7FB0E8;
+  --a-pendbg:#121A24; --a-ignored:#6E7877;
   --a-card:linear-gradient(148deg,#0C0F10 0%,#1E2626 55%,#333D3A 100%);
-  --a-c1:#5CC79B; --a-c2:#7C9BD1; --a-c3:#D9B860; --a-c4:#E5836A; --a-c5:#93B4C4; --a-c6:#B197C4;
+  --a-c1:#5CC79B; --a-c2:#7C9BD1; --a-c3:#C3A8DC; --a-c4:#E5836A; --a-c5:#A9C6D6; --a-c6:#C97D9A;
 }
 
 *{box-sizing:border-box}
@@ -225,7 +225,7 @@ table.led .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;
 table.led tr.sel td{box-shadow:inset 2px 0 0 var(--a-accent)}
 .bulkbar{display:flex;align-items:center;gap:12px;background:var(--a-ink);color:var(--a-canvas);
   border-radius:5px;padding:9px 13px;font-size:12.5px;font-weight:500;margin-top:16px}
-.bulkbar button{border:1px solid rgba(150,150,150,.4);border-radius:4px;padding:3px 9px;font-size:11.5px}
+.bulkbar button{border:1px solid rgba(150,150,150,.4);border-radius:4px;padding:3px 9px;font-size:11.5px;white-space:nowrap}
 
 .bar{height:4px;background:var(--a-rule);overflow:hidden}
 .bar i{display:block;height:100%;background:var(--a-ink)}
@@ -470,8 +470,8 @@ visao:()=>`${mhead('Visão geral','Indicadores de agosto de 2026',true)}
 
 historico:()=>`${mhead('Histórico','1.284 lançamentos · 10 no período filtrado',true)}
  <div class="mbody">
-  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-   <div class="pchip" style="flex:1;min-width:180px;color:var(--a-subtle)">⌕ Buscar comerciante ou categoria <kbd style="float:right;font-family:var(--mono);font-size:10px">/</kbd></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:2px">
+   <div class="pchip" style="flex:1;min-width:150px;color:var(--a-subtle);border:1px solid var(--a-rule2);border-radius:5px;display:flex;justify-content:space-between;align-items:center;gap:8px;white-space:nowrap;overflow:hidden">⌕ Buscar comerciante ou categoria<kbd style="font-family:var(--mono);font-size:10px">/</kbd></div>
    <button class="pchip" aria-pressed="true">Mercado ✕</button><button class="pchip" aria-pressed="true">Nubank ·1847 ✕</button>
    <button class="pchip">+ Filtro</button></div>
   <div class="bulkbar">2 selecionados<button>Recategorizar</button><button>Marcar como ignorado</button><button>Exportar</button>
@@ -621,24 +621,25 @@ const panelSistema=()=>`<div class="dsgrid">
   <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
    O <code style="font-family:var(--mono);font-size:11px">#F5F3EC</code> anterior era o <b style="color:var(--c-ink)">surface tint</b> do Material 3 vestido de bege. Ele obrigava tudo a virar card branco flutuando — a assinatura visual que o produto quer perder.</p></div>
 
- <div class="dscard"><h4>Latão, não verde institucional</h4>
-  ${SW('accent','#8A6A18','#D9B860','pauta, foco, atalho')}
-  ${SW('accent/soft','#F4EDD9','#241E10','linha sob o cursor')}
+ <div class="dscard"><h4>Tinta de caneta, não cor de marca</h4>
+  ${SW('accent','#1D4E89','#7FB0E8','pauta ativa, foco, revisão')}
+  ${SW('accent/soft','#E8EEF7','#121A24','linha sob o cursor')}
   ${SW('brand (ação)','#0E1112','#EDEFEC','o botão é tinta')}
   <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
-   <b style="color:var(--c-ink)">O botão primário deixa de ser colorido.</b> Botão tonal na cor da semente é o default do Material e o maior delator de app gerado. Ação primária vira tinta sólida; o latão fica para pauta, foco e estado.</p></div>
+   <b style="color:var(--c-ink)">O botão primário deixa de ser colorido.</b> Botão tonal na cor da semente é o default do Material e o maior delator de app gerado. Ação primária vira tinta sólida.
+   O azul é o azul-caneta do livro-razão e aparece só onde há <b style="color:var(--c-ink)">ação</b>: pauta ativa, foco, item em revisão. Amarelo e ocre saíram do sistema inteiro — inclusive da paleta categórica.</p></div>
 
  <div class="dscard"><h4>Semântica de dinheiro</h4>
   ${SW('income','#0B6B4F','#5CC79B','sempre com +')}
   ${SW('expense','#0E1112','#EDEFEC','tinta, não vermelho')}
   ${SW('negative','#A33A1F','#E5836A','só problema')}
-  ${SW('pending','#8A6A18','#D9B860','em revisão')}
+  ${SW('pending','#1D4E89','#7FB0E8','em revisão = ação')}
   ${SW('ignored','#8B9394','#6E7877','fora do pessoal')}</div>
 
  <div class="dscard"><h4>Categórica — segura em daltonismo</h4>
-  <div style="display:flex;gap:6px;margin-bottom:12px">${['#2F6F5B','#3B5C8A','#B8892E','#A8452F','#5A7D8C','#7A5A8C']
+  <div style="display:flex;gap:6px;margin-bottom:12px">${['#2F6F5B','#2A4779','#9B7BB8','#A8452F','#7FA0B0','#6E2F45']
    .map(c=>`<i style="flex:1;height:42px;border-radius:3px;background:${c}"></i>`).join('')}</div>
-  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Aparece como <b style="color:var(--c-ink)">barra de 3px na marca do lançamento</b>, não como ícone. Ordem fixa por categoria — Mercado é sempre o mesmo verde, no painel e na projeção.</p></div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Aparece como <b style="color:var(--c-ink)">barra de 3px na marca do lançamento</b>, não como ícone. Ordem fixa por categoria. As seis matizes variam também em <b style="color:var(--c-ink)">claridade</b> — é isso, e não a matiz, que as mantém distinguíveis em deuteranopia.</p></div>
 
  <div class="dscard"><h4>Duas vozes numéricas</h4>
   <div class="tyrow"><code>display (serifa)</code><span class="num" style="font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.02em">3.482,10</span></div>
@@ -662,7 +663,7 @@ const panelSistema=()=>`<div class="dsgrid">
   <div style="border-top:2px solid var(--c-ink);padding-top:8px;margin-bottom:12px">
    ${[['ME','Mercado Extra','486,15'],['UB','Uber · 3 corridas','74,30'],['NF','Netflix','59,90']]
     .map(([k,n,v],i)=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-top:${i?'1px solid var(--c-line)':'0'};background:${i%2?'var(--c-bg)':'transparent'}">
-     <span style="font-family:var(--mono);font-size:9.5px;font-weight:600;border:1px solid var(--c-line2);border-left:3px solid var(--c-accent);border-radius:2px;padding:2px 4px">${k}</span>
+     <span style="font-family:var(--mono);font-size:9.5px;font-weight:600;border:1px solid var(--c-line2);border-left:3px solid #2F6F5B;border-radius:2px;padding:2px 4px">${k}</span>
      <span style="flex:1;font-size:12.5px">${n}</span>
      <span style="font-variant-numeric:tabular-nums;font-size:12.5px;padding-left:14px;border-left:1px solid var(--c-line);min-width:78px;text-align:right">−${v}</span></div>`).join('')}</div>
   <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">A coluna de valor é separada por uma pauta vertical e zebrada — a estrutura de um livro-razão de verdade, que também é o que faz o olho não perder a linha numa tela larga.</p></div>

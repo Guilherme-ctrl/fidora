@@ -542,3 +542,73 @@ push: fifteen unformatted files and one brace lint.
 - **The app has not been driven by hand against the production Supabase.** The
   browser pane here does not deliver clicks into the Flutter canvas; the
   overview was driven with synthesised wheel events, no other screen was.
+
+## PR 0 — rede de segurança do remake de UI (2026-08-19)
+
+Antes de mudar qualquer coisa de design, uma linha de base. O objetivo era
+tornar a mudança visível; o efeito colateral foi encontrar cinco overflows que
+já estavam em produção.
+
+### Costura de relógio
+
+Um golden só vale se for determinístico, e a demo e quatro derivações do domínio
+liam `DateTime.now()` direto — a fatura "fecha em N dias" mudaria de valor todo
+dia. Todas passaram a ler `clock.now()` (`package:clock`), que é
+`DateTime.now()` quando ninguém sobrescreve. Os cinco `DateTime.now()` que
+sobraram estão em `supabase_finance_repository.dart` e escrevem carimbo real no
+banco — esses devem mesmo seguir o relógio de parede.
+
+### Defeitos encontrados e corrigidos
+
+| Onde | Sintoma | Largura |
+|---|---|---|
+| `more_page.dart` `_Step` | rótulo do passo do Apple Pay estourava 66px | 390pt |
+| `projection_page.dart` | par realizado/meta estourava 28px | 390pt |
+| `more_page.dart` metas | `Spacer` entre dois valores rígidos, 66px | 390pt a 1.3x |
+| `invoice_forecast_card.dart` `_Part` | legenda estourava 30px | 390pt a 1.3x |
+| `invoice_forecast_card.dart` total | total previsto estourava 42px | 390pt a 2.0x |
+
+Todos são conteúdo que não podia ser visto, em telefone. Nenhum tinha teste.
+
+### Defeitos encontrados e adiados, com dono
+
+Dois restam, e são da mesma classe já corrigida uma vez no dashboard — célula de
+proporção fixa que não cresce com o texto:
+
+- `common.dart:138` (`MetricCard`) — substituído no PR 2
+- `categories_page.dart:82` (grade de proporção fixa) — substituído no PR 3
+
+Estão marcados como `skip` com o motivo no nome do teste, não silenciados.
+
+### O que passou a existir
+
+| Arquivo | O que faz |
+|---|---|
+| `test/support/contrast.dart` | arnês WCAG extraído de `theme_test.dart`, reusável pelos tokens novos |
+| `test/support/golden.dart` | pump com relógio, tamanho, escala de texto e densidade fixos |
+| `test/golden_test.dart` | 24 imagens: 6 páginas × 3 larguras em claro + 6 em escuro |
+| `test/page_overflow_test.dart` | 24 casos de layout + 12 de Dynamic Type, **rodando no CI** |
+| `insights_card.dart` | chave por tom, para o teste não depender do glifo do ícone |
+
+Densidade fixada em 1:1 em vez do 3× padrão do ambiente de teste: as mesmas 24
+imagens caíram de 5,7 MB para 1,3 MB e a suíte de golden de 20s para 7s.
+
+### Limite conhecido
+
+O texto renderiza como retângulo — o ambiente de teste não tem fonte real
+carregada e o produto ainda não empacota nenhuma. Os goldens registram layout,
+espaço, cor e hierarquia, que é o que mais muda; passam a registrar as formas
+das letras quando as fontes entrarem no PR 1.
+
+Os goldens não rodam no CI: uma imagem gerada no macOS não bate com uma gerada
+no Linux. Por isso os overflows têm teste próprio em `page_overflow_test.dart`,
+que roda. Localmente: `flutter test --tags golden`.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | 97 arquivos, 0 alterados |
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **457 passam, 6 adiados** |
+| `flutter test --tags golden` | 24 passam, estáveis em duas execuções seguidas |

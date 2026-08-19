@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:flutter/material.dart';
@@ -302,7 +303,7 @@ class PeriodFilterBar extends StatelessWidget {
     final result = await showDateRangePicker(
       context: context,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 1095)),
+      lastDate: clock.now().add(const Duration(days: 1095)),
       initialDateRange: DateTimeRange(
         start: period.start,
         end: period.endInclusive,
@@ -344,7 +345,7 @@ class PeriodFilterBar extends StatelessWidget {
         icon: const Icon(Icons.chevron_right_rounded),
       ),
       TextButton(
-        onPressed: () => onChanged(FinancePeriod.month(DateTime.now())),
+        onPressed: () => onChanged(FinancePeriod.month(clock.now())),
         child: const Text('Este mês'),
       ),
       OutlinedButton.icon(

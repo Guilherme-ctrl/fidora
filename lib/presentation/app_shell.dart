@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/reminder_service.dart';
 import 'package:financeiro_ai/core/theme.dart';
@@ -24,7 +25,7 @@ class AppShell extends ConsumerStatefulWidget {
 
 class _AppShellState extends ConsumerState<AppShell> {
   int index = 0;
-  FinancePeriod period = FinancePeriod.month(DateTime.now());
+  FinancePeriod period = FinancePeriod.month(clock.now());
 
   /// Five destinations, the Material maximum. Projeção used to be the sixth;
   /// it is derived data consulted occasionally, so it now lives behind "Mais"

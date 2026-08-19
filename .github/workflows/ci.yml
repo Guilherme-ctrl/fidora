@@ -31,7 +31,11 @@ jobs:
 
       - run: flutter analyze --fatal-infos
 
-      - run: flutter test
+      # Goldens are excluded: a reference image rendered on macOS does not
+      # match one rendered on Linux, and these exist to be looked at during
+      # design review, not to gate a merge. Run them locally with
+      # `flutter test --tags golden`.
+      - run: flutter test --exclude-tags golden
 
   database:
     name: Database tests

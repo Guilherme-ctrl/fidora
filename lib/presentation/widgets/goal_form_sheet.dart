@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
@@ -78,7 +79,7 @@ class _GoalFormState extends State<_GoalForm> {
   }
 
   Future<void> _pickDate() async {
-    final now = DateTime.now();
+    final now = clock.now();
     final picked = await showDatePicker(
       context: context,
       initialDate: _targetDate ?? DateTime(now.year + 1, now.month, now.day),

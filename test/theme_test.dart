@@ -1,31 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-/// WCAG relative luminance.
-double luminance(Color color) {
-  double channel(double raw) => raw <= 0.03928
-      ? raw / 12.92
-      : math.pow((raw + 0.055) / 1.055, 2.4).toDouble();
-  return 0.2126 * channel(color.r) +
-      0.7152 * channel(color.g) +
-      0.0722 * channel(color.b);
-}
-
-double contrast(Color a, Color b) {
-  final first = luminance(a);
-  final second = luminance(b);
-  final lighter = math.max(first, second);
-  final darker = math.min(first, second);
-  return (lighter + 0.05) / (darker + 0.05);
-}
+import 'support/contrast.dart';
 
 void main() {
   group('Contrast — the audit measured 3.2:1 and 4.0:1 here', () {
-    const aa = 4.5;
-
     for (final entry in {
       'light': FinoraPalette.light,
       'dark': FinoraPalette.dark,

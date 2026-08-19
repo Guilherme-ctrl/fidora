@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/domain/models.dart';
 
 enum InvoiceState { open, closed, paid, overdue }
@@ -10,7 +11,7 @@ enum InvoiceState { open, closed, paid, overdue }
 /// tell the truth.
 InvoiceState invoiceState(Invoice invoice, {DateTime? now}) {
   if (invoice.status == 'paid') return InvoiceState.paid;
-  final today = now ?? DateTime.now();
+  final today = now ?? clock.now();
   final due = DateTime(
     invoice.dueDate.year,
     invoice.dueDate.month,

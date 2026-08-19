@@ -99,21 +99,31 @@ class MorePage extends ConsumerWidget {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 const SizedBox(height: 6),
+                                // A Spacer between two rigid amounts has no
+                                // give: at 1.3x text the pair overflowed by
+                                // 66px. spaceBetween plus Flexible lets the
+                                // values wrap instead.
                                 Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
-                                      currency.format(goal.current),
-                                      style: TextStyle(
-                                        color: context.palette.inkMuted,
-                                        fontSize: 12,
+                                    Flexible(
+                                      child: Text(
+                                        currency.format(goal.current),
+                                        style: TextStyle(
+                                          color: context.palette.inkMuted,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
-                                    const Spacer(),
-                                    Text(
-                                      currency.format(goal.target),
-                                      style: TextStyle(
-                                        color: context.palette.inkMuted,
-                                        fontSize: 12,
+                                    Flexible(
+                                      child: Text(
+                                        currency.format(goal.target),
+                                        textAlign: TextAlign.end,
+                                        style: TextStyle(
+                                          color: context.palette.inkMuted,
+                                          fontSize: 12,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -583,7 +593,14 @@ class _Step extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        // Unbounded, the label overflowed the row by 66px at 390pt — the
+        // width of an iPhone 15. Found by the golden baseline.
+        Expanded(
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
       ],
     ),
   );

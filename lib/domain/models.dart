@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 
 enum TransactionStatus { confirmed, pending, ignored }
@@ -221,7 +222,7 @@ class Goal {
   double get remaining =>
       (target - current).clamp(0, double.infinity).toDouble();
 
-  int? get daysLeft => targetDate?.difference(DateTime.now()).inDays;
+  int? get daysLeft => targetDate?.difference(clock.now()).inDays;
 
   bool get isLate => (daysLeft ?? 1) < 0 && progress < 1;
 

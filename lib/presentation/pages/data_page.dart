@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/csv_export.dart';
@@ -125,7 +126,7 @@ class DataPage extends ConsumerWidget {
     final file = XFile.fromData(
       utf8.encode(csv),
       mimeType: 'text/csv',
-      name: csvFileName(DateTime.now()),
+      name: csvFileName(clock.now()),
     );
     try {
       await SharePlus.instance.share(

@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
@@ -19,7 +20,7 @@ import 'package:uuid/uuid.dart';
 /// of the process so the product can be exercised end to end without Supabase.
 class DemoFinanceRepository implements FinanceRepository {
   static const _uuid = Uuid();
-  final DateTime _now = DateTime.now();
+  final DateTime _now = clock.now();
   List<FinanceTransaction>? _ledger;
 
   List<FinanceTransaction> get _transactions => _ledger ??= _seedTransactions();
@@ -300,7 +301,7 @@ class DemoFinanceRepository implements FinanceRepository {
       total: invoice.total,
       dueDate: invoice.dueDate,
       status: paid ? 'paid' : 'closed',
-      paidAt: paid ? DateTime.now() : null,
+      paidAt: paid ? clock.now() : null,
     );
   }
 
@@ -488,7 +489,7 @@ class DemoFinanceRepository implements FinanceRepository {
     final token = ShortcutToken(
       id: _uuid.v4(),
       name: name.trim(),
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
     );
     _tokens.insert(0, token);
     return IssuedShortcutToken(secret: secret, token: token);
@@ -506,7 +507,7 @@ class DemoFinanceRepository implements FinanceRepository {
       name: token.name,
       createdAt: token.createdAt,
       lastUsedAt: token.lastUsedAt,
-      revokedAt: DateTime.now(),
+      revokedAt: clock.now(),
     );
   }
 

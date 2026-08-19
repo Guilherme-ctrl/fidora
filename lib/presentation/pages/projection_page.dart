@@ -334,13 +334,19 @@ class _GoalsOutlook extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),
-                    Text(
-                      '${currency.format(actual)} de ${currency.format(category.monthlyBudget)}',
-                      style: TextStyle(
-                        color: over
-                            ? context.palette.danger
-                            : context.palette.brand,
-                        fontWeight: FontWeight.w800,
+                    // Two amounts side by side need more than a narrow card
+                    // can give: the pair overflowed by 28px at 390pt. Flexible
+                    // lets it wrap instead of clipping a value.
+                    Flexible(
+                      child: Text(
+                        '${currency.format(actual)} de ${currency.format(category.monthlyBudget)}',
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          color: over
+                              ? context.palette.danger
+                              : context.palette.brand,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ],

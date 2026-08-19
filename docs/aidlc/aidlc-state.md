@@ -489,3 +489,41 @@ descrito pelo dono: hoje compartilham o shell.
 
 **O nome fica para depois da direção visual.** Nome deve caber no visual, não o
 contrário.
+
+## Construction — unidade `ui-remake-pr0`
+
+| Stage | Status | Notas |
+|---|---|---|
+| Functional design | Completo | Rede de segurança definida em `docs/design/07-implementation-plan.md` |
+| NFR requirements | Pulado | Nenhuma superfície nova de desempenho, segurança ou escala |
+| NFR design | Pulado | NFR requirements pulado |
+| Infrastructure design | Pulado | Sem migration e sem recurso novo |
+| Code generation | Completo | Ver checklist |
+
+### Checklist
+
+- [x] `package:clock` como costura única de "agora"; 5 `DateTime.now()` restantes
+      são carimbos de banco e ficam
+- [x] `test/support/contrast.dart` — arnês WCAG extraído de `theme_test.dart`
+- [x] `test/support/golden.dart` — relógio, tamanho, escala e densidade fixos
+- [x] `test/golden_test.dart` — 24 imagens, tag `golden`, 1:1
+- [x] `test/page_overflow_test.dart` — 36 casos, rodam no CI
+- [x] Cinco overflows de produção corrigidos
+- [x] Dois overflows estruturais nomeados como `skip`, com dono no PR 2 e no PR 3
+- [x] `insights_card.dart` com chave por tom
+- [x] CI exclui a tag `golden`
+- [x] Evidência em `04-validation.md`
+
+### Decisão tomada nesta unidade
+
+**O plano dizia não tocar `lib/domain`, e foi preciso.** A costura de relógio
+atravessa quatro arquivos do domínio. É mudança de comportamento nula —
+`clock.now()` devolve `DateTime.now()` quando ninguém sobrescreve — e sem ela
+nenhum golden é reprodutível de um dia para o outro. A regra que o plano
+protegia continua intacta: nenhuma regra financeira, política de RLS ou
+linhagem de importação foi alterada.
+
+**Os dois overflows estruturais não foram corrigidos de propósito.** `MetricCard`
+e a grade de categorias são exatamente os widgets que os PRs 2 e 3 substituem.
+Corrigi-los agora seria escrever o mesmo layout duas vezes, e a segunda escrita
+jogaria a primeira fora.

@@ -70,10 +70,25 @@ class _InsightRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final (icon, color) = switch (insight.tone) {
-      InsightTone.warning => (Icons.trending_up_rounded, palette.danger),
-      InsightTone.good => (Icons.trending_down_rounded, palette.brand),
-      InsightTone.neutral => (Icons.info_outline_rounded, palette.inkMuted),
+    // The key carries the tone, so a test can assert the direction without
+    // naming the glyph — the icon set is a design decision and is expected to
+    // change; what the row means is not.
+    final (icon, color, key) = switch (insight.tone) {
+      InsightTone.warning => (
+        Icons.trending_up_rounded,
+        palette.danger,
+        const Key('insight-tone-warning'),
+      ),
+      InsightTone.good => (
+        Icons.trending_down_rounded,
+        palette.brand,
+        const Key('insight-tone-good'),
+      ),
+      InsightTone.neutral => (
+        Icons.info_outline_rounded,
+        palette.inkMuted,
+        const Key('insight-tone-neutral'),
+      ),
     };
 
     return Padding(
@@ -82,6 +97,7 @@ class _InsightRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
+            key: key,
             width: 28,
             height: 28,
             decoration: BoxDecoration(

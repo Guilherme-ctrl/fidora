@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
@@ -93,7 +94,7 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
     _isShared = existing?.isShared ?? false;
     _holderId = existing?.holderId;
     _accountId = existing?.accountId;
-    _date = existing?.date ?? DateTime.now();
+    _date = existing?.date ?? clock.now();
     _receiptPath = existing?.receiptPath;
     _hasInstallments = existing?.isInstallment ?? false;
     _isIncome = existing?.isIncome ?? false;
@@ -226,7 +227,7 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
       context: context,
       initialDate: _date,
       firstDate: DateTime(2020),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      lastDate: clock.now().add(const Duration(days: 365)),
       locale: const Locale('pt', 'BR'),
       helpText: 'Data da compra',
     );

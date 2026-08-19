@@ -17,6 +17,7 @@ O código da aplicação continua na raiz do workspace. Aqui só há documentaç
 | 04 | [Arquitetura de informação e fluxos](04-ia-flows.md) | Nova navegação, web ≠ mobile, telas e estados |
 | 05 | [Naming](05-naming.md) | Diagnóstico do nome atual e alternativas |
 | 06 | [Roadmap de implementação](06-roadmap.md) | Ordem de execução, esforço e critério de pronto |
+| 07 | [Plano de aplicação no código](07-implementation-plan.md) | Os oito PRs, com o tamanho real medido em `lib/` |
 
 ## Método
 

@@ -1,4 +1,4 @@
-# 03 — Design System "Fólio"
+# 03 — Design System "Ledger"
 
 > **Correção de rota (19 ago 2026).** A primeira versão deste documento mandava
 > preservar a paleta de `lib/core/theme.dart`. Estava errado, e travava o remake
@@ -7,14 +7,14 @@
 > card branco flutuando. O que se preserva é o **método** (contraste medido,
 > tokens semânticos, `ThemeExtension`), não os valores.
 
-Nome do sistema: **Fólio** — a folha numerada do livro contábil.
+Nome do sistema: **Ledger** — o livro-razão: denso, alinhado e legível por definição.
 
 ## O diagnóstico do "cara de Flutter"
 
 Cinco coisas produzem a aparência genérica, e nenhuma delas é limitação do
 framework:
 
-| Sintoma | Causa no código | O que o Fólio faz |
+| Sintoma | Causa no código | O que o Ledger faz |
 |---|---|---|
 | Fundo bege com cards brancos boiando | `scaffoldBackgroundColor: canvas` + `cardTheme` | O fundo **é** a superfície. O que separa é pauta, não card |
 | Botão primário tonal na cor da marca | `ColorScheme.fromSeed` | **A ação primária é tinta**, não cor de marca |
@@ -36,7 +36,7 @@ visual.
 3. **O número tem duas vozes.** O valor de manchete é impresso — serifa, corpo
    grande. A coluna é máquina — tabular, alinhada à direita, atrás de uma pauta
    vertical. Metadado é mono, versalete, espaçado.
-4. **Latão é pauta e foco, não preenchimento.**
+4. **A tinta de caneta é pauta e foco, não preenchimento.** Nenhum amarelo, ocre ou âmbar no sistema.
 5. **A cor categórica trabalha.** Ela identifica a categoria numa barra de 3px na
    marca do lançamento — em vez de ícone genérico ou emoji.
 6. **Acessível por padrão.** AA (4.5:1) em texto normal, 3:1 em componente, alvo
@@ -61,16 +61,26 @@ visual.
 O bege sai. O papel novo é neutro (croma ≈ 0) e o grafite tem viés levemente
 frio — nenhum dos dois puxa para o creme.
 
-### Latão
+### Tinta de caneta
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `accent` | `#8A6A18` | `#D9B860` | pauta ativa, foco, atalho, item selecionado |
-| `accent/soft` | `#F4EDD9` | `#241E10` | linha sob o cursor, estado pendente |
+| `accent` | `#1D4E89` | `#7FB0E8` | pauta ativa, foco, item em revisão |
+| `accent/soft` | `#E8EEF7` | `#121A24` | linha sob o cursor |
 | `brand` (ação) | `#0E1112` | `#EDEFEC` | **botão primário = tinta** |
 
-Latão sobre grafite tem o peso de uma placa gravada e não é o verde
-institucional de banco nem o verde ácido que todo dashboard escuro usa.
+> **Segunda correção (19 ago 2026).** A versão anterior usava latão
+> (`#8A6A18` / `#D9B860`). Avaliação do dono: *"esse bege/amarelo precisa
+> sair"* — e ele estava certo duas vezes, porque o ocre reintroduzia por trás
+> exatamente a temperatura quente que o bege do fundo tinha acabado de perder.
+> **Amarelo, ocre e âmbar saíram do sistema inteiro**, inclusive da paleta
+> categórica.
+
+O azul é o azul-caneta do livro-razão. Ele nunca preenche nada — aparece só onde
+há **ação**: pauta ativa, anel de foco, item aguardando revisão. Por isso
+`pending` deixou de ser uma cor de alarme e passou a ser a mesma tinta: um
+lançamento em revisão não é um problema, é uma tarefa. Vermelho fica reservado a
+problema de verdade.
 
 ### Semântica de dinheiro
 
@@ -79,13 +89,17 @@ institucional de banco nem o verde ácido que todo dashboard escuro usa.
 | `income` | `#0B6B4F` | `#5CC79B` | **sempre** com prefixo `+` |
 | `expense` | `#0E1112` | `#EDEFEC` | saída normal é tinta, **não** vermelho |
 | `negative` | `#A33A1F` | `#E5836A` | só saldo negativo, meta estourada, falha |
-| `pending` | `#8A6A18` | `#D9B860` | não confirmado, em revisão |
+| `pending` | `#1D4E89` | `#7FB0E8` | não confirmado, em revisão — é ação, não alarme |
 | `ignored` | `#8B9394` | `#6E7877` | fora dos totais pessoais |
 
 ### Categórica — segura em deuteranopia e protanopia
 
-`#2F6F5B` · `#3B5C8A` · `#B8892E` · `#A8452F` · `#5A7D8C` · `#7A5A8C`
+`#2F6F5B` · `#2A4779` · `#9B7BB8` · `#A8452F` · `#7FA0B0` · `#6E2F45`
 (no tema escuro, as versões claras equivalentes)
+
+As seis matizes variam também em **claridade** — aproximadamente L\* 42, 32, 58,
+42, 65 e 28. É a claridade, não a matiz, que as mantém distinguíveis em
+deuteranopia e protanopia. O ocre anterior saiu junto com o resto do amarelo.
 
 Aparece como barra de 3px na marca do lançamento. Ordem fixa por categoria: o
 verde de Mercado é o mesmo no painel, na projeção e na fatura. Nunca gerar cor
@@ -136,8 +150,8 @@ menu suspenso e modal. O que dá profundidade é pauta e zebra.
 | `Card` | `RuledSection` | borda superior de 1px, sem fundo, sem raio |
 | `Card` (métrica) | `LedgerTile` | pauta de 2px no topo, valor serifado, rule vertical entre colunas |
 | `ListTile` | `LedgerRow` | marca tipográfica com barra de categoria, zebra, **coluna de valor atrás de pauta vertical** |
-| `NavigationRail` | `FolioSidebar` | seções separadas por pauta, item ativo com barra de latão à esquerda |
-| `NavigationBar` | `FolioTabBar` | indicador é pauta de latão no topo, não pílula |
+| `NavigationRail` | `LedgerSidebar` | seções separadas por pauta, item ativo com barra de tinta à esquerda |
+| `NavigationBar` | `LedgerTabBar` | indicador é pauta de tinta no topo, não pílula |
 | `Chip` | `MonoTag` | mono, caixa alta, borda de 1px, raio 2 |
 | `FilledButton` | `InkButton` | fundo `ink/strong`, raio 5 |
 | `showModalBottomSheet` | `ResponsiveSheet` | sheet < 600 · dialog 600–1239 · painel lateral ≥ 1240 |
@@ -181,7 +195,7 @@ manchete. `MediaQuery.disableAnimations` respeitado.
 
 - [ ] Contraste AA verificado nos dois temas, com o mesmo rigor da auditoria que
       produziu `inkMuted`/`inkSubtle` no tema atual
-- [ ] Latão sobre papel: `#8A6A18` em `#FBFBF9` mede 5.3:1 — válido para texto
+- [ ] Tinta de caneta sobre papel: `#1D4E89` em `#FBFBF9` mede 8.0:1; `#7FB0E8` em `#0E1112` mede 8.5:1
 - [ ] Todo alvo de toque ≥ 44×44
 - [ ] Estado nunca só por cor: sinal, borda ou texto junto
 - [ ] Ordem de foco lógica, anel visível no web

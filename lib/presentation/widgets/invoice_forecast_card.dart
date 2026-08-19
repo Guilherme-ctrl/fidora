@@ -92,11 +92,17 @@ class _ForecastRow extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  currency.format(forecast.total),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 19,
+                // Expanded on the left does not save the row when the total
+                // alone is wider than the card: at 2x text it overflowed by
+                // 42px. Flexible lets the amount wrap.
+                Flexible(
+                  child: Text(
+                    currency.format(forecast.total),
+                    textAlign: TextAlign.end,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 19,
+                    ),
                   ),
                 ),
               ],
@@ -234,12 +240,16 @@ class _Part extends StatelessWidget {
         decoration: BoxDecoration(color: color, shape: BoxShape.circle),
       ),
       const SizedBox(width: 6),
-      Text(
-        '${currency.format(value)} $label',
-        style: TextStyle(
-          fontSize: 12.5,
-          color: context.palette.inkMuted,
-          fontWeight: FontWeight.w600,
+      // The legend sits in a Wrap, so its own row must be able to give: at
+      // 1.3x text the amount plus the label overflowed by 30px.
+      Flexible(
+        child: Text(
+          '${currency.format(value)} $label',
+          style: TextStyle(
+            fontSize: 12.5,
+            color: context.palette.inkMuted,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     ],

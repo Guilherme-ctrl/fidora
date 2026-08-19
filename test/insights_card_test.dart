@@ -110,17 +110,19 @@ void main() {
   });
 
   testWidgets('points a spike up and a saving down', (tester) async {
+    // Asserted by tone key, not by glyph: the icon set changes with the design
+    // system and this test is about the direction, not the drawing.
     await _pump(
       tester,
       _snapshot([..._baseline(), _tx(date: DateTime(2026, 9, 5), amount: 800)]),
     );
-    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+    expect(find.byKey(const Key('insight-tone-warning')), findsOneWidget);
 
     await _pump(
       tester,
       _snapshot([..._baseline(), _tx(date: DateTime(2026, 9, 5), amount: 100)]),
     );
-    expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
+    expect(find.byKey(const Key('insight-tone-good')), findsOneWidget);
   });
 
   testWidgets('keeps the direction out of the accessibility tree twice', (
