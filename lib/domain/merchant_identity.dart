@@ -177,6 +177,13 @@ final _extraSpace = RegExp(r'\s+');
 
 /// The name the same shop should always have.
 ///
+/// **Not** the normalisation that feeds `dedup_key`. That one lives in
+/// `supabase/functions/capture-transaction/rules.ts`, folds accents and strips
+/// punctuation, and must never change: the key is stored per row, so a
+/// different normalisation would stop a repeated capture from matching the row
+/// it already wrote and would create a duplicate charge. This is the *display
+/// and grouping* name, and it is deliberately a separate concept.
+///
 /// Two things in a Brazilian statement stop a merchant from being recognisable
 /// as itself, and both are mechanical.
 ///
@@ -188,7 +195,7 @@ final _extraSpace = RegExp(r'\s+');
 /// And the acquirer writes itself in front: `PAYPAL*SPOTIFY` is a Spotify
 /// charge, not a PayPal one. Grouping by the raw string files every card
 /// aggregator's customers together under the aggregator.
-String normalizeMerchant(String merchant) {
+String merchantIdentity(String merchant) {
   var name = merchant.trim();
 
   final aggregator = _aggregatorPrefix.firstMatch(name);
@@ -204,4 +211,22 @@ String normalizeMerchant(String merchant) {
   name = name.replaceAll(RegExp(r'[\s\-–—.]+$'), '').trim();
 
   return name.isEmpty ? merchant.trim() : name;
+}
+
+/// The instalment written inside a merchant name: `03/10`, `D03/12`.
+///
+/// [merchantIdentity] removes it, and removing something that was never
+/// captured elsewhere would lose it — so this exists to put it back into the
+/// columns that should have held it.
+(int current, int total)? readInstallment(String merchant) {
+  final match = RegExp(
+    r'\s*[A-Za-z]?(\d{1,2})\s*/\s*(\d{1,2})\s*$',
+  ).firstMatch(merchant.trim());
+  if (match == null) return null;
+  final current = int.parse(match.group(1)!);
+  final total = int.parse(match.group(2)!);
+  // `12/08` in a description is far more often a date than one instalment of
+  // eight, so a current above the total is rejected rather than guessed at.
+  if (total < 2 || current < 1 || current > total) return null;
+  return (current, total);
 }

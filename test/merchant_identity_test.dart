@@ -75,6 +75,7 @@ void main() {
   });
 
   _normalisation();
+  _instalments();
 
   group('Coverage', () {
     test('reports what a lookup would actually reach', () {
@@ -113,38 +114,65 @@ void _normalisation() {
     test('the instalment written inside the name comes off', () {
       // This is the one that matters most: without it, ten instalments of one
       // purchase are ten different merchants.
-      expect(normalizeMerchant('LOJA X 03/10'), 'LOJA X');
-      expect(normalizeMerchant('LOJA X 04/10'), 'LOJA X');
-      expect(normalizeMerchant('MAGAZINE LUIZA D03/12'), 'MAGAZINE LUIZA');
-      expect(normalizeMerchant('CASA E CIA L01/06'), 'CASA E CIA');
+      expect(merchantIdentity('LOJA X 03/10'), 'LOJA X');
+      expect(merchantIdentity('LOJA X 04/10'), 'LOJA X');
+      expect(merchantIdentity('MAGAZINE LUIZA D03/12'), 'MAGAZINE LUIZA');
+      expect(merchantIdentity('CASA E CIA L01/06'), 'CASA E CIA');
       expect(
-        normalizeMerchant('LOJA X 03/10'),
-        normalizeMerchant('LOJA X 07/10'),
+        merchantIdentity('LOJA X 03/10'),
+        merchantIdentity('LOJA X 07/10'),
         reason: 'duas parcelas da mesma compra têm de virar o mesmo nome',
       );
     });
 
     test('the acquirer in front comes off, the shop stays', () {
-      expect(normalizeMerchant('PAYPAL*SPOTIFY'), 'SPOTIFY');
-      expect(normalizeMerchant('MP *SHOPEE'), 'SHOPEE');
-      expect(normalizeMerchant('PAG    *PADARIA CENTRAL'), 'PADARIA CENTRAL');
-      expect(normalizeMerchant('EBANX* STEAM GAMES'), 'STEAM GAMES');
+      expect(merchantIdentity('PAYPAL*SPOTIFY'), 'SPOTIFY');
+      expect(merchantIdentity('MP *SHOPEE'), 'SHOPEE');
+      expect(merchantIdentity('PAG    *PADARIA CENTRAL'), 'PADARIA CENTRAL');
+      expect(merchantIdentity('EBANX* STEAM GAMES'), 'STEAM GAMES');
     });
 
     test('both at once', () {
-      expect(normalizeMerchant('PAYPAL*LOJA X 02/06'), 'LOJA X');
+      expect(merchantIdentity('PAYPAL*LOJA X 02/06'), 'LOJA X');
     });
 
     test('leaves a plain name alone', () {
-      expect(normalizeMerchant('MERCADO EXTRA'), 'MERCADO EXTRA');
-      expect(normalizeMerchant('  UBER  '), 'UBER');
+      expect(merchantIdentity('MERCADO EXTRA'), 'MERCADO EXTRA');
+      expect(merchantIdentity('  UBER  '), 'UBER');
     });
 
     test('never returns nothing', () {
       // A name that is only an aggregator prefix has no shop in it, so the
       // original is better than an empty string.
-      expect(normalizeMerchant('PAYPAL*'), 'PAYPAL*');
-      expect(normalizeMerchant('03/10'), '03/10');
+      expect(merchantIdentity('PAYPAL*'), 'PAYPAL*');
+      expect(merchantIdentity('03/10'), '03/10');
+    });
+  });
+}
+
+/// Putting back what the identity name takes away.
+void _instalments() {
+  group('Reading the instalment out of a name', () {
+    test('finds it in the shapes the banks write', () {
+      expect(readInstallment('LOJA X 03/10'), (3, 10));
+      expect(readInstallment('MAGAZINE LUIZA D03/12'), (3, 12));
+      expect(readInstallment('CASA E CIA L01/06'), (1, 6));
+    });
+
+    test('a date is not an instalment', () {
+      // `12/08` at the end of a description is a date far more often than it is
+      // one instalment of eight, and guessing would write a wrong total onto a
+      // real purchase.
+      expect(readInstallment('PIX TRANSF JOSE 12/08'), isNull);
+      expect(readInstallment('COMPRA 25/12'), isNull);
+    });
+
+    test('a single instalment is not an instalment plan', () {
+      expect(readInstallment('LOJA X 01/01'), isNull);
+    });
+
+    test('nothing to find', () {
+      expect(readInstallment('MERCADO EXTRA'), isNull);
     });
   });
 }

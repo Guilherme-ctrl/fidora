@@ -17,6 +17,12 @@ export function foldAccents(value: string): string {
   return value.normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+/// Feeds `dedup_key`. **Do not change it.**
+///
+/// The key is stored per row. A different normalisation would stop a repeated
+/// capture from matching the row it already wrote, and the Shortcut fires more
+/// than once for one purchase often enough that this is the whole reason the
+/// key exists. See `merchantIdentity` for the name the product displays.
 export function normalizeMerchant(value: string): string {
   return foldAccents(value)
     .replace(/[^A-Za-z0-9 ]/g, " ")
@@ -120,4 +126,29 @@ export function decideCategory(input: {
       ? `A categoria "${input.requestedCategoryName}" não existe e nenhuma regra casou com o estabelecimento.`
       : "Nenhuma categoria foi informada e nenhuma regra casou com o estabelecimento.",
   };
+}
+
+
+/// The name the same shop should always have.
+///
+/// Not [normalizeMerchant]: this one is for display and grouping, and changing
+/// it is safe. Two things break a merchant's identity in a Brazilian statement
+/// and both are mechanical — the instalment is written inside the name, so
+/// `LOJA X 03/10` and `LOJA X 04/10` never meet; and the acquirer writes itself
+/// in front, so `PAYPAL*SPOTIFY` files a Spotify charge under PayPal.
+export function merchantIdentity(value: string): string {
+  let name = value.trim();
+
+  const aggregator = /^\s*([A-Za-z0-9.]{2,14})\s*\*\s*(.+)$/.exec(name);
+  if (aggregator && aggregator[2].trim().length >= 3) {
+    name = aggregator[2].trim();
+  }
+
+  name = name
+    .replace(/\s*[A-Za-z]?\d{1,2}\s*\/\s*\d{1,2}\s*$/, "")
+    .replace(/\s+/g, " ")
+    .replace(/[\s\-–—.]+$/, "")
+    .trim();
+
+  return name.length === 0 ? value.trim() : name;
 }

@@ -2,8 +2,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import {
   decideCategory,
   type MerchantRule,
-  normalizeMerchant,
-} from "./rules.ts";
+  normalizeMerchant, merchantIdentity } from "./rules.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,8 +76,18 @@ Deno.serve(async (request) => {
   const competence = invoiceCompetence(purchasedAt, card.closing_day);
   const dueDate = new Date(competence.getFullYear(), competence.getMonth(), card.due_day);
   const month = isoDate(competence);
-  const normalizedMerchant = normalizeMerchant(merchantOriginal);
-  const dedupKey = await sha256(`${isoDate(purchasedAt)}|${lastFour}|${normalizedMerchant}|${amount.toFixed(2)}`);
+  // Two different normalisations, on purpose.
+  //
+  // `normalizeMerchant` feeds the dedup key and must never change: the key is
+  // stored per row, so a different one would stop a repeated capture from
+  // matching the row it already wrote — a duplicate charge, in silence.
+  //
+  // `merchantIdentity` is what the product shows and groups on. It strips the
+  // acquirer prefix and the instalment written inside the name, which is what
+  // lets two instalments of one purchase be recognised as the same shop.
+  const dedupName = normalizeMerchant(merchantOriginal);
+  const dedupKey = await sha256(`${isoDate(purchasedAt)}|${lastFour}|${dedupName}|${amount.toFixed(2)}`);
+  const displayName = merchantIdentity(merchantOriginal);
 
   const { data: invoice, error: invoiceError } = await admin.from("invoices").upsert({
     user_id: shortcutToken.user_id,
@@ -98,7 +107,7 @@ Deno.serve(async (request) => {
     invoice_id: invoice.id,
     holder_id: card.holder_id,
     merchant_original: merchantOriginal,
-    merchant_normalized: normalizedMerchant,
+    merchant_normalized: displayName,
     amount,
     category_id: decision.categoryId,
     subcategory: decision.subcategory,

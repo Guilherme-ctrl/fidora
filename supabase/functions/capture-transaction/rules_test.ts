@@ -4,8 +4,7 @@ import {
   matchesPattern,
   type MerchantRule,
   normalizeMerchant,
-  selectRule,
-} from "./rules.ts";
+  selectRule, merchantIdentity } from "./rules.ts";
 
 function rule(overrides: Partial<MerchantRule> = {}): MerchantRule {
   return {
@@ -140,4 +139,29 @@ Deno.test("the fallback explains which name was rejected", () => {
   );
   assertEquals(decision.categoryId, null);
   assertEquals(decision.needsReview, true);
+});
+
+Deno.test("merchantIdentity strips the instalment written inside the name", () => {
+  // Ten instalments of one purchase were ten different merchants, so a rule
+  // written on one never matched the next.
+  assertEquals(merchantIdentity("LOJA X 03/10"), "LOJA X");
+  assertEquals(merchantIdentity("LOJA X 03/10"), merchantIdentity("LOJA X 07/10"));
+  assertEquals(merchantIdentity("MAGAZINE LUIZA D03/12"), "MAGAZINE LUIZA");
+});
+
+Deno.test("merchantIdentity strips the acquirer, keeps the shop", () => {
+  assertEquals(merchantIdentity("PAYPAL*SPOTIFY"), "SPOTIFY");
+  assertEquals(merchantIdentity("PAG    *PADARIA CENTRAL"), "PADARIA CENTRAL");
+  assertEquals(merchantIdentity("PAYPAL*LOJA X 02/06"), "LOJA X");
+});
+
+Deno.test("merchantIdentity never returns nothing", () => {
+  assertEquals(merchantIdentity("MERCADO EXTRA"), "MERCADO EXTRA");
+  assertEquals(merchantIdentity("PAYPAL*"), "PAYPAL*");
+});
+
+Deno.test("the dedup normalisation is untouched by all of this", () => {
+  // If this ever fails, a repeated capture stops matching the row it already
+  // wrote and the person gets charged twice in their ledger.
+  assertEquals(normalizeMerchant("PAYPAL*LOJA X 03/10"), "PAYPAL LOJA X 03 10");
 });

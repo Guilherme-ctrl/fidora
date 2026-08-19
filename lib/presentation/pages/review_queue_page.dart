@@ -39,7 +39,7 @@ class _Group {
       // is written inside the name, so `LOJA X 03/10` and `LOJA X 04/10` would
       // never meet.
       final merchant = transaction?.merchant;
-      final key = merchant == null ? item.reason : normalizeMerchant(merchant);
+      final key = merchant == null ? item.reason : merchantIdentity(merchant);
       byKey.putIfAbsent(key, () => []).add(item);
       sample.putIfAbsent(key, () => transaction);
     }
