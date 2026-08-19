@@ -6,6 +6,7 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// The instant every golden is rendered at.
 ///
@@ -18,8 +19,13 @@ final goldenInstant = DateTime(2026, 8, 19, 9);
 FinancePeriod get goldenPeriod => FinancePeriod.month(goldenInstant);
 
 /// Runs [body] with the clock frozen at [goldenInstant].
-Future<T> withGoldenClock<T>(Future<T> Function() body) =>
-    withClock(Clock.fixed(goldenInstant), body);
+Future<T> withGoldenClock<T>(Future<T> Function() body) {
+  // The appearance control reads stored preferences, and a page that renders it
+  // needs the channel to answer. Setting it here rather than in each test keeps
+  // the next screen that stores something from failing the same way.
+  SharedPreferences.setMockInitialValues(<String, Object>{});
+  return withClock(Clock.fixed(goldenInstant), body);
+}
 
 /// The widths the design system names, plus the one where the current shell
 /// switches. 390 is an iPhone 15, 900 is the breakpoint the app uses today and

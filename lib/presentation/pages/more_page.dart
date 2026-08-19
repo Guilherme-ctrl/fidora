@@ -25,6 +25,8 @@ import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
+import 'package:financeiro_ai/application/appearance.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -284,6 +286,7 @@ class MorePage extends ConsumerWidget {
             ],
           ),
         ),
+        const _Appearance(),
       ],
     );
   }
@@ -647,4 +650,99 @@ class _OperationTile extends StatelessWidget {
       trailing: const Icon(Icons.chevron_right_rounded),
     ),
   );
+}
+
+/// The theme, where someone can actually find it.
+///
+/// PR 3 put the control in the sidebar's footer, and the sidebar only exists at
+/// 600pt and up — so on a phone the product had two themes and no way to choose
+/// between them. It belongs in Ajustes anyway, which is where the information
+/// architecture said it would be.
+///
+/// Three named choices rather than a cycling icon: an icon that rotates through
+/// states cannot tell you what the states are, and "Sistema" is a real answer,
+/// not the absence of one.
+class _Appearance extends ConsumerWidget {
+  const _Appearance();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final current = ref.watch(appearanceProvider);
+
+    return RuledSection(
+      title: 'Aparência',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Vale para este aparelho e fica guardado.',
+            style: context.type.bodySm.copyWith(color: palette.inkMuted),
+          ),
+          const SizedBox(height: Space.sm),
+          IntrinsicHeight(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: palette.ruleStrong),
+                borderRadius: BorderRadius.circular(Radii.sm),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Row(
+                children: [
+                  for (final mode in ThemeMode.values) ...[
+                    if (mode != ThemeMode.values.first)
+                      Container(
+                        width: Strokes.hairline,
+                        color: palette.ruleStrong,
+                      ),
+                    Expanded(
+                      child: Semantics(
+                        selected: mode == current,
+                        button: true,
+                        label: 'Tema ${mode.label}',
+                        child: InkWell(
+                          onTap: () =>
+                              ref.read(appearanceProvider.notifier).set(mode),
+                          child: Container(
+                            color: mode == current ? palette.ink : null,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: Space.xs + 2,
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  mode.icon,
+                                  size: 17,
+                                  color: mode == current
+                                      ? palette.canvas
+                                      : palette.inkMuted,
+                                ),
+                                const SizedBox(height: Space.xxs),
+                                Text(
+                                  mode.label,
+                                  style: context.type.bodySm.copyWith(
+                                    color: mode == current
+                                        ? palette.canvas
+                                        : palette.inkMuted,
+                                    fontWeight: mode == current
+                                        ? FontWeight.w600
+                                        : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
