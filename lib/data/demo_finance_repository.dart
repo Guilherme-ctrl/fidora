@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
-import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -851,7 +850,7 @@ class DemoFinanceRepository implements FinanceRepository {
       id: '1',
       name: 'Alimentação',
       icon: Icons.restaurant_rounded,
-      color: coral,
+      color: Color(0xFF8D2F36),
       monthlyBudget: 1200,
     ),
     FinanceCategory(
@@ -885,7 +884,7 @@ class DemoFinanceRepository implements FinanceRepository {
       id: '6',
       name: 'Lazer',
       icon: Icons.sports_soccer_rounded,
-      color: gold,
+      color: Color(0xFF788E57),
       monthlyBudget: 700,
     ),
     FinanceCategory(

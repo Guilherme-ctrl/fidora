@@ -233,3 +233,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 0. Nada enviado ao remoto; nenhum commit feito.
 
 ---
+
+## Construction — Code Generation (PR 1: tokens do Ledger)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Commita numa branch e segue pro PR 1"
+**AI Response**: "PR 0 commitado em `feat/ui-remake-pr0`; PR 1 em `feat/ui-remake-pr1`. O PR 1 entregou `tokens.dart`, `breakpoints.dart`, `typography.dart` e a paleta Ledger completa em `theme.dart`, com pontes `@Deprecated` para as 270 chamadas existentes. O que vale registrar é que **três valores que eu tinha escrito nos documentos foram reprovados quando medidos**, antes de chegarem ao código: `inkSubtle` a 4,34:1 contra o fundo zebrado novo — um fundo que a linha do razão introduz e que não existia quando o token foi definido; a borda de campo a ~1,5:1, quando a WCAG 1.4.11 pede 3:1 para o que identifica um controle; e as duas paletas categóricas que eu tinha publicado, uma caindo a ΔE 8,4 sob protanopia e a outra, otimizada só para deuteranopia, a ΔE 1,0 sob tritanopia. A paleta final saiu de uma busca com simulação de Viénot–Brettel–Mollon, faixa amarela banida e separação mínima de matiz, e ficou em ΔE 19,5 no claro e 21,6 no escuro. `test/categorical_test.dart` roda essa simulação a cada build, então a afirmação deixou de ser retórica. As pontes de depreciação produziram 197 avisos — `danger` 73, `brand` 69 — que batem com as ~145 decisões semânticas previstas; o CI passou a `--no-fatal-infos` até o PR 5 apagá-las. Duas coisas ficaram de fora com motivo: as fontes, porque baixar binário precisa da sua autorização, e as 12 cores do seletor de categoria, porque são dado gravado no banco e mexer nelas é migração e não tema. 526 testes passam, 6 adiados, e as 24 imagens de referência mudaram como esperado."
+**Context**: Construction / Code Generation — PR 1. Branch `feat/ui-remake-pr1`.
+
+---

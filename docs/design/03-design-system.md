@@ -55,7 +55,7 @@ visual.
 | `ink/muted` | `#525A5B` | `#9AA3A2` | secundário, ≥ 4.5:1 |
 | `ink/subtle` | `#6B7476` | `#7F8988` | metadado, ≥ 4.5:1 |
 | `rule` | `#E3E5E1` | `#232827` | a pauta comum |
-| `rule/2` | `#C7CBC6` | `#343A39` | borda de campo e de objeto |
+| `rule/2` | `#767E7D` | `#666E6D` | borda de componente — WCAG 1.4.11 pede 3:1 |
 | `rule/heavy` | `#0E1112` | `#EDEFEC` | pauta de cabeçalho, 2px |
 
 O bege sai. O papel novo é neutro (croma ≈ 0) e o grafite tem viés levemente
@@ -90,16 +90,42 @@ problema de verdade.
 | `expense` | `#0E1112` | `#EDEFEC` | saída normal é tinta, **não** vermelho |
 | `negative` | `#A33A1F` | `#E5836A` | só saldo negativo, meta estourada, falha |
 | `pending` | `#1D4E89` | `#7FB0E8` | não confirmado, em revisão — é ação, não alarme |
-| `ignored` | `#8B9394` | `#6E7877` | fora dos totais pessoais |
+| `ignored` | `#656D6E` | `#8A9392` | igual a `ink/subtle` — ver nota |
 
 ### Categórica — segura em deuteranopia e protanopia
 
-`#2F6F5B` · `#2A4779` · `#9B7BB8` · `#A8452F` · `#7FA0B0` · `#6E2F45`
-(no tema escuro, as versões claras equivalentes)
+| # | Claro | Escuro |
+|---|---|---|
+| 1 | `#06485B` | `#4F8397` |
+| 2 | `#8D2F36` | `#D67071` |
+| 3 | `#695299` | `#AE93E0` |
+| 4 | `#177B63` | `#69C4A8` |
+| 5 | `#677B98` | `#B4C8E8` |
+| 6 | `#788E57` | `#CCE2A6` |
 
-As seis matizes variam também em **claridade** — aproximadamente L\* 42, 32, 58,
-42, 65 e 28. É a claridade, não a matiz, que as mantém distinguíveis em
-deuteranopia e protanopia. O ocre anterior saiu junto com o resto do amarelo.
+> **Terceira correção (19 ago 2026).** As duas paletas categóricas anteriores
+> deste documento foram escritas de intuição e **falharam quando medidas**:
+> a primeira caiu a ΔE 8,4 sob protanopia; a segunda, otimizada só para
+> deuteranopia, caiu a ΔE 1,0 sob tritanopia. Esta foi buscada com simulação de
+> Viénot–Brettel–Mollon e ΔE CIE76, com a faixa amarela (matiz 30–120°) banida
+> e separação mínima de 34° entre matizes.
+
+Cada categoria tem **uma matiz**, renderizada numa claridade para o tema claro e
+outra para o escuro — a categoria não troca de identidade ao trocar de tema. As
+seis se separam por claridade além da matiz, que é o que sobrevive a qualquer
+deficiência de visão de cor.
+
+Medido em `test/categorical_test.dart`, que roda a simulação a cada build:
+
+| | claro | escuro |
+|---|---|---|
+| ΔE mínimo sob visão normal, deuteranopia e protanopia | **19,5** | **21,6** |
+| ΔE mínimo sob tritanopia | 17,1 | 19,9 |
+| contraste mínimo com o fundo | 3,28:1 | 4,20:1 |
+
+Deuteranopia e protanopia somam ~8% dos homens; tritanopia, ~0,01%. Por isso o
+par comum carrega a barra mais alta e a tritanopia um piso — otimizar as três
+igualmente gasta todo o orçamento na mais rara.
 
 Aparece como barra de 3px na marca do lançamento. Ordem fixa por categoria: o
 verde de Mercado é o mesmo no painel, na projeção e na fatura. Nunca gerar cor

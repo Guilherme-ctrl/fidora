@@ -1,83 +1,170 @@
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/contrast.dart';
 
+/// Contrast is measured here before a value reaches the palette, not after.
+///
+/// The previous version of this file caught secondary text sitting at 3.2:1 and
+/// 4.0:1. The Ledger palette added a third ground — `sunken`, the zebra row —
+/// and the first draft of `inkSubtle` failed against exactly that one at 4.34.
 void main() {
-  group('Contrast — the audit measured 3.2:1 and 4.0:1 here', () {
-    for (final entry in {
-      'light': FinoraPalette.light,
-      'dark': FinoraPalette.dark,
-    }.entries) {
-      final name = entry.key;
-      final palette = entry.value;
+  const themes = {'light': FinoraPalette.light, 'dark': FinoraPalette.dark};
 
-      test('$name: primary text clears AA on both grounds', () {
-        expect(contrast(palette.ink, palette.canvas), greaterThanOrEqualTo(aa));
+  group('Text clears AA on every ground', () {
+    themes.forEach((name, palette) {
+      final grounds = {
+        'canvas': palette.canvas,
+        'surface': palette.surface,
+        'sunken': palette.sunken,
+      };
+
+      final text = {
+        'ink': palette.ink,
+        'inkMuted': palette.inkMuted,
+        'inkSubtle': palette.inkSubtle,
+        'ignored': palette.ignored,
+        'accent': palette.accent,
+        'income': palette.income,
+        'negative': palette.negative,
+        'pending': palette.pending,
+      };
+
+      text.forEach((token, colour) {
+        grounds.forEach((groundName, ground) {
+          test('$name: $token on $groundName', () {
+            expect(
+              contrast(colour, ground),
+              greaterThanOrEqualTo(aa),
+              reason: '$token measured ${contrast(colour, ground)}',
+            );
+          });
+        });
+      });
+    });
+  });
+
+  group('Text on a tint and on the action', () {
+    themes.forEach((name, palette) {
+      test('$name: accent on its own wash', () {
         expect(
-          contrast(palette.ink, palette.surface),
+          contrast(palette.accent, palette.accentSoft),
           greaterThanOrEqualTo(aa),
         );
       });
 
-      test('$name: secondary text clears AA on both grounds', () {
+      test('$name: the ink button is legible', () {
         expect(
-          contrast(palette.inkMuted, palette.canvas),
+          contrast(palette.onAction, palette.action),
           greaterThanOrEqualTo(aa),
         );
-        expect(
-          contrast(palette.inkMuted, palette.surface),
-          greaterThanOrEqualTo(aa),
-        );
+      });
+    });
+  });
+
+  group('Component boundaries clear 3:1', () {
+    // WCAG 1.4.11. The old `hairline` was decorative and was also being used as
+    // a field outline, where it measured about 1.5:1 — a field a person could
+    // not find the edge of.
+    themes.forEach((name, palette) {
+      for (final ground in [palette.canvas, palette.surface, palette.sunken]) {
+        test('$name: ruleStrong on ${ground.toARGB32().toRadixString(16)}', () {
+          expect(
+            contrast(palette.ruleStrong, ground),
+            greaterThanOrEqualTo(aaLarge),
+          );
+        });
+      }
+    });
+  });
+
+  group('Chart hues are visible against the page', () {
+    themes.forEach((name, palette) {
+      test('$name: every categorical hue clears 3:1', () {
+        for (final colour in palette.categorical) {
+          final worst = [
+            palette.canvas,
+            palette.surface,
+            palette.sunken,
+          ].map((g) => contrast(colour, g)).reduce((a, b) => a < b ? a : b);
+          expect(
+            worst,
+            greaterThanOrEqualTo(aaLarge),
+            reason: '${colour.toARGB32().toRadixString(16)} measured $worst',
+          );
+        }
+      });
+    });
+  });
+
+  group('Semantics that must not collapse', () {
+    themes.forEach((name, palette) {
+      test('$name: an ordinary spend is ink, not the problem colour', () {
+        expect(palette.expense, palette.ink);
+        expect(palette.expense, isNot(palette.negative));
       });
 
-      test('$name: the smallest captions clear AA on both grounds', () {
-        expect(
-          contrast(palette.inkSubtle, palette.canvas),
-          greaterThanOrEqualTo(aa),
-        );
-        expect(
-          contrast(palette.inkSubtle, palette.surface),
-          greaterThanOrEqualTo(aa),
-        );
+      test('$name: the primary action is ink, not a hue', () {
+        expect(palette.action, palette.ink);
       });
 
-      test('$name: text on the brand tint clears AA', () {
-        expect(
-          contrast(palette.onBrandSoft, palette.brandSoft),
-          greaterThanOrEqualTo(aa),
-        );
+      test('$name: awaiting review reads as action, not as a fault', () {
+        expect(palette.pending, palette.accent);
+        expect(palette.pending, isNot(palette.negative));
       });
 
-      test('$name: danger text clears AA on the card surface', () {
+      test('$name: the ground is not tinted away from the surface', () {
+        // The beige canvas was 8 points of luminance below white, which is what
+        // made every piece of content need a card to lift off it.
         expect(
-          contrast(palette.danger, palette.surface),
-          greaterThanOrEqualTo(aa),
+          (luminance(palette.canvas) - luminance(palette.surface)).abs(),
+          lessThan(0.05),
         );
       });
-
-      test('$name: warning text clears AA on the card surface', () {
-        expect(
-          contrast(palette.onWarning, palette.surface),
-          greaterThanOrEqualTo(aa),
-        );
-      });
-    }
+    });
   });
 
   group('Theme wiring', () {
-    test('both brightnesses carry the palette extension', () {
+    test('both brightnesses carry both extensions', () {
       final light = buildAppTheme();
       final dark = buildAppTheme(brightness: Brightness.dark);
       expect(light.extension<FinoraPalette>(), FinoraPalette.light);
       expect(dark.extension<FinoraPalette>(), FinoraPalette.dark);
+      expect(light.extension<LedgerText>(), LedgerText.standard);
       expect(dark.brightness, Brightness.dark);
     });
 
-    test('surfaces differ between the themes', () {
-      expect(FinoraPalette.light.canvas, isNot(FinoraPalette.dark.canvas));
-      expect(FinoraPalette.light.surface, isNot(FinoraPalette.dark.surface));
+    test('every numeric style is tabular', () {
+      const type = LedgerText.standard;
+      for (final style in [
+        type.displayHero,
+        type.displayMetric,
+        type.amount,
+        type.meta,
+      ]) {
+        expect(
+          style.fontFeatures?.any((f) => f.feature == 'tnum'),
+          isTrue,
+          reason: 'a column of amounts cannot align without tabular figures',
+        );
+      }
+    });
+
+    test('nothing in the system is rounder than 10', () {
+      final shape = buildAppTheme().cardTheme.shape! as RoundedRectangleBorder;
+      final radius = shape.borderRadius.resolve(TextDirection.ltr).topLeft.x;
+      expect(radius, Radii.md);
+      expect(radius, lessThanOrEqualTo(10));
+    });
+
+    test('the field outline is the 3:1 rule, not the decorative one', () {
+      final theme = buildAppTheme();
+      final border =
+          theme.inputDecorationTheme.enabledBorder! as OutlineInputBorder;
+      expect(border.borderSide.color, FinoraPalette.light.ruleStrong);
     });
 
     test('the scaffold follows the palette canvas', () {
@@ -87,8 +174,11 @@ void main() {
       );
     });
 
-    testWidgets('context.palette resolves the active theme', (tester) async {
-      late FinoraPalette seen;
+    testWidgets('context.palette and context.type resolve the active theme', (
+      tester,
+    ) async {
+      late FinoraPalette palette;
+      late LedgerText type;
       await tester.pumpWidget(
         MaterialApp(
           theme: buildAppTheme(),
@@ -96,19 +186,22 @@ void main() {
           themeMode: ThemeMode.dark,
           home: Builder(
             builder: (context) {
-              seen = context.palette;
+              palette = context.palette;
+              type = context.type;
               return const SizedBox();
             },
           ),
         ),
       );
-      expect(seen, FinoraPalette.dark);
+      expect(palette, FinoraPalette.dark);
+      expect(type, LedgerText.standard);
     });
 
-    test('lerp stays on the palette type', () {
+    test('lerp stays on the palette type and mixes the chart hues', () {
       final mixed = FinoraPalette.light.lerp(FinoraPalette.dark, 0.5);
       expect(mixed, isA<FinoraPalette>());
       expect(mixed.ink, isNot(FinoraPalette.light.ink));
+      expect(mixed.categorical.length, 6);
     });
   });
 }

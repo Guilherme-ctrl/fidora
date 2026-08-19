@@ -612,3 +612,62 @@ que roda. Localmente: `flutter test --tags golden`.
 | `flutter analyze --fatal-infos` | sem problemas |
 | `flutter test --exclude-tags golden` | **457 passam, 6 adiados** |
 | `flutter test --tags golden` | 24 passam, estáveis em duas execuções seguidas |
+
+## PR 1 — tokens do design system Ledger (2026-08-19)
+
+Nenhum valor de cor entrou no código sem ter sido medido antes. Três foram
+reprovados na medição e reescritos.
+
+### Reprovados antes de entrar
+
+| Valor | Medida | Por quê |
+|---|---|---|
+| `inkSubtle` claro `#6B7476` | 4,34:1 | Contra `sunken`, o fundo zebrado que a linha do razão introduz. Passou a `#656D6E` (4,80:1) |
+| Borda de campo `#C7CBC6` | ~1,5:1 | WCAG 1.4.11 pede 3:1 para o que identifica um controle. Virou `ruleStrong` `#767E7D` (3,77:1) |
+| 1ª paleta categórica | ΔE 8,4 | Sob protanopia. Escrita de intuição |
+| 2ª paleta categórica | ΔE 1,0 | Sob tritanopia — otimizada só para deuteranopia |
+
+A paleta final foi buscada com simulação de Viénot–Brettel–Mollon e ΔE CIE76,
+com a faixa amarela (matiz 30–120°) banida e separação mínima de 34° entre
+matizes:
+
+| | claro | escuro |
+|---|---|---|
+| ΔE mínimo — normal, deuteranopia, protanopia | 19,5 | 21,6 |
+| ΔE mínimo — tritanopia | 17,1 | 19,9 |
+| contraste mínimo com o fundo | 3,28:1 | 4,20:1 |
+
+### Pontes de migração
+
+197 avisos de depreciação, que são a worklist e não uma regressão:
+
+| Token | Usos |
+|---|---|
+| `danger` | 73 |
+| `brand` | 69 |
+| `warning` | 20 |
+| `onWarning` | 12 |
+| `brandSoft` | 12 |
+| `hairline` | 7 |
+| `onBrandSoft` | 3 |
+| `info` | 1 |
+
+`brand` e `danger` somam 142, dentro das ~145 decisões semânticas que o plano
+previu. O CI passou a `--no-fatal-infos` até o PR 5 apagar as pontes; erros e
+warnings continuam falhando o build.
+
+### Limite conhecido
+
+As fontes não foram empacotadas — baixar binário precisa de autorização do dono.
+`LedgerText` usa `fontFamilyFallback` para a serifa do sistema até lá, e
+`FontFeature.tabularFigures()` já funciona com a fonte padrão, então o
+alinhamento de coluna já vale.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings, 197 infos de depreciação |
+| `flutter test --exclude-tags golden` | **526 passam, 6 adiados** |
+| `flutter test --tags golden` | 24 passam; todas as 24 imagens mudaram, como esperado |

@@ -30,6 +30,10 @@ linter:
   # `// ignore_for_file: name_of_lint` syntax on the line or in the file
   # producing the lint.
   rules:
+    # The palette's migration bridges are only useful if using one is visible.
+    # Without this, a `@Deprecated` member is silent inside its own package and
+    # the worklist for PR 5 would not exist.
+    deprecated_member_use_from_same_package: true
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 

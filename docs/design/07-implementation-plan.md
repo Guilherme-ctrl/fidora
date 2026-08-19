@@ -98,59 +98,39 @@ Ainda em aberto para o PR 1, porque dependem de tokens que ainda não existem:
 - [ ] `flutter_test_config.dart` carregando as fontes, para os goldens deixarem
       de renderizar texto como retângulo
 
-### PR 1 — Tokens · ~1 dia
+### PR 1 — Tokens · **entregue** (2026-08-19)
 
-Arquivos novos em `lib/core/`:
+- [x] `lib/core/tokens.dart` — espaço base 4, raio (máximo 10), traço, duração
+- [x] `lib/core/breakpoints.dart` — `Breakpoint` e `maxContentWidth`
+- [x] `lib/core/typography.dart` — `LedgerText`, três vozes, tabular em todo
+      estilo numérico
+- [x] `lib/core/theme.dart` — paleta Ledger completa, com pontes `@Deprecated`
+- [x] `test/theme_test.dart` reescrito — 75 casos
+- [x] `test/support/cvd.dart` + `test/categorical_test.dart` — simulação de
+      Viénot–Brettel–Mollon e ΔE CIE76
+- [x] CI passa a `flutter analyze --no-fatal-infos`
 
-```text
-lib/core/tokens.dart       espaço, raio, duração, elevação — const, não variam por tema
-lib/core/breakpoints.dart  a escala única
-lib/core/typography.dart   LedgerText como ThemeExtension
-lib/core/theme.dart        FinoraPalette com o conjunto novo de campos
-```
+**Três valores foram escritos, medidos e reprovados antes de entrar no código:**
+`inkSubtle` a 4,34:1 contra o fundo zebrado novo; a borda de campo a ~1,5:1
+quando a WCAG 1.4.11 pede 3:1; e duas paletas categóricas inteiras, uma a
+ΔE 8,4 sob protanopia e outra a ΔE 1,0 sob tritanopia.
 
-**Mantém `FinoraPalette` como nome de classe e `context.palette` como acesso.**
-São 270 chamadas; renomear a classe seria churn puro. O que muda é o conjunto de
-campos:
+**197 avisos de depreciação** — `brand` 69, `danger` 73, `warning` 20,
+`onWarning` 12, `brandSoft` 12, `hairline` 7, `onBrandSoft` 3, `info` 1. É a
+worklist dos PRs 2 e 5, e bate com as ~145 decisões semânticas previstas.
 
-| Campo atual | Vira | Observação |
-|---|---|---|
-| `ink` | `ink` | valor muda: `#17211B` → `#0E1112` |
-| `inkMuted` / `inkSubtle` | iguais | valores novos, mesmo rigor de contraste |
-| `canvas` | `canvas` | **`#F5F3EC` → `#FBFBF9`** — o bege sai |
-| `surface` | `surface` | passa a ser **só objeto discreto** |
-| — | `sunken` **(novo)** | zebra de linha e tabela |
-| `hairline` | `rule` | + `rule2` (borda) e `rule3` (pauta pesada) |
-| `brand` | `brand` | **muda de significado**: passa a ser tinta, não verde |
-| `brandSoft` / `onBrandSoft` | `accent` / `accentSoft` | azul-caneta `#1D4E89` |
-| `danger` | `negative` | só problema |
-| `warning` / `onWarning` | `pending` | azul, não âmbar — revisão é ação |
-| — | `income` / `expense` / `ignored` **(novos)** | semântica de dinheiro |
-| `info` | removido | 1 uso |
-| `cardGradient` / `onCard` | mantidos | 0 usos hoje; a face do cartão passa a usar |
-| — | `categorical` **(novo)** | `List<Color>` de 6, ordem fixa |
+Ficou de fora, e por quê:
 
-**Ponte de migração:** manter `danger`, `warning`, `onWarning`, `brandSoft` e
-`onBrandSoft` como getters `@Deprecated` apontando para o destino mais próximo.
-Isso é o que permite o PR 1 entrar sem quebrar as 270 chamadas — o app compila
-com avisos, e os avisos viram a lista de tarefas dos PRs seguintes. Eles são
-removidos no PR 5, e aí `dart analyze` limpo é o critério de pronto.
-
-**Fontes** — adicionar ao `pubspec.yaml` (hoje não há nenhuma declarada):
-
-| Papel | Família | Licença |
-|---|---|---|
-| Display | **Source Serif 4** | OFL |
-| Interface | **Inter** | OFL |
-| Metadado | **JetBrains Mono** | OFL |
-
-New York é bonita e é só da Apple; empacotar Source Serif 4 mantém iOS e web
-idênticos. Cada estilo numérico leva
-`fontFeatures: [FontFeature.tabularFigures()]` — recurso que o app não usa em
-lugar nenhum hoje.
-
-**Pronto quando:** `buildAppTheme()` devolve os dois temas novos, `theme_test`
-passa, e o app compila (com os avisos de depreciação).
+- [ ] **Empacotar Source Serif 4, Inter e JetBrains Mono.** Baixar binário de
+      fonte precisa da sua autorização. Até lá `LedgerText` usa
+      `fontFamilyFallback` para a serifa do sistema (New York no iOS/macOS,
+      Georgia no resto), e `FontFeature.tabularFigures()` já funciona com a
+      fonte padrão — o alinhamento de coluna, que era o ganho principal, já
+      está valendo.
+- [ ] `categoryColors` em `category_visuals.dart` ainda tem o ocre `#8D6414` e
+      as 12 cores do seletor não passaram por medição. São **dado gravado** —
+      `categories.color` no banco — então mexer nelas é migração, não tema. Fica
+      para o PR 5.
 
 ### PR 2 — Camada de componentes · ~2 dias
 

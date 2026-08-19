@@ -26,25 +26,25 @@
 /* ============ APP TOKENS — "Fólio": tinta sobre papel, pautado a latão ============ */
 [data-app="light"]{
   --a-canvas:#FBFBF9; --a-surface:#FFFFFF; --a-sunken:#F3F4F1;
-  --a-ink:#0E1112; --a-muted:#525A5B; --a-subtle:#6B7476;
-  --a-rule:#E3E5E1; --a-rule2:#C7CBC6; --a-rule3:#0E1112;
+  --a-ink:#0E1112; --a-muted:#525A5B; --a-subtle:#656D6E;
+  --a-rule:#E3E5E1; --a-rule2:#767E7D; --a-rule3:#0E1112;
   --a-brand:#0E1112; --a-onbrand:#FBFBF9;
   --a-accent:#1D4E89; --a-accent-soft:#E8EEF7;
   --a-income:#0B6B4F; --a-negative:#A33A1F; --a-pending:#1D4E89;
-  --a-pendbg:#E8EEF7; --a-ignored:#8B9394;
+  --a-pendbg:#E8EEF7; --a-ignored:#656D6E;
   --a-card:linear-gradient(148deg,#14181A 0%,#252E2E 55%,#3A4441 100%);
-  --a-c1:#2F6F5B; --a-c2:#2A4779; --a-c3:#9B7BB8; --a-c4:#A8452F; --a-c5:#7FA0B0; --a-c6:#6E2F45;
+  --a-c1:#06485B; --a-c2:#8D2F36; --a-c3:#695299; --a-c4:#177B63; --a-c5:#677B98; --a-c6:#788E57;
 }
 [data-app="dark"]{
   --a-canvas:#0E1112; --a-surface:#161A1B; --a-sunken:#0A0D0D;
-  --a-ink:#EDEFEC; --a-muted:#9AA3A2; --a-subtle:#7F8988;
-  --a-rule:#232827; --a-rule2:#343A39; --a-rule3:#EDEFEC;
+  --a-ink:#EDEFEC; --a-muted:#9AA3A2; --a-subtle:#8A9392;
+  --a-rule:#232827; --a-rule2:#666E6D; --a-rule3:#EDEFEC;
   --a-brand:#EDEFEC; --a-onbrand:#0E1112;
   --a-accent:#7FB0E8; --a-accent-soft:#121A24;
   --a-income:#5CC79B; --a-negative:#E5836A; --a-pending:#7FB0E8;
-  --a-pendbg:#121A24; --a-ignored:#6E7877;
+  --a-pendbg:#121A24; --a-ignored:#8A9392;
   --a-card:linear-gradient(148deg,#0C0F10 0%,#1E2626 55%,#333D3A 100%);
-  --a-c1:#5CC79B; --a-c2:#7C9BD1; --a-c3:#C3A8DC; --a-c4:#E5836A; --a-c5:#A9C6D6; --a-c6:#C97D9A;
+  --a-c1:#4F8397; --a-c2:#D67071; --a-c3:#AE93E0; --a-c4:#69C4A8; --a-c5:#B4C8E8; --a-c6:#CCE2A6;
 }
 
 *{box-sizing:border-box}
@@ -616,7 +616,8 @@ const panelSistema=()=>`<div class="dsgrid">
   ${SW('surface','#FFFFFF','#161A1B','só objeto discreto')}
   ${SW('ink/strong','#0E1112','#EDEFEC','')}
   ${SW('ink/muted','#525A5B','#9AA3A2','≥ 4.5:1')}
-  ${SW('rule','#E3E5E1','#232827','o que separa')}
+  ${SW('rule','#E3E5E1','#232827','decorativo')}
+  ${SW('rule/forte','#767E7D','#666E6D','borda de componente, 3:1')}
   ${SW('rule/heavy','#0E1112','#EDEFEC','pauta de cabeçalho')}
   <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
    O <code style="font-family:var(--mono);font-size:11px">#F5F3EC</code> anterior era o <b style="color:var(--c-ink)">surface tint</b> do Material 3 vestido de bege. Ele obrigava tudo a virar card branco flutuando — a assinatura visual que o produto quer perder.</p></div>
@@ -637,9 +638,9 @@ const panelSistema=()=>`<div class="dsgrid">
   ${SW('ignored','#8B9394','#6E7877','fora do pessoal')}</div>
 
  <div class="dscard"><h4>Categórica — segura em daltonismo</h4>
-  <div style="display:flex;gap:6px;margin-bottom:12px">${['#2F6F5B','#2A4779','#9B7BB8','#A8452F','#7FA0B0','#6E2F45']
+  <div style="display:flex;gap:6px;margin-bottom:12px">${['#06485B','#8D2F36','#695299','#177B63','#677B98','#788E57']
    .map(c=>`<i style="flex:1;height:42px;border-radius:3px;background:${c}"></i>`).join('')}</div>
-  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Aparece como <b style="color:var(--c-ink)">barra de 3px na marca do lançamento</b>, não como ícone. Ordem fixa por categoria. As seis matizes variam também em <b style="color:var(--c-ink)">claridade</b> — é isso, e não a matiz, que as mantém distinguíveis em deuteranopia.</p></div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Aparece como <b style="color:var(--c-ink)">barra de 3px na marca do lançamento</b>, não como ícone. Ordem fixa por categoria. Medidas, não estimadas: <b style="color:var(--c-ink)">ΔE mínimo 19,5</b> sob visão normal, deuteranopia e protanopia, e 17,1 sob tritanopia. Duas versões anteriores desta paleta falharam nesse teste e nunca chegaram ao código.</p></div>
 
  <div class="dscard"><h4>Duas vozes numéricas</h4>
   <div class="tyrow"><code>display (serifa)</code><span class="num" style="font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.02em">3.482,10</span></div>
