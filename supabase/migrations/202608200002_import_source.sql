@@ -1,22 +1,21 @@
 -- Record who produced an import instead of assuming ChatGPT did.
 --
 -- `raw_source` was written as the literal 'chatgpt' for every imported row.
--- That was true while ChatGPT-produced JSON was the only way in; with the
--- spreadsheet reader it became a factual error in the ledger — a statement
--- exported from the bank and read by the app would be filed as if a model had
--- transcribed it.
+-- True while ChatGPT-produced JSON was the only way in; with the spreadsheet
+-- reader it became a factual error — a statement exported from the bank and
+-- read by the app would be filed as if a model had transcribed it. The payload
+-- now declares its own source, and the fallback keeps every existing producer
+-- writing exactly what it wrote before.
 --
--- The payload now declares its own `source`, and the fallback keeps every
--- existing producer writing exactly what it wrote before, so this is safe to
--- apply before or after the app ships.
---
--- The whole function is restated rather than patched in place. An earlier
--- attempt read the live definition with `pg_get_functiondef` and rewrote it,
--- which would have read a stub instead of the original and destroyed the
--- import. The body below is the one from 202608170004 with a single literal
--- changed.
+-- The target is `import_finora_invoice_v1`, NOT `import_finora_invoice`.
+-- Migration 202608170005 renamed the original body to `_v1` and made
+-- `import_finora_invoice` a wrapper that adds item-level review on top of it.
+-- The first version of this migration restated the *wrapper* with the old
+-- body, which would have silently reverted that review in production. The
+-- local suite passed anyway, because nothing in it covered what the wrapper
+-- adds — see the assertions added to 04_import_test.sql.
 
-create or replace function public.import_finora_invoice(p_payload jsonb)
+create or replace function public.import_finora_invoice_v1(p_payload jsonb)
 returns jsonb language plpgsql security definer set search_path = public, private as $$
 declare
   target_user uuid := auth.uid();
