@@ -169,3 +169,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Build and Test — primeira cobertura de Dynamic Type do projeto.
 
 ---
+
+## Construction — Code Generation (Fase 4: anexo de comprovante com OCR)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Atulaize o deocumento, não quero esse widget agora nem substituir o nativo, pode fazer só o OCR na fase 04" / "No aparelho, ML Kit (recomendado)"
+**AI Response**: "Documento atualizado: Widget iOS e App Intents marcados como fora do escopo por decisão sua, e previsão e insights marcados como feitos. OCR entregue com reconhecimento no próprio aparelho: migration com bucket privado e políticas por dono, parser puro em `lib/domain/receipt_scan.dart`, reconhecedor atrás de interface (o web degrada para só anexar), e campo no formulário que oferece a leitura em vez de aplicá-la. 38 testes novos, 378 no total. Precisei subir o alvo do iOS de 15.0 para 15.5, exigência do ML Kit — nenhum aparelho se perde, todo dispositivo que roda 15.0 pode atualizar. Uma limitação que não consigo contornar: o ML Kit não publica fatia arm64 para simulador, então em Mac Apple Silicon o reconhecimento não roda no Simulator. O build de device compila e as permissões estão no bundle, mas nenhuma nota foi fotografada nem lida."
+**Context**: Construction / Code Generation — último item da fase 4.
+
+---

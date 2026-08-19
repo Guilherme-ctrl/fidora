@@ -4,7 +4,9 @@ import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/domain/receipt_scan.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/receipt_field.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -22,7 +24,7 @@ Future<bool?> showTransactionFormSheet(
       _TransactionForm(snapshot: snapshot, onSave: onSave, existing: existing),
 );
 
-class _TransactionForm extends StatefulWidget {
+class _TransactionForm extends ConsumerStatefulWidget {
   const _TransactionForm({
     required this.snapshot,
     required this.onSave,
@@ -34,10 +36,10 @@ class _TransactionForm extends StatefulWidget {
   final FinanceTransaction? existing;
 
   @override
-  State<_TransactionForm> createState() => _TransactionFormState();
+  ConsumerState<_TransactionForm> createState() => _TransactionFormState();
 }
 
-class _TransactionFormState extends State<_TransactionForm> {
+class _TransactionFormState extends ConsumerState<_TransactionForm> {
   late final TextEditingController _merchant;
   late final TextEditingController _amount;
   late final TextEditingController _installmentCurrent;
@@ -55,6 +57,17 @@ class _TransactionFormState extends State<_TransactionForm> {
   bool _saving = false;
   String? _failure;
   TransactionDraftErrors _errors = const TransactionDraftErrors();
+
+  PendingReceipt? _pendingReceipt;
+
+  /// Path of the receipt already stored, when editing. Cleared to null by
+  /// removing it, which is what tells the save to detach.
+  String? _receiptPath;
+
+  /// Whether the person chose the date themselves. The field is never
+  /// empty — it opens on today — so emptiness cannot decide whether a
+  /// scanned date may replace it.
+  bool _dateTouched = false;
 
   @override
   void initState() {
@@ -81,6 +94,7 @@ class _TransactionFormState extends State<_TransactionForm> {
     _holderId = existing?.holderId;
     _accountId = existing?.accountId;
     _date = existing?.date ?? DateTime.now();
+    _receiptPath = existing?.receiptPath;
     _hasInstallments = existing?.isInstallment ?? false;
     _isIncome = existing?.isIncome ?? false;
     _categoryId = widget.snapshot.categories
@@ -106,7 +120,7 @@ class _TransactionFormState extends State<_TransactionForm> {
   CreditCard? get _selectedCard =>
       widget.snapshot.cards.where((item) => item.id == _cardId).firstOrNull;
 
-  TransactionDraft _buildDraft() => TransactionDraft(
+  TransactionDraft _buildDraft({String? receiptPath}) => TransactionDraft(
     id: widget.existing?.id,
     purchasedAt: _date,
     merchant: _merchant.text,
@@ -125,11 +139,11 @@ class _TransactionFormState extends State<_TransactionForm> {
     personalAmount: _isShared && !_isIncome
         ? (parseAmountInput(_share.text) ?? double.nan)
         : null,
+    receiptPath: receiptPath,
   );
 
   Future<void> _submit() async {
-    final draft = _buildDraft();
-    final errors = draft.validate();
+    final errors = _buildDraft(receiptPath: _receiptPath).validate();
     setState(() {
       _errors = errors;
       _failure = null;
@@ -138,7 +152,22 @@ class _TransactionFormState extends State<_TransactionForm> {
 
     setState(() => _saving = true);
     try {
-      await widget.onSave(draft);
+      // Uploaded before the row is written, so the transaction carries the
+      // path in the same call. Writing the row first and attaching after
+      // would leave a saved transaction with a lost receipt whenever the
+      // second call failed.
+      var path = _receiptPath;
+      final pending = _pendingReceipt;
+      if (pending != null) {
+        path = await ref
+            .read(financeRepositoryProvider)
+            .uploadReceipt(
+              bytes: pending.bytes,
+              fileName: pending.fileName,
+              contentType: pending.contentType,
+            );
+      }
+      await widget.onSave(_buildDraft(receiptPath: path));
       if (mounted) Navigator.of(context).pop(true);
     } on FinanceWriteException catch (error) {
       if (mounted) {
@@ -157,6 +186,41 @@ class _TransactionFormState extends State<_TransactionForm> {
     }
   }
 
+  /// Fills only what is still blank.
+  ///
+  /// Overwriting a typed value would make the recognizer authoritative over
+  /// the person, and the recognizer is the one reading a photograph of a
+  /// crumpled piece of paper.
+  void _applyScan(ReceiptScan scan) {
+    final filled = <String>[];
+    setState(() {
+      if (scan.merchant != null && _merchant.text.trim().isEmpty) {
+        _merchant.text = scan.merchant!;
+        filled.add('estabelecimento');
+      }
+      if (scan.amount != null && _amount.text.trim().isEmpty) {
+        _amount.text = scan.amount!.toStringAsFixed(2).replaceAll('.', ',');
+        filled.add('valor');
+      }
+      // The date always has a value — it defaults to today — so "empty" cannot
+      // be the test. Only a date the person has not touched gives way.
+      if (scan.date != null && !_dateTouched) {
+        _date = scan.date!;
+        filled.add('data');
+      }
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          filled.isEmpty
+              ? 'Os campos já estavam preenchidos — nada foi alterado.'
+              : 'Preenchi ${filled.join(', ')}. Confira antes de salvar.',
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -166,7 +230,12 @@ class _TransactionFormState extends State<_TransactionForm> {
       locale: const Locale('pt', 'BR'),
       helpText: 'Data da compra',
     );
-    if (picked != null) setState(() => _date = picked);
+    if (picked != null) {
+      setState(() {
+        _date = picked;
+        _dateTouched = true;
+      });
+    }
   }
 
   @override
@@ -446,6 +515,18 @@ class _TransactionFormState extends State<_TransactionForm> {
                       ),
                     ),
                 ],
+                const SizedBox(height: 22),
+                ReceiptField(
+                  existingPath: _receiptPath,
+                  pending: _pendingReceipt,
+                  onPicked: (receipt) =>
+                      setState(() => _pendingReceipt = receipt),
+                  onCleared: () => setState(() {
+                    _pendingReceipt = null;
+                    _receiptPath = null;
+                  }),
+                  onApplyScan: _applyScan,
+                ),
                 if (_failure != null) ...[
                   const SizedBox(height: 16),
                   Container(

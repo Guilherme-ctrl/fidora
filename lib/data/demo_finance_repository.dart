@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
@@ -9,6 +11,7 @@ import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
@@ -212,6 +215,7 @@ class DemoFinanceRepository implements FinanceRepository {
       holderId: draft.holderId,
       personalAmount: draft.personalAmount,
       accountId: draft.accountId,
+      receiptPath: draft.receiptPath,
     );
     _transactions
       ..removeWhere((item) => item.id == saved.id)
@@ -553,6 +557,34 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> deleteMerchantRule(String id) async {
     _rules.removeWhere((item) => item.id == id);
+  }
+
+  /// Receipts in demo mode live in memory as data URLs, so the attach and view
+  /// flow can be exercised end to end without a Storage bucket.
+  final Map<String, String> _receipts = {};
+
+  @override
+  Future<String> uploadReceipt({
+    required Uint8List bytes,
+    required String fileName,
+    required String contentType,
+  }) async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    final path = 'demo/${_uuid.v4()}_$fileName';
+    _receipts[path] = 'data:$contentType;base64,${base64Encode(bytes)}';
+    return path;
+  }
+
+  @override
+  Future<String> receiptUrl(String path) async {
+    final url = _receipts[path];
+    if (url == null) throw const FinanceWriteException('Comprovante não encontrado.');
+    return url;
+  }
+
+  @override
+  Future<void> deleteReceipt(String path) async {
+    _receipts.remove(path);
   }
 
   @override

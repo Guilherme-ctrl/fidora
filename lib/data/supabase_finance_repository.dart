@@ -8,6 +8,7 @@ import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -84,6 +85,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
       // Null means the whole charge is yours; the statement total is untouched
       // either way, since `amount` stays what the issuer charged.
       'personal_amount': draft.personalAmount,
+      // Already uploaded by the time the draft arrives, so the row carries the
+      // path in the same write rather than in a follow-up that could fail.
+      'receipt_path': draft.receiptPath,
       'status': draft.status.name,
       'notes': draft.notes,
       'source': 'manual',
@@ -505,6 +509,68 @@ class SupabaseFinanceRepository implements FinanceRepository {
     } on PostgrestException catch (error) {
       throw FinanceWriteException(_friendlyWriteError(error));
     }
+  }
+
+  @override
+  Future<String> uploadReceipt({
+    required Uint8List bytes,
+    required String fileName,
+    required String contentType,
+  }) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const FinanceWriteException('Entre na sua conta para anexar.');
+    }
+    // The owner id is the first path segment because that is exactly what the
+    // storage policies match on. Any other shape uploads fine and then fails
+    // to be readable.
+    final path = '$userId/${_uuid.v4()}_$fileName';
+    try {
+      await _client.storage
+          .from('receipts')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(contentType: contentType, upsert: false),
+          );
+      return path;
+    } on StorageException catch (error) {
+      throw FinanceWriteException(_friendlyStorageError(error));
+    }
+  }
+
+  @override
+  Future<String> receiptUrl(String path) async {
+    try {
+      // Short-lived on purpose: the bucket is private, and a long-lived link
+      // would be a permanent public address for a document that shows a
+      // merchant, an amount and a date.
+      return await _client.storage
+          .from('receipts')
+          .createSignedUrl(path, 60 * 10);
+    } on StorageException catch (error) {
+      throw FinanceWriteException(_friendlyStorageError(error));
+    }
+  }
+
+  @override
+  Future<void> deleteReceipt(String path) async {
+    try {
+      await _client.storage.from('receipts').remove([path]);
+    } on StorageException catch (error) {
+      throw FinanceWriteException(_friendlyStorageError(error));
+    }
+  }
+
+  String _friendlyStorageError(StorageException error) {
+    final text = '${error.statusCode} ${error.message}';
+    if (text.contains('413') || text.toLowerCase().contains('too large')) {
+      return 'A imagem passa de 10 MB. Tire a foto em resolução menor.';
+    }
+    if (text.contains('403') || text.contains('401')) {
+      return 'Sem permissão para guardar o comprovante.';
+    }
+    return 'Não foi possível guardar o comprovante. Tente de novo.';
   }
 
   String _friendlyRuleError(PostgrestException error) {

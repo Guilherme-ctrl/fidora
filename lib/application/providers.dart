@@ -5,6 +5,7 @@ import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class FinanceRepository {
@@ -64,6 +65,23 @@ abstract class FinanceRepository {
   Future<List<MerchantRule>> loadMerchantRules();
   Future<void> saveMerchantRule(MerchantRuleDraft draft);
   Future<void> deleteMerchantRule(String id);
+
+  /// Stores a receipt image and returns its object path.
+  ///
+  /// Uploading before the transaction is written is deliberate: the row can
+  /// then carry the path in the same insert, instead of depending on a second
+  /// call that could fail after the transaction already exists.
+  Future<String> uploadReceipt({
+    required Uint8List bytes,
+    required String fileName,
+    required String contentType,
+  });
+
+  /// A short-lived URL for viewing a stored receipt. The bucket is private, so
+  /// there is no permanent address to hand out.
+  Future<String> receiptUrl(String path);
+
+  Future<void> deleteReceipt(String path);
 }
 
 final financeRepositoryProvider = Provider<FinanceRepository>(

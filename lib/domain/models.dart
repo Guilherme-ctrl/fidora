@@ -20,6 +20,7 @@ class FinanceTransaction {
     this.holderId,
     this.personalAmount,
     this.accountId,
+    this.receiptPath,
   });
   final String id;
   final DateTime date;
@@ -45,6 +46,13 @@ class FinanceTransaction {
 
   /// Where the money moved, when it was not a card.
   final String? accountId;
+
+  /// Object path of the attached receipt in the private `receipts`
+  /// bucket. Only the path is stored: the image itself would bloat every
+  /// snapshot load, and the ledger is read in full on each one.
+  final String? receiptPath;
+
+  bool get hasReceipt => receiptPath != null;
 
   /// What counts as yours. The full [amount] stays the audited figure.
   double get personalShare => personalAmount ?? amount;
@@ -85,6 +93,7 @@ class FinanceTransaction {
         holderId: json['holder_id'] as String?,
         personalAmount: (json['personal_amount'] as num?)?.toDouble(),
         accountId: json['account_id'] as String?,
+        receiptPath: json['receipt_path'] as String?,
         status: switch (json['status']) {
           'pending' => TransactionStatus.pending,
           'ignored' => TransactionStatus.ignored,

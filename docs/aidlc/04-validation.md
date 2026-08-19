@@ -403,3 +403,60 @@ Two further defects surfaced at large Dynamic Type:
 snapshot at four widths and three text scales, and fails on any overflow. This
 is the first coverage of Dynamic Type in the project; the standing gate about
 it is narrowed, not closed — only the dashboard is covered.
+
+## Receipt attachment and OCR (fase 4)
+
+Reading is **on device** — the photograph never leaves the phone. For a
+document that shows a merchant, an amount and a date, that is the point, and
+it also means no API key and no per-scan cost. Chosen by the owner on
+2026-08-18 over a cloud recognizer.
+
+Covered by tests: 30 on the parser, 8 on the field and its wiring into the
+form. The design decisions the tests pin:
+
+- **Nothing is guessed.** Every field of `ReceiptScan` is nullable, and a
+  field is either supported by something the receipt says or comes back null.
+  Prefilling a wrong amount is worse than prefilling nothing: it gets
+  confirmed along with everything else and becomes a fact in the ledger.
+- **No fallback to "the largest number on the page."** Without a labelled
+  total there is no amount, because the largest number is as likely to be a
+  CNPJ fragment, a barcode or a card number.
+- **"TOTAL DE ITENS 7" is not seven reais.** Labels containing *total* that
+  never carry a price are excluded explicitly.
+- **A specific label beats a bare one** regardless of order, so a receipt
+  printing both a subtotal and a total to pay reads the one charged.
+- **`1.234` is one thousand.** With no comma, three digits after a dot is a
+  thousands separator and two digits is a decimal point. Getting this
+  backwards understates a purchase by a thousandfold.
+- **Reading is offered, not applied.** The button says "preencher os campos
+  vazios" and does exactly that; a typed value is never overwritten. The date
+  is special-cased because it is never empty — it defaults to today — so only
+  a date the person has not touched gives way.
+- **A failed reading never loses the photograph.** The attachment is useful on
+  its own.
+- **Upload happens before the row is written**, so the transaction carries the
+  path in the same call. Writing first and attaching after would leave a saved
+  transaction with a lost receipt whenever the second call failed.
+
+Storage: a private bucket, 10 MB limit, image mime types only. Policies match
+on the first path segment being the owner's user id, which is the shape the
+upload code writes. Reads go through a ten-minute signed URL — a public bucket
+would make every receipt readable by anyone holding the URL.
+
+Deleting a transaction does not delete its object: Postgres cannot reach into
+Storage. An orphan stays private and unreferenced rather than becoming public.
+A sweeper is not written.
+
+**iOS deployment target raised 15.0 → 15.5**, required by `google_mlkit_commons`.
+No device is lost: everything that runs 15.0 can run 15.5.
+
+**Not verified, and this one cannot be verified here at all.** ML Kit ships no
+arm64 simulator slices:
+
+    MLImage, MLKitCommon, MLKitVision — no arm64 simulator support
+
+On an Apple Silicon Mac the recognizer cannot run in the Simulator. The device
+build compiles and links, and the permission strings are present in the built
+`Info.plist`, but no receipt has been photographed or read. Everything up to
+the recognizer call is covered by tests with a stubbed recognizer; the call
+itself needs a real iPhone.

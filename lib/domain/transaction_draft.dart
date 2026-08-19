@@ -46,6 +46,7 @@ class TransactionDraft {
     this.holderId,
     this.personalAmount,
     this.accountId,
+    this.receiptPath,
   });
 
   final String? id;
@@ -66,6 +67,11 @@ class TransactionDraft {
 
   /// Where the money moved, when it was not a card.
   final String? accountId;
+
+  /// Storage path of an attached receipt, or null. Already uploaded by the
+  /// time the draft is saved: the write must not depend on a second network
+  /// call that could fail after the row exists.
+  final String? receiptPath;
 
   bool get isShared => personalAmount != null && personalAmount! < amount;
 
