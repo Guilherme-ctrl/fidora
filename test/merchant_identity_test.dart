@@ -74,6 +74,8 @@ void main() {
     });
   });
 
+  _normalisation();
+
   group('Coverage', () {
     test('reports what a lookup would actually reach', () {
       final coverage = PayeeCoverage();
@@ -101,6 +103,48 @@ void main() {
       final coverage = PayeeCoverage();
       expect(coverage.shareOfAll, 0);
       expect(coverage.shareOfPix, 0);
+    });
+  });
+}
+
+/// The two mechanical reasons a merchant is not recognisable as itself.
+void _normalisation() {
+  group('Normalising a merchant name', () {
+    test('the instalment written inside the name comes off', () {
+      // This is the one that matters most: without it, ten instalments of one
+      // purchase are ten different merchants.
+      expect(normalizeMerchant('LOJA X 03/10'), 'LOJA X');
+      expect(normalizeMerchant('LOJA X 04/10'), 'LOJA X');
+      expect(normalizeMerchant('MAGAZINE LUIZA D03/12'), 'MAGAZINE LUIZA');
+      expect(normalizeMerchant('CASA E CIA L01/06'), 'CASA E CIA');
+      expect(
+        normalizeMerchant('LOJA X 03/10'),
+        normalizeMerchant('LOJA X 07/10'),
+        reason: 'duas parcelas da mesma compra têm de virar o mesmo nome',
+      );
+    });
+
+    test('the acquirer in front comes off, the shop stays', () {
+      expect(normalizeMerchant('PAYPAL*SPOTIFY'), 'SPOTIFY');
+      expect(normalizeMerchant('MP *SHOPEE'), 'SHOPEE');
+      expect(normalizeMerchant('PAG    *PADARIA CENTRAL'), 'PADARIA CENTRAL');
+      expect(normalizeMerchant('EBANX* STEAM GAMES'), 'STEAM GAMES');
+    });
+
+    test('both at once', () {
+      expect(normalizeMerchant('PAYPAL*LOJA X 02/06'), 'LOJA X');
+    });
+
+    test('leaves a plain name alone', () {
+      expect(normalizeMerchant('MERCADO EXTRA'), 'MERCADO EXTRA');
+      expect(normalizeMerchant('  UBER  '), 'UBER');
+    });
+
+    test('never returns nothing', () {
+      // A name that is only an aggregator prefix has no shop in it, so the
+      // original is better than an empty string.
+      expect(normalizeMerchant('PAYPAL*'), 'PAYPAL*');
+      expect(normalizeMerchant('03/10'), '03/10');
     });
   });
 }

@@ -166,3 +166,42 @@ class PayeeCoverage {
 
   double get shareOfPix => pix == 0 ? 0 : resolvable / pix;
 }
+
+/// A parcela escrita dentro do nome: `LOJA X 03/10`, `LOJA X D03/10`.
+final _installmentSuffix = RegExp(r'\s*[A-Za-z]?\d{1,2}\s*/\s*\d{1,2}\s*$');
+
+/// O prefixo do agregador: `PAYPAL*SPOTIFY`, `MP*SHOPEE`, `PAG *PADARIA`.
+final _aggregatorPrefix = RegExp(r'^\s*([A-Za-z0-9\.]{2,14})\s*\*\s*(.+)$');
+
+final _extraSpace = RegExp(r'\s+');
+
+/// The name the same shop should always have.
+///
+/// Two things in a Brazilian statement stop a merchant from being recognisable
+/// as itself, and both are mechanical.
+///
+/// The instalment is written **inside the name**, so `LOJA X 03/10` and
+/// `LOJA X 04/10` are different strings. A merchant rule written on one never
+/// matches the other, and a review queue cannot group them — which is most of
+/// why a queue of twenty-four feels like twenty-four unrelated decisions.
+///
+/// And the acquirer writes itself in front: `PAYPAL*SPOTIFY` is a Spotify
+/// charge, not a PayPal one. Grouping by the raw string files every card
+/// aggregator's customers together under the aggregator.
+String normalizeMerchant(String merchant) {
+  var name = merchant.trim();
+
+  final aggregator = _aggregatorPrefix.firstMatch(name);
+  if (aggregator != null) {
+    final tail = aggregator.group(2)!.trim();
+    // Only when there is a real name after it: `X*` alone tells us nothing.
+    if (tail.length >= 3) name = tail;
+  }
+
+  name = name.replaceAll(_installmentSuffix, '');
+  name = name.replaceAll(_extraSpace, ' ').trim();
+  // A trailing separator left behind by the strip.
+  name = name.replaceAll(RegExp(r'[\s\-–—.]+$'), '').trim();
+
+  return name.isEmpty ? merchant.trim() : name;
+}

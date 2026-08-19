@@ -1214,3 +1214,39 @@ faz aquele estabelecimento nunca mais voltar.
 E há um caminho melhor para cartão que não depende de nada disso: o **MCC**, que
 a bandeira já atribui. Vale conferir se o extrato traz antes de investir em
 casar nome com empresa.
+
+### O resultado do spike: não vale, e o que vale no lugar
+
+O dono rodou as consultas no razão real. **897 lançamentos, 196 Pix, zero com
+documento** — nem CNPJ, nem CPF, nem mascarado. O banco dele não escreve
+documento na descrição.
+
+Então a consulta de CNAE alcançaria **0%** do razão e não deve ser construída. O
+spike custou pouco e evitou isso.
+
+Mas a consulta de formatos, que existia para explicar uma cobertura baixa,
+mostrou outra coisa. Nas 25 formas mais frequentes:
+
+| Padrão | Lançamentos |
+|---|---|
+| `AAA*AAA` — prefixo de agregador | 157 |
+| `AAA ##/##` — parcela dentro do nome | 154 |
+| **somados** | **311, ou 35% do razão** |
+
+E 35% é o piso, porque são só as 25 formas mais comuns.
+
+Os dois são mecânicos e locais. A parcela escrita **dentro do nome** significa
+que `LOJA X 03/10` e `LOJA X 04/10` são strings diferentes: uma regra de
+estabelecimento escrita numa nunca casa com a outra, e a fila de revisão não
+consegue agrupá-las. É boa parte do motivo de uma fila de 24 parecer 24 decisões
+sem relação.
+
+E `PAYPAL*SPOTIFY` é uma cobrança da Spotify, não da PayPal. Agrupar pelo texto
+cru arquiva os clientes de cada agregador debaixo do agregador.
+
+`normalizeMerchant` resolve os dois, e o agrupamento da fila passou a usá-lo.
+`tool/sql/merchant_collapse.sql` mede quanto isso junta no razão real.
+
+**A lição:** a pergunta que o dono fez tinha resposta negativa, e a consulta que
+existia só para depurar a resposta negativa achou um problema maior — que já
+estava atrapalhando a tela sobre a qual ele tinha reclamado dois dias antes.

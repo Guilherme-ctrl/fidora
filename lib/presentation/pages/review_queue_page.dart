@@ -1,5 +1,6 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/merchant_identity.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -34,7 +35,11 @@ class _Group {
       final transaction = snapshot?.transactions
           .where((row) => row.id == item.transactionId)
           .firstOrNull;
-      final key = transaction?.merchant ?? item.reason;
+      // Normalised, or the same shop arrives as several groups: the instalment
+      // is written inside the name, so `LOJA X 03/10` and `LOJA X 04/10` would
+      // never meet.
+      final merchant = transaction?.merchant;
+      final key = merchant == null ? item.reason : normalizeMerchant(merchant);
       byKey.putIfAbsent(key, () => []).add(item);
       sample.putIfAbsent(key, () => transaction);
     }
