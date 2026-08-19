@@ -149,17 +149,29 @@ class MetricCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   if (detail != null)
-                    Text(
-                      detail!,
-                      style: TextStyle(
-                        color: color,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
+                    // Flexible, not rigid: at a large Dynamic Type setting this
+                    // caption stops fitting beside the icon, and a fixed Text
+                    // pushed the row past the card instead of giving way.
+                    Flexible(
+                      child: Text(
+                        detail!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.end,
+                        style: TextStyle(
+                          color: color,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                 ],
               ),
-              const SizedBox(height: 22),
+              // A flexible gap rather than a fixed 22: the grid hands this card
+              // a fixed height, and a rigid gap made the content taller than
+              // the cell the moment a trend line appeared. The slack now lives
+              // where it can be given back.
+              const Spacer(),
               Text(
                 value,
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
@@ -167,7 +179,14 @@ class MetricCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 4),
-              Text(label, style: TextStyle(color: context.palette.inkMuted)),
+              // Capped so a long label in a narrow column cannot grow the card
+              // past the height the grid gave it.
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: context.palette.inkMuted),
+              ),
               if (trend != null) ...[
                 const SizedBox(height: 9),
                 Row(

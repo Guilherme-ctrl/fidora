@@ -349,3 +349,57 @@ guards are behaving; the demo fixture is what is too thin to show them.
 **Not verified:** the screen has not been driven by hand, for the same reason
 as the forecast — the browser pane here does not deliver clicks into the
 Flutter canvas.
+
+## Demo ledger extended to four months (fase 4)
+
+`DemoFinanceRepository` held 8 transactions in a single month, which silently
+disabled every feature that needs a baseline. It now carries three prior
+months plus the current one, with past invoices and salary rows.
+
+Two mistakes of mine in the first pass, both caught by running the derivations
+against the seeded data rather than by reading it:
+
+- **A malformed income row.** Written as `movementType: 'income'` on
+  `cardLastFour: ''`. Neither is what the model checks: income is `credit` on
+  something that is *not* a card, and `isCard` only excludes the literal
+  `----`. The row became a 9.800 expense on a phantom card, and the insights
+  panel reported "você gastou 100% a menos em Renda" as good news.
+- **Amounts too uniform.** Derived from the loop index, so a bakery, a
+  supermarket and a petrol station all passed the recurring detector's
+  steadiness test and were reported as subscriptions. The detector was right;
+  the fixture was fake. Amounts are now listed per month, and only Netflix and
+  the telecom bill hold still.
+
+Past invoice totals were also invented near 2.400 while the seeded ledger
+spends about 500 per card, so the forecast reported every open invoice as
+closing "76% abaixo da média" — correct arithmetic about data that
+contradicted itself. The totals now track the ledger.
+
+A guard test asserts the demo still spans at least three months. Without it, a
+future trim back to one month would make the layout tests below stop
+exercising the trend line and pass for the wrong reason.
+
+## Metric grid overflow (found by extending the demo)
+
+Extending the demo exposed a layout bug that had been shipping invisible: the
+metric cards overflowed by 24 pixels once a trend line rendered, and the trend
+line only renders when there is a previous month to compare against.
+
+The cause was structural, not cosmetic. `GridView.count` sized every cell from
+a fixed `childAspectRatio`, chosen for a card without a trend line. Two rounds
+of tuning that number each left a smaller overflow at some other width, which
+is the signature of the wrong approach. The grid is now rows of
+`IntrinsicHeight`, which measure their own content, with
+`CrossAxisAlignment.stretch` so values in a row share a baseline.
+
+Two further defects surfaced at large Dynamic Type:
+
+- the metric label could grow unbounded in a narrow column — now capped at two
+  lines with an ellipsis;
+- the caption beside the icon overflowed horizontally at 2× text — now
+  `Flexible` so it gives way instead of pushing the row past the card.
+
+`test/dashboard_layout_test.dart` pumps the real dashboard with the real demo
+snapshot at four widths and three text scales, and fails on any overflow. This
+is the first coverage of Dynamic Type in the project; the standing gate about
+it is narrowed, not closed — only the dashboard is covered.

@@ -47,6 +47,34 @@ class DemoFinanceRepository implements FinanceRepository {
   late final List<CreditCard> _cards = [..._seedCards];
 
   late final List<Invoice> _invoices = [
+    // Closed and settled months, so the invoice screens have history and the
+    // forecast has an average to be measured against. Without these, every
+    // comparison against past invoices is silently skipped.
+    //
+    // The totals track what the seeded ledger actually spends on each card. An
+    // earlier pass invented figures near 2.400, and the forecast then reported
+    // every open invoice as closing "76% abaixo da média" — arithmetic that was
+    // correct about data that contradicted itself.
+    for (var back = 1; back <= 3; back++) ...[
+      Invoice(
+        id: 'p1$back',
+        cardId: '1',
+        referenceMonth: DateTime(_now.year, _now.month - back),
+        total: _pastCardOne[back - 1],
+        dueDate: DateTime(_now.year, _now.month - back, 9),
+        status: 'paid',
+        paidAt: DateTime(_now.year, _now.month - back, 8),
+      ),
+      Invoice(
+        id: 'p2$back',
+        cardId: '2',
+        referenceMonth: DateTime(_now.year, _now.month - back),
+        total: _pastCardTwo[back - 1],
+        dueDate: DateTime(_now.year, _now.month - back, 10),
+        status: 'paid',
+        paidAt: DateTime(_now.year, _now.month - back, 10),
+      ),
+    ],
     Invoice(
       id: '1',
       cardId: '1',
@@ -543,7 +571,63 @@ class DemoFinanceRepository implements FinanceRepository {
     );
   }
 
+  /// A recent date guaranteed to still fall inside the current month.
+  ///
+  /// The demo used to reach back with a plain subtraction, which meant that on
+  /// the third of a month most of the ledger landed in the previous one and the
+  /// overview opened nearly empty.
+  DateTime _daysAgo(int days) {
+    final date = _now.subtract(Duration(days: days));
+    return date.month == _now.month ? date : DateTime(_now.year, _now.month);
+  }
+
+  /// A day in the month [monthsBack] before this one.
+  DateTime _backThen(int monthsBack, int day) =>
+      DateTime(_now.year, _now.month - monthsBack, day);
+
   List<FinanceTransaction> _seedTransactions() => [
+    ..._seedHistory(),
+    // Two dinners that make this month's Alimentação stand out on purpose: the
+    // insights card has nothing to say about a ledger where every month looks
+    // the same, and a demo that cannot show the feature cannot sell it.
+    FinanceTransaction(
+      id: 'd1',
+      date: _daysAgo(2),
+      merchant: 'CANTINA DO PORTO',
+      amount: 180.00,
+      category: 'Alimentação',
+      cardLastFour: '6902',
+    ),
+    FinanceTransaction(
+      id: 'd2',
+      date: _daysAgo(4),
+      merchant: 'TRATTORIA NONNA',
+      amount: 150.00,
+      category: 'Alimentação',
+      cardLastFour: '6902',
+    ),
+    // The subscription that moved. Three months at 39,90 and this one at
+    // 55,90, which is what the price-change insight reads.
+    FinanceTransaction(
+      id: 'd3',
+      date: _daysAgo(6),
+      merchant: 'NETFLIX',
+      amount: 55.90,
+      category: 'Assinaturas',
+      cardLastFour: '4567',
+    ),
+    // Without this month's salary the overview opens with zero income and a
+    // savings rate that means nothing.
+    FinanceTransaction(
+      id: 'd4',
+      date: _daysAgo(8),
+      merchant: 'SALÁRIO',
+      amount: 9800.00,
+      category: 'Renda',
+      cardLastFour: '----',
+      accountId: 'a1',
+      movementType: 'credit',
+    ),
     FinanceTransaction(
       id: '1',
       date: _now,
@@ -615,6 +699,101 @@ class DemoFinanceRepository implements FinanceRepository {
       cardLastFour: '0590',
       status: TransactionStatus.pending,
     ),
+  ];
+
+  /// Three months before this one, so the app has something to compare against.
+  ///
+  /// A single month of data is what the demo had, and it silently disabled
+  /// every feature that needs a baseline: the insights card had nothing to say,
+  /// and the invoice forecast could only ever report what was already
+  /// committed. The shape here is deliberate, not filler — each month carries a
+  /// steady rent and subscription, a food total that stays near 180 so this
+  /// month reads as a spike, and transport near 250 so this month reads as a
+  /// drop.
+  /// Amounts are listed per month rather than derived from the loop index.
+  ///
+  /// A formula produced values within a few reais of each other, and the
+  /// recurring detector correctly read a bakery, a supermarket and a petrol
+  /// station as subscriptions — the steadiness test is exactly what it is meant
+  /// to catch. Real everyday spending varies; only [_netflix] and the telecom
+  /// bill hold still, and those are the two that should be detected.
+  /// Past invoice totals, in the same range the seeded ledger produces on each
+  /// card, so the forecast compares against something believable.
+  static const _pastCardOne = [498.30, 542.75, 466.10];
+  static const _pastCardTwo = [451.40, 489.20, 428.85];
+
+  static const _groceries = [118.40, 214.90, 96.30];
+  static const _bakery = [61.20, 32.40, 88.10];
+  static const _fuel = [214.00, 168.30, 289.40];
+  static const _rides = [38.60, 74.20, 22.90];
+
+  List<FinanceTransaction> _seedHistory() => [
+    for (var back = 1; back <= 3; back++) ...[
+      FinanceTransaction(
+        id: 'h${back}a',
+        date: _backThen(back, 6),
+        merchant: 'MERCADO EXTRA',
+        amount: _groceries[back - 1],
+        category: 'Alimentação',
+        cardLastFour: '6902',
+      ),
+      FinanceTransaction(
+        id: 'h${back}b',
+        date: _backThen(back, 17),
+        merchant: 'PADARIA CENTRAL',
+        amount: _bakery[back - 1],
+        category: 'Alimentação',
+        cardLastFour: '6902',
+      ),
+      FinanceTransaction(
+        id: 'h${back}c',
+        date: _backThen(back, 9),
+        merchant: 'POSTO IPIRANGA',
+        amount: _fuel[back - 1],
+        category: 'Transporte',
+        cardLastFour: '4567',
+      ),
+      FinanceTransaction(
+        id: 'h${back}d',
+        date: _backThen(back, 21),
+        merchant: 'UBER',
+        amount: _rides[back - 1],
+        category: 'Transporte',
+        cardLastFour: '6902',
+      ),
+      // Same merchant, same amount, every month: this is what the app treats
+      // as a subscription, and what makes the recurring panel non-empty.
+      FinanceTransaction(
+        id: 'h${back}e',
+        date: _backThen(back, 12),
+        merchant: 'NETFLIX',
+        amount: 39.90,
+        category: 'Assinaturas',
+        cardLastFour: '4567',
+      ),
+      FinanceTransaction(
+        id: 'h${back}f',
+        date: _backThen(back, 3),
+        merchant: 'UNIFIQUE TELECOM',
+        amount: 197.50,
+        category: 'Moradia',
+        cardLastFour: '4567',
+      ),
+      // Income is `credit` on something that is not a card. Writing this as
+      // `movementType: 'income'` on a blank card number made it an expense of
+      // 9800 on a phantom card, because `isCard` only excludes the literal
+      // `----`.
+      FinanceTransaction(
+        id: 'h${back}g',
+        date: _backThen(back, 5),
+        merchant: 'SALÁRIO',
+        amount: 9800.00,
+        category: 'Renda',
+        cardLastFour: '----',
+        accountId: 'a1',
+        movementType: 'credit',
+      ),
+    ],
   ];
 
   static const _seedCategories = <FinanceCategory>[

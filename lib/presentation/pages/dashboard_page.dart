@@ -69,100 +69,134 @@ class DashboardPage extends ConsumerWidget {
         ),
         const SizedBox(height: 18),
         _BudgetWarning(alerts: budgetAlerts(snapshot, period)),
-        GridView.count(
-          crossAxisCount: columns,
-          mainAxisSpacing: 14,
-          crossAxisSpacing: 14,
-          childAspectRatio: width < 680 ? 2.15 : 1.7,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            MetricCard(
-              label: 'Saídas — faturas + conta',
-              value: currency.format(analytics.expenses),
-              icon: Icons.south_east_rounded,
-              color: context.palette.danger,
-              detail:
-                  '${analytics.transactions.where((item) => item.affectsExpenses && isCardTransaction(item)).length} no cartão',
-              trendLabel: _expenseTrend(comparison),
-              // Spending less than the baseline is the good direction.
-              trendGood: comparison.hasBaseline ? !comparison.spentMore : null,
-              tooltip: 'Ver todas as saídas consideradas no período',
-              onTap: () => _showTransactions(
-                context,
-                'Saídas no período',
-                analytics.transactions
-                    .where((item) => item.affectsExpenses)
-                    .toList(),
-              ),
-            ),
-            MetricCard(
-              label: 'Entradas no período',
-              value: currency.format(analytics.income),
-              icon: Icons.south_west_rounded,
-              color: context.palette.brand,
-              detail:
-                  '${analytics.transactions.where((item) => item.isIncome).length} entradas',
-              tooltip: 'Ver créditos e entradas do período',
-              onTap: () => _showTransactions(
-                context,
-                'Entradas no período',
-                analytics.transactions.where((item) => item.isIncome).toList(),
-              ),
-            ),
-            MetricCard(
-              label: 'Saldo do período',
-              value: currency.format(analytics.balance),
-              icon: Icons.account_balance_wallet_rounded,
-              color: analytics.balance >= 0
-                  ? const Color(0xFF5D65A8)
-                  : context.palette.danger,
-              detail: '${analytics.savingsRate.toStringAsFixed(1)}% poupado',
-              tooltip: 'Entender como entradas e saídas formam o saldo',
-              onTap: () => showDetailSheet(
-                context,
-                title: 'Saldo de ${period.label}',
-                description:
-                    'Saldo é a diferença entre entradas e saídas consideradas.',
-                child: Column(
-                  children: [
-                    DetailValue(
-                      label: 'Entradas',
-                      value: currency.format(analytics.income),
-                    ),
-                    DetailValue(
-                      label: 'Saídas',
-                      value: currency.format(analytics.expenses),
-                    ),
-                    DetailValue(
-                      label: 'Cartão por fatura',
-                      value: currency.format(cardExpenses),
-                    ),
-                    DetailValue(
-                      label: 'Conta, Pix e débito',
-                      value: currency.format(accountExpenses),
-                    ),
-                    DetailValue(
-                      label: 'Saldo',
-                      value: currency.format(analytics.balance),
-                    ),
-                  ],
+        // Rows of intrinsic height rather than a grid of fixed aspect ratio.
+        // The ratio approach sized every cell from a guessed height, and a
+        // trend line — which only renders once there is a previous month —
+        // pushed the content past it. That overflow shipped invisible while
+        // the demo held a single month. Rows that measure their own content
+        // cannot overflow at any text scale, and stretching the cards makes
+        // the values in a row share a baseline.
+        Builder(
+          builder: (context) {
+            final metrics = <Widget>[
+              MetricCard(
+                label: 'Saídas — faturas + conta',
+                value: currency.format(analytics.expenses),
+                icon: Icons.south_east_rounded,
+                color: context.palette.danger,
+                detail:
+                    '${analytics.transactions.where((item) => item.affectsExpenses && isCardTransaction(item)).length} no cartão',
+                trendLabel: _expenseTrend(comparison),
+                // Spending less than the baseline is the good direction.
+                trendGood: comparison.hasBaseline
+                    ? !comparison.spentMore
+                    : null,
+                tooltip: 'Ver todas as saídas consideradas no período',
+                onTap: () => _showTransactions(
+                  context,
+                  'Saídas no período',
+                  analytics.transactions
+                      .where((item) => item.affectsExpenses)
+                      .toList(),
                 ),
               ),
-            ),
-            MetricCard(
-              label: 'Faturas no período',
-              value: currency.format(invoiceTotal),
-              icon: Icons.credit_card_rounded,
-              color: context.palette.warning,
-              detail:
-                  '${snapshot.invoices.where((item) => period.contains(item.referenceMonth)).length} faturas',
-              tooltip: 'Ver faturas cuja competência está no período',
-              onTap: () => _showInvoices(context),
-            ),
-          ],
+              MetricCard(
+                label: 'Entradas no período',
+                value: currency.format(analytics.income),
+                icon: Icons.south_west_rounded,
+                color: context.palette.brand,
+                detail:
+                    '${analytics.transactions.where((item) => item.isIncome).length} entradas',
+                tooltip: 'Ver créditos e entradas do período',
+                onTap: () => _showTransactions(
+                  context,
+                  'Entradas no período',
+                  analytics.transactions
+                      .where((item) => item.isIncome)
+                      .toList(),
+                ),
+              ),
+              MetricCard(
+                label: 'Saldo do período',
+                value: currency.format(analytics.balance),
+                icon: Icons.account_balance_wallet_rounded,
+                color: analytics.balance >= 0
+                    ? const Color(0xFF5D65A8)
+                    : context.palette.danger,
+                detail: '${analytics.savingsRate.toStringAsFixed(1)}% poupado',
+                tooltip: 'Entender como entradas e saídas formam o saldo',
+                onTap: () => showDetailSheet(
+                  context,
+                  title: 'Saldo de ${period.label}',
+                  description:
+                      'Saldo é a diferença entre entradas e saídas consideradas.',
+                  child: Column(
+                    children: [
+                      DetailValue(
+                        label: 'Entradas',
+                        value: currency.format(analytics.income),
+                      ),
+                      DetailValue(
+                        label: 'Saídas',
+                        value: currency.format(analytics.expenses),
+                      ),
+                      DetailValue(
+                        label: 'Cartão por fatura',
+                        value: currency.format(cardExpenses),
+                      ),
+                      DetailValue(
+                        label: 'Conta, Pix e débito',
+                        value: currency.format(accountExpenses),
+                      ),
+                      DetailValue(
+                        label: 'Saldo',
+                        value: currency.format(analytics.balance),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              MetricCard(
+                label: 'Faturas no período',
+                value: currency.format(invoiceTotal),
+                icon: Icons.credit_card_rounded,
+                color: context.palette.warning,
+                detail:
+                    '${snapshot.invoices.where((item) => period.contains(item.referenceMonth)).length} faturas',
+                tooltip: 'Ver faturas cuja competência está no período',
+                onTap: () => _showInvoices(context),
+              ),
+            ];
+
+            return Column(
+              children: [
+                for (var row = 0; row < metrics.length; row += columns) ...[
+                  if (row > 0) const SizedBox(height: 14),
+                  IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var slot = 0; slot < columns; slot++) ...[
+                          if (slot > 0) const SizedBox(width: 14),
+                          Expanded(
+                            child: row + slot < metrics.length
+                                ? metrics[row + slot]
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            );
+          },
         ),
         const SizedBox(height: 14),
+        // After the numbers, before the breakdowns: it reads as the answer to
+        // the numbers above, and the charts below are where someone goes to
+        // check it. Removes itself when there is nothing worth saying.
+        InsightsCard(snapshot: snapshot, period: period),
         LayoutBuilder(
           builder: (context, constraints) {
             final split = constraints.maxWidth >= 900;
@@ -187,10 +221,6 @@ class DashboardPage extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 14),
-        // After the numbers, before the breakdowns: it reads as the answer to
-        // the numbers above, and the charts below are where someone goes to
-        // check it. Removes itself when there is nothing worth saying.
-        InsightsCard(snapshot: snapshot, period: period),
         _MonthOverMonth(comparison: comparison, average: average),
         const SizedBox(height: 14),
         _BudgetComparison(

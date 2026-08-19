@@ -161,3 +161,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — segundo item da fase 4.
 
 ---
+
+## Construction — Build and Test (dados de demonstração e overflow da grade)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Sim, estende os dados de demo"
+**AI Response**: "Estendi o repositório de demonstração para quatro meses, com faturas passadas e salário. Dois erros meus na primeira passada, pegos ao rodar as derivações contra os dados e não ao relê-los: escrevi a entrada como `movementType: 'income'` num cartão em branco, o que a tornou uma despesa de 9.800 num cartão fantasma; e derivei os valores do índice do laço, deixando padaria, mercado e posto uniformes o bastante para serem classificados como assinatura. Isso expôs um bug de layout que estava invisível: os cards de indicador estouravam 24px assim que a linha de tendência aparecia — e ela só aparece quando existe mês anterior. Troquei a grade de proporção fixa por linhas de altura intrínseca, o que remove a classe do bug em vez de ajustar o número. Mais dois defeitos em texto grande: rótulo sem limite de linhas e legenda sem flexibilidade. `test/dashboard_layout_test.dart` roda o dashboard real em quatro larguras e três escalas de texto. 340 testes no total."
+**Context**: Construction / Build and Test — primeira cobertura de Dynamic Type do projeto.
+
+---
