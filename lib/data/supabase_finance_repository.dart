@@ -387,6 +387,18 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<List<ImportBatch>> loadImportBatches() async {
+    final rows = await _client
+        .from('import_batches')
+        .select()
+        .order('created_at', ascending: false)
+        .limit(200);
+    return (rows as List)
+        .map((json) => ImportBatch.fromJson(json as Map<String, dynamic>))
+        .toList();
+  }
+
+  @override
   Future<List<ShortcutToken>> loadShortcutTokens() async {
     final rows = await _client
         .from('shortcut_tokens')

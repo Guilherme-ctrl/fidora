@@ -227,6 +227,40 @@ class Goal {
   );
 }
 
+/// One statement import: what came in, and what it produced.
+class ImportBatch {
+  const ImportBatch({
+    required this.id,
+    required this.fileName,
+    required this.createdAt,
+    this.rowsRead = 0,
+    this.rowsCreated = 0,
+    this.rowsUpdated = 0,
+    this.rowsDuplicated = 0,
+    this.rowsToReview = 0,
+  });
+
+  final String id;
+  final String fileName;
+  final DateTime createdAt;
+  final int rowsRead;
+  final int rowsCreated;
+  final int rowsUpdated;
+  final int rowsDuplicated;
+  final int rowsToReview;
+
+  factory ImportBatch.fromJson(Map<String, dynamic> json) => ImportBatch(
+    id: json['id'] as String,
+    fileName: json['file_name'] as String,
+    createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
+    rowsRead: (json['rows_read'] as num?)?.toInt() ?? 0,
+    rowsCreated: (json['rows_created'] as num?)?.toInt() ?? 0,
+    rowsUpdated: (json['rows_updated'] as num?)?.toInt() ?? 0,
+    rowsDuplicated: (json['rows_duplicated'] as num?)?.toInt() ?? 0,
+    rowsToReview: (json['rows_to_review'] as num?)?.toInt() ?? 0,
+  );
+}
+
 /// A place money sits: checking, savings, a wallet.
 ///
 /// `accounts` and `transactions.account_id` have been in the schema since the

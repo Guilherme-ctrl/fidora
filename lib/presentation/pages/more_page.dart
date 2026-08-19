@@ -10,6 +10,7 @@ import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/pages/accounts_page.dart';
+import 'package:financeiro_ai/presentation/pages/data_page.dart';
 import 'package:financeiro_ai/presentation/pages/holders_page.dart';
 import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
 import 'package:financeiro_ai/presentation/pages/subscriptions_page.dart';
@@ -208,6 +209,18 @@ class MorePage extends ConsumerWidget {
                 tooltip:
                     'Selecionar o JSON e revisar a importação antes de gravar',
                 onTap: () => _pickInvoice(context, ref),
+              ),
+              _OperationTile(
+                icon: Icons.download_rounded,
+                color: const Color(0xFF6B7B58),
+                title: 'Seus dados',
+                subtitle: 'Exportar CSV e ver o histórico de importações',
+                tooltip: 'Exportar seus lançamentos e revisar importações',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => DataPage(snapshot: snapshot),
+                  ),
+                ),
               ),
               _OperationTile(
                 icon: Icons.people_alt_rounded,

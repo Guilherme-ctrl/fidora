@@ -432,6 +432,19 @@ class DemoFinanceRepository implements FinanceRepository {
   }
 
   @override
+  Future<List<ImportBatch>> loadImportBatches() async => [
+    ImportBatch(
+      id: 'b1',
+      fileName: 'itau-2026-07.json',
+      createdAt: _now.subtract(const Duration(days: 12)),
+      rowsRead: 67,
+      rowsCreated: 66,
+      rowsUpdated: 1,
+      rowsToReview: 2,
+    ),
+  ];
+
+  @override
   Future<List<ShortcutToken>> loadShortcutTokens() async =>
       List.unmodifiable(_tokens);
 

@@ -52,6 +52,8 @@ abstract class FinanceRepository {
   Future<void> saveHolder(HolderDraft draft);
   Future<void> deleteHolder(String id);
 
+  Future<List<ImportBatch>> loadImportBatches();
+
   Future<List<ShortcutToken>> loadShortcutTokens();
 
   /// Issues a token. The secret comes back once and is never stored in full.
@@ -83,6 +85,9 @@ final merchantRulesProvider = FutureProvider<List<MerchantRule>>(
 );
 final shortcutTokensProvider = FutureProvider<List<ShortcutToken>>(
   (ref) => ref.watch(financeRepositoryProvider).loadShortcutTokens(),
+);
+final importBatchesProvider = FutureProvider<List<ImportBatch>>(
+  (ref) => ref.watch(financeRepositoryProvider).loadImportBatches(),
 );
 
 /// Reloads the snapshot and completes only when the new data has arrived, so a
