@@ -129,3 +129,11 @@ recorded verbatim and is never summarized.
 
 ---
 
+
+## Construction — Code Generation (Fase 3: lembretes de vencimento)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode terminar 100% da fase 3"
+**AI Response**: "Implementei o lembrete de vencimento de fatura, último item da fase 3: `lib/domain/reminders.dart` (derivação pura do conjunto de lembretes), `lib/application/reminder_service.dart` (agendamento via flutter_local_notifications 22.3.0, preferências em shared_preferences), `lib/presentation/pages/reminders_page.dart` (tela de ajustes com prévia do que está agendado), reagendamento a cada snapshot novo no `app_shell.dart`, e o delegate de UNUserNotificationCenter no `AppDelegate.swift`. 19 testes novos; 275 no total, analyze limpo. Dois defeitos foram encontrados pelos testes antes de subir: `daysBefore` truncava por causa da hora escolhida, e a primeira versão usava a API posicional do plugin v18. Não verificado: a entrega em aparelho — `flutter build ios` falhou porque o disco está cheio (194 MiB livres de 228 GiB), então nem a compilação Swift foi alcançada."
+**Context**: Construction / Code Generation — encerra a fase 3 do plano. Commit 00c07ab na branch feat/fase-3-financas.
+
+---
