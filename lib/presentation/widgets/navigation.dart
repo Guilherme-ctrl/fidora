@@ -37,28 +37,45 @@ class Destination {
     required this.label,
     required this.icon,
     this.badge = 0,
-  });
+    String? short,
+  }) : _short = short;
 
   final NavSpace space;
   final String label;
   final IconData icon;
 
+  final String? _short;
+
+  /// What the phone's tab bar shows. A tab is about 70pt wide and "Precisa de
+  /// você" was arriving as "Precisa de v…".
+  String get short => _short ?? label;
+
   /// A count worth interrupting for. Only the review queue uses it.
   final int badge;
 
-  Destination withBadge(int value) =>
-      Destination(space: space, label: label, icon: icon, badge: value);
+  /// Carries `short` across. Dropping it here is what made the one destination
+  /// that has a badge — the review queue — the one destination whose tab label
+  /// was still truncated after the short labels landed.
+  Destination withBadge(int value) => Destination(
+    space: space,
+    label: label,
+    short: _short,
+    icon: icon,
+    badge: value,
+  );
 }
 
 const destinations = <Destination>[
   Destination(
     space: NavSpace.today,
     label: 'Precisa de você',
+    short: 'Hoje',
     icon: Icons.bolt_outlined,
   ),
   Destination(
     space: NavSpace.money,
     label: 'Visão geral',
+    short: 'Visão',
     icon: Icons.equalizer_rounded,
   ),
   Destination(
@@ -74,6 +91,7 @@ const destinations = <Destination>[
   Destination(
     space: NavSpace.money,
     label: 'Cartões e faturas',
+    short: 'Faturas',
     icon: Icons.credit_card_rounded,
   ),
   Destination(
@@ -406,7 +424,7 @@ class _Tab extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  item.label,
+                  item.short,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: context.type.labelCaps.copyWith(
@@ -439,7 +457,14 @@ class _CreateTab extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 9),
+            // `heightFactor: 1` is what stops this sizing to the constraints it
+            // is offered. Without it `Center` expanded to the full screen
+            // height, took the whole `Row` with it, and left the body with
+            // nothing — the bar rendered halfway down the screen with the page
+            // squeezed to zero. It only shows on a phone, which is the one
+            // width whose shell golden I generated and never looked at.
             child: Center(
+              heightFactor: 1,
               child: Container(
                 width: 40,
                 height: 28,

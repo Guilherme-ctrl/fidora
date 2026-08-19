@@ -3,6 +3,7 @@ import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/presentation/app_shell.dart';
+import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/widgets/navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -103,6 +104,21 @@ void main() {
       expect(first.withBadge(4).badge, 4);
     });
 
+    test('adding a badge keeps the short label', () {
+      // It did not, and the review queue is the only destination with a badge —
+      // so it was the one tab still reading "Precisa de v…" after the short
+      // labels landed.
+      for (final item in destinations) {
+        expect(item.withBadge(2).short, item.short, reason: item.label);
+      }
+    });
+
+    test('a tab label fits a tab', () {
+      for (final item in destinations) {
+        expect(item.short.length, lessThanOrEqualTo(10), reason: item.label);
+      }
+    });
+
     test('projection left the junk drawer', () {
       final projection = destinations.firstWhere((d) => d.label == 'Projeção');
       expect(projection.space, NavSpace.future);
@@ -114,6 +130,38 @@ void main() {
       await _pumpShell(tester, const Size(390, 900));
       expect(find.byType(LedgerTabBar), findsOneWidget);
       expect(find.byType(LedgerSidebar), findsNothing);
+    });
+  });
+
+  testWidgets('the tab bar sits on the floor and leaves the page its screen', (
+    tester,
+  ) async {
+    // This shipped broken. The create tab held a `Center` with no height
+    // factor, so it expanded to the constraints it was offered, took the whole
+    // Row with it, and the bar rendered 812pt tall: icons halfway down the
+    // screen and the page squeezed to zero height.
+    //
+    // Asserting the bar exists was never enough — it existed. What was missing
+    // was asking where it was.
+    await withGoldenClock(() async {
+      const size = Size(390, 900);
+      await _pumpShell(tester, size);
+
+      final bar = tester.getRect(find.byType(LedgerTabBar));
+      expect(bar.bottom, size.height, reason: 'a barra saiu do rodapé');
+      expect(
+        bar.height,
+        lessThan(120),
+        reason: 'a barra está comendo a tela: ${bar.height}pt',
+      );
+
+      final page = tester.getRect(find.byType(TodayPage));
+      expect(
+        page.height,
+        greaterThan(size.height * 0.6),
+        reason: 'a página ficou com ${page.height}pt de altura',
+      );
+      expect(find.text('Hoje'), findsWidgets);
     });
   });
 

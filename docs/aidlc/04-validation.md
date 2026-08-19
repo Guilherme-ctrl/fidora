@@ -1049,3 +1049,58 @@ nelas.
 | `flutter analyze --fatal-infos` | sem problemas |
 | `flutter test --exclude-tags golden` | **578 passam, 0 adiados** |
 | `flutter test --tags golden` | 31 passam, agora com tipografia |
+
+## O telefone estava quebrado, e o golden dele existia (2026-08-19)
+
+O dono mandou uma captura do app no iPhone: a barra de abas no meio da tela, os
+ícones centralizados nela e **nenhum conteúdo**. Reproduzi no web a 375pt em
+minutos — não era do iOS, era layout, e estava na `main`.
+
+### A causa
+
+`LedgerTabBar` ocupava **a tela inteira**: `Rect.fromLTRB(0, 0, 375, 812)`. A
+`TodayPage` ficava com altura zero.
+
+O botão "+" da barra tinha um `Center` sem `heightFactor`. `Center` se expande
+até as restrições que recebe, e a `Row` da barra oferece a altura toda da tela.
+A barra esticou para 812, centralizou os ícones no meio, e o corpo do `Scaffold`
+ficou sem nada. `heightFactor: 1` resolve.
+
+### Por que os testes não pegaram
+
+`navigation_test` afirmava `find.byType(LedgerTabBar)` → `findsOneWidget`. **A
+barra existia.** O que faltava era perguntar *onde ela estava*.
+
+E é pior que isso: eu **gerei o golden do shell no telefone** no PR 3, com o
+defeito dentro, e olhei apenas o de 1440 — a largura que não tem barra de abas.
+A imagem que mostrava o bug esteve no repositório o tempo todo.
+
+Duas asserções novas guardam isso: a barra termina no rodapé e mede menos de
+120pt; a página ocupa mais de 60% da altura.
+
+### Dois outros achados da mesma captura
+
+- **A marca do topo do telefone nunca entrou no design system.** Quadrado azul
+  arredondado com um glifo de gráfico e "finora" em caixa baixa pesada — o
+  visual anterior, sobrevivendo aos sete PRs porque o trilho ganhou marca
+  própria no PR 3 e essa só aparece no telefone, que é onde eu menos olhei.
+- **O rótulo "Precisa de você" não cabe numa aba.** Ganhou rótulo curto — e a
+  primeira correção só funcionou em quatro dos cinco destinos, porque
+  `withBadge` recriava o objeto e descartava o rótulo curto. O único destino com
+  contador é justamente a fila de revisão. Um teste passa por todos os destinos
+  agora.
+
+### Lição de processo
+
+Gerar uma imagem de referência não é revisá-la. As 31 são regeradas a cada PR e
+eu olhei talvez seis. O telefone é a superfície que eu menos verifiquei e é onde
+o produto é usado.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **581 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam |
+| Navegador a 375pt | barra no rodapé, conteúdo na tela |

@@ -505,60 +505,58 @@ class _SidebarBrand extends StatelessWidget {
   }
 }
 
+/// The phone's top bar.
+///
+/// It kept the pre-remake look — a rounded blue square with a chart glyph and
+/// "finora" in a heavy lowercase — through every one of the seven PRs, because
+/// the sidebar got its own mark in PR 3 and this one was only ever seen on a
+/// phone. It is the first thing on the screen there.
 class _Brand extends StatelessWidget {
   const _Brand({required this.compact, this.onSignOut});
   final bool compact;
   final Future<void> Function()? onSignOut;
+
   @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Container(
-        width: 38,
-        height: 38,
-        decoration: BoxDecoration(
-          color: context.palette.accent,
-          borderRadius: BorderRadius.circular(13),
-        ),
-        child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
-      ),
-      if (!compact || MediaQuery.sizeOf(context).width > 360) ...[
-        const SizedBox(width: 10),
-        Text(
-          'finora',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.w900,
-            letterSpacing: -1,
-          ),
-        ),
-      ],
-      if (compact) const Spacer(),
-      if (compact)
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Row(
+      children: [
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          width: 26,
+          height: 26,
+          alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: context.palette.accentSoft,
-            borderRadius: BorderRadius.circular(20),
+            color: palette.action,
+            borderRadius: BorderRadius.circular(Radii.xs),
           ),
           child: Text(
-            onSignOut == null ? 'Demo' : 'Online',
-            style: TextStyle(
-              color: context.palette.accent,
-              fontWeight: FontWeight.w700,
-              fontSize: 12,
-            ),
+            'F',
+            style: context.type.titleMd.copyWith(color: palette.onAction),
           ),
         ),
-      if (compact && onSignOut != null) ...[
-        const SizedBox(width: 4),
-        IconButton(
-          tooltip: 'Sair',
-          onPressed: onSignOut,
-          icon: const Icon(Icons.logout_rounded),
+        const SizedBox(width: Space.xs),
+        Expanded(
+          child: Text(
+            'Finora',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.type.titleMd,
+          ),
         ),
+        MonoTag(onSignOut == null ? 'demo' : 'online'),
+        if (onSignOut != null) ...[
+          const SizedBox(width: Space.xxs),
+          IconButton(
+            tooltip: 'Sair',
+            iconSize: 17,
+            visualDensity: VisualDensity.compact,
+            onPressed: onSignOut,
+            icon: const Icon(Icons.logout_rounded),
+          ),
+        ],
       ],
-    ],
-  );
+    );
+  }
 }
 
 class _ErrorState extends StatelessWidget {

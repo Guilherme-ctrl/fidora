@@ -297,3 +297,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — fecha o último item conhecido do PR 1.
 
 ---
+
+## Construction — correção (o telefone estava quebrado)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "[captura do app no iPhone] Assim ta o app"
+**AI Response**: "Reproduzi no web a 375pt em minutos: não era do iOS, era layout, e estava na `main`. O `LedgerTabBar` ocupava a tela inteira — `Rect.fromLTRB(0, 0, 375, 812)` — e a `TodayPage` ficava com altura zero. O botão '+' da barra tinha um `Center` sem `heightFactor`, e `Center` se expande até as restrições que recebe; a `Row` da barra oferece a altura toda da tela. `heightFactor: 1` resolve. O que mais importa aqui é por que meus testes não pegaram: `navigation_test` afirmava que a barra existia, e ela existia — faltava perguntar **onde**. E pior: eu gerei o golden do shell no telefone no PR 3, com o defeito dentro, e olhei só o de 1440, que é a largura sem barra de abas. A imagem que mostrava o bug esteve no repositório o tempo todo. Acrescentei duas asserções de posição. A mesma captura revelou mais dois: a marca do topo do telefone nunca entrou no design system — sobreviveu aos sete PRs porque o trilho ganhou marca própria no PR 3 e essa só aparece no telefone; e 'Precisa de você' não cabe numa aba. A correção do rótulo curto funcionou em quatro dos cinco destinos, porque `withBadge` recriava o objeto e descartava o campo — e o único destino com contador é justamente a fila de revisão. Teste cobrindo todos os destinos agora. A lição de processo: gerar imagem de referência não é revisá-la; são 31 regeradas a cada PR e eu olhei talvez seis, e o telefone é a superfície que menos verifiquei."
+**Context**: Construction — correção de defeito reportado pelo dono em dispositivo real.
+
+---
