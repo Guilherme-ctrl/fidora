@@ -11,7 +11,6 @@ select
   ) as formato,
   count(*) as vezes
 from public.transactions
-where user_id = auth.uid()
 group by 1
 order by vezes desc
 limit 25;

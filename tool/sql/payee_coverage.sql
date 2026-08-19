@@ -6,6 +6,11 @@
 --
 -- Mede o razão inteiro, não um arquivo de extrato, que é a diferença entre uma
 -- amostra e a resposta.
+--
+-- Sem filtro por usuário de propósito: o editor do Studio roda como `postgres`,
+-- onde `auth.uid()` é nulo — a primeira versão desta consulta filtrava por ele
+-- e por isso não devolvia nada. O produto tem um dono; se algum dia tiver mais,
+-- acrescente o `where user_id = '...'` aqui.
 
 with base as (
   select
@@ -13,7 +18,6 @@ with base as (
     source,
     card_id is null as sem_cartao
   from public.transactions
-  where user_id = auth.uid()
 ),
 marcado as (
   select
