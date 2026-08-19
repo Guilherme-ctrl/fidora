@@ -21,30 +21,19 @@
 -- ou seja, cobrança duplicada em silêncio. As duas normalizações são conceitos
 -- diferentes de propósito.
 
--- A parcela primeiro: recuperar antes de apagar.
+-- O que esta migration deliberadamente NÃO faz, além de não tocar no dedup_key:
+-- ela não tenta recuperar a parcela para as colunas.
 --
--- O leitor de planilha já extrai a parcela para as colunas e ainda assim deixa
--- o sufixo no nome, então na maioria das linhas isto não muda nada. Onde a
--- coluna estiver vazia e o nome tiver a parcela, o dado é recuperado em vez de
--- descartado junto com o texto.
-update public.transactions
-set
-  installment_current = nullif(
-    substring(merchant_original from '\s[A-Za-z]?(\d{1,2})\s*/\s*\d{1,2}\s*$'),
-    ''
-  )::int,
-  installment_total = nullif(
-    substring(merchant_original from '\s[A-Za-z]?\d{1,2}\s*/\s*(\d{1,2})\s*$'),
-    ''
-  )::int,
-  modality = 'installment'
-where installment_current is null
-  and merchant_original ~ '\s[A-Za-z]?\d{1,2}\s*/\s*\d{1,2}\s*$'
-  -- Um total abaixo de dois é data, não parcelamento.
-  and substring(merchant_original from '\s[A-Za-z]?\d{1,2}\s*/\s*(\d{1,2})\s*$')::int >= 2
-  -- E uma parcela acima do total também.
-  and substring(merchant_original from '\s[A-Za-z]?(\d{1,2})\s*/\s*\d{1,2}\s*$')::int
-      <= substring(merchant_original from '\s[A-Za-z]?\d{1,2}\s*/\s*(\d{1,2})\s*$')::int;
+-- A tentação era grande, porque o texto tem `03/10` e a coluna está vazia em
+-- algumas linhas. Mas `03/10` no fim de uma descrição é tão frequentemente uma
+-- data quanto uma parcela, e o filtro óbvio — total maior que a parcela — deixa
+-- passar exatamente os casos ambíguos: `03/10` como 3 de outubro passa igual.
+-- Escrever parcelamento errado numa compra à vista é pior do que não escrever
+-- nada, e nada se perde ao adiar: `merchant_original` continua intacto, com o
+-- texto inteiro, para sempre.
+--
+-- `tool/sql/instalment_candidates.sql` mede quantas linhas isso alcançaria e
+-- quantas são ambíguas. Com esse número dá para decidir; sem ele seria chute.
 
 -- A identidade, na coluna que já existia para isso.
 --
