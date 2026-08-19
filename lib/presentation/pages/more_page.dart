@@ -23,6 +23,7 @@ import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
 import 'package:financeiro_ai/presentation/pages/subscriptions_page.dart';
 import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,7 +52,7 @@ class MorePage extends ConsumerWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             final split = constraints.maxWidth >= 850;
-            final goals = SectionCard(
+            final goals = RuledSection(
               title: 'Metas',
               tooltip: 'Criar uma meta',
               onTap: () => editGoal(context, ref),
@@ -85,7 +86,7 @@ class MorePage extends ConsumerWidget {
                                     Text(
                                       '${(goal.progress * 100).round()}%',
                                       style: TextStyle(
-                                        color: context.palette.brand,
+                                        color: context.palette.accent,
                                         fontWeight: FontWeight.w900,
                                       ),
                                     ),
@@ -95,8 +96,8 @@ class MorePage extends ConsumerWidget {
                                 LinearProgressIndicator(
                                   value: goal.progress,
                                   minHeight: 9,
-                                  color: context.palette.brand,
-                                  backgroundColor: context.palette.brandSoft,
+                                  color: context.palette.accent,
+                                  backgroundColor: context.palette.accentSoft,
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 const SizedBox(height: 6),
@@ -154,7 +155,7 @@ class MorePage extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 14),
-        SectionCard(
+        RuledSection(
           title: 'Operação',
           child: Column(
             children: [
@@ -205,7 +206,7 @@ class MorePage extends ConsumerWidget {
               ),
               _OperationTile(
                 icon: Icons.rule_folder_rounded,
-                color: context.palette.warning,
+                color: context.palette.pending,
                 title: 'Revisões pendentes',
                 subtitle: snapshot.pendingReviews == 0
                     ? 'Nada aguardando sua confirmação'
@@ -250,7 +251,7 @@ class MorePage extends ConsumerWidget {
               ),
               _OperationTile(
                 icon: Icons.people_alt_rounded,
-                color: context.palette.brand,
+                color: context.palette.accent,
                 title: 'Portadores',
                 subtitle: snapshot.holders.isEmpty
                     ? 'Defina quais gastos entram nas suas finanças'
@@ -276,7 +277,7 @@ class MorePage extends ConsumerWidget {
               ),
               _OperationTile(
                 icon: Icons.psychology_alt_rounded,
-                color: context.palette.danger,
+                color: context.palette.negative,
                 title: 'Regras de estabelecimento',
                 subtitle: 'Categorize compras recorrentes automaticamente',
                 tooltip: 'Ver e editar regras de categorização',
@@ -476,7 +477,9 @@ class MorePage extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: error ? context.palette.danger : context.palette.brand,
+        backgroundColor: error
+            ? context.palette.negative
+            : context.palette.income,
       ),
     );
   }
@@ -528,12 +531,12 @@ class _AutomationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: context.palette.brandSoft,
+                  color: context.palette.accentSoft,
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Icon(
                   Icons.contactless_rounded,
-                  color: context.palette.brand,
+                  color: context.palette.accent,
                   size: 28,
                 ),
               ),
@@ -583,7 +586,7 @@ class _Step extends StatelessWidget {
       children: [
         CircleAvatar(
           radius: 12,
-          backgroundColor: context.palette.brand,
+          backgroundColor: context.palette.accent,
           child: Text(
             number,
             style: const TextStyle(

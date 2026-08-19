@@ -224,8 +224,8 @@ class _InvoiceReviewDialogState extends State<_InvoiceReviewDialog> {
                             ? Icons.check_circle_rounded
                             : Icons.warning_amber_rounded,
                         color: unresolvedCount == 0
-                            ? context.palette.brand
-                            : context.palette.warning,
+                            ? context.palette.accent
+                            : context.palette.pending,
                       ),
                       _SummaryChip(
                         label: '$remainingValidation para validar',
@@ -236,13 +236,13 @@ class _InvoiceReviewDialogState extends State<_InvoiceReviewDialog> {
                   if (unmappedCategories.isNotEmpty) ...[
                     const SizedBox(height: 10),
                     Material(
-                      color: context.palette.warning.withValues(alpha: .14),
+                      color: context.palette.pending.withValues(alpha: .14),
                       borderRadius: BorderRadius.circular(12),
                       child: ListTile(
                         dense: true,
                         leading: Icon(
                           Icons.create_new_folder_outlined,
-                          color: context.palette.warning,
+                          color: context.palette.pending,
                         ),
                         title: Text(
                           '${unmappedCategories.length} ${unmappedCategories.length == 1 ? 'categoria ainda não cadastrada' : 'categorias ainda não cadastradas'}',
@@ -428,7 +428,7 @@ class _CategoryCreationDialog extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             Material(
-              color: context.palette.brandSoft.withValues(alpha: .45),
+              color: context.palette.accentSoft.withValues(alpha: .45),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: const EdgeInsets.all(14),
@@ -442,7 +442,7 @@ class _CategoryCreationDialog extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.add_circle_outline_rounded,
-                              color: context.palette.brand,
+                              color: context.palette.accent,
                               size: 20,
                             ),
                             const SizedBox(width: 10),
@@ -499,10 +499,10 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.fromLTRB(24, 18, 14, 18),
-    color: context.palette.brandSoft.withValues(alpha: .55),
+    color: context.palette.accentSoft.withValues(alpha: .55),
     child: Row(
       children: [
-        Icon(Icons.fact_check_rounded, color: context.palette.brand),
+        Icon(Icons.fact_check_rounded, color: context.palette.accent),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
@@ -539,7 +539,7 @@ class _SummaryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Chip(
-    avatar: Icon(icon, size: 17, color: color ?? context.palette.brand),
+    avatar: Icon(icon, size: 17, color: color ?? context.palette.accent),
     label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
   );
 }
@@ -593,9 +593,9 @@ class _TransactionReviewTile extends StatelessWidget {
 
   Color dispositionColor(BuildContext context) => switch (disposition) {
     'reconcile' => const Color(0xFF5D65A8),
-    'duplicate' => context.palette.brand,
-    'payment' => context.palette.warning,
-    _ => context.palette.danger,
+    'duplicate' => context.palette.accent,
+    'payment' => context.palette.pending,
+    _ => context.palette.negative,
   };
 
   @override
@@ -612,9 +612,9 @@ class _TransactionReviewTile extends StatelessWidget {
     ];
     return Material(
       color: validated
-          ? context.palette.brandSoft.withValues(alpha: .35)
+          ? context.palette.accentSoft.withValues(alpha: .35)
           : !resolved
-          ? context.palette.warning.withValues(alpha: .10)
+          ? context.palette.pending.withValues(alpha: .10)
           : Colors.transparent,
       borderRadius: BorderRadius.circular(13),
       child: InkWell(
@@ -639,9 +639,9 @@ class _TransactionReviewTile extends StatelessWidget {
                         ? Icons.error_outline_rounded
                         : Icons.radio_button_unchecked_rounded,
                     color: validated
-                        ? context.palette.brand
+                        ? context.palette.accent
                         : !resolved
-                        ? context.palette.warning
+                        ? context.palette.pending
                         : context.palette.inkSubtle,
                   ),
                 ),

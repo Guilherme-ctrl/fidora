@@ -73,7 +73,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
                       text:
                           'As notificações estão bloqueadas para o Finora. '
                           'Libere em Ajustes › Notificações e volte aqui.',
-                      color: context.palette.danger,
+                      color: context.palette.negative,
                     ),
                   const SizedBox(height: 20),
                   _Section(
@@ -234,7 +234,7 @@ class _Preview extends StatelessWidget {
                     Icon(
                       Icons.notifications_active_rounded,
                       size: 18,
-                      color: context.palette.brand,
+                      color: context.palette.accent,
                     ),
                     const SizedBox(width: 10),
                     Expanded(

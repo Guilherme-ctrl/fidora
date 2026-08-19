@@ -3,6 +3,7 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/narrative.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 
 /// The few things that actually changed, in sentences.
@@ -42,7 +43,7 @@ class InsightsCard extends StatelessWidget {
     );
   }
 
-  Widget _panel(BuildContext context, List<Insight> insights) => SectionCard(
+  Widget _panel(BuildContext context, List<Insight> insights) => RuledSection(
     title: 'O que mudou',
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,12 +77,12 @@ class _InsightRow extends StatelessWidget {
     final (icon, color, key) = switch (insight.tone) {
       InsightTone.warning => (
         Icons.trending_up_rounded,
-        palette.danger,
+        palette.negative,
         const Key('insight-tone-warning'),
       ),
       InsightTone.good => (
         Icons.trending_down_rounded,
-        palette.brand,
+        palette.accent,
         const Key('insight-tone-good'),
       ),
       InsightTone.neutral => (

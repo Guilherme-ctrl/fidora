@@ -6,6 +6,7 @@ import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -94,7 +95,7 @@ class AccountsPage extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.danger,
+              backgroundColor: context.palette.negative,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Arquivar'),
@@ -112,7 +113,7 @@ class AccountsPage extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Conta arquivada.'),
-            backgroundColor: context.palette.brand,
+            backgroundColor: context.palette.accent,
           ),
         );
       }
@@ -121,7 +122,7 @@ class AccountsPage extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.message),
-            backgroundColor: context.palette.danger,
+            backgroundColor: context.palette.negative,
           ),
         );
       }
@@ -172,7 +173,7 @@ class _AccountTile extends StatelessWidget {
                             style: TextStyle(fontSize: 11),
                           ),
                           visualDensity: VisualDensity.compact,
-                          backgroundColor: context.palette.warning.withValues(
+                          backgroundColor: context.palette.pending.withValues(
                             alpha: .18,
                           ),
                         ),
@@ -201,7 +202,7 @@ class _AccountTile extends StatelessWidget {
                   currency.format(balance.balance),
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: negative ? context.palette.danger : null,
+                    color: negative ? context.palette.negative : null,
                   ),
                 ),
                 // Saying which number this is matters: with no opening balance
@@ -224,7 +225,10 @@ class _AccountTile extends StatelessWidget {
             IconButton(
               tooltip: 'Arquivar',
               onPressed: onArchive,
-              icon: Icon(Icons.archive_outlined, color: context.palette.danger),
+              icon: Icon(
+                Icons.archive_outlined,
+                color: context.palette.negative,
+              ),
             ),
           ],
         ),
@@ -243,7 +247,7 @@ class _Empty extends StatelessWidget {
       Icon(
         Icons.account_balance_rounded,
         size: 50,
-        color: context.palette.brand,
+        color: context.palette.accent,
       ),
       const SizedBox(height: 18),
       const Text(
@@ -267,10 +271,8 @@ Future<void> editAccount(
   WidgetRef ref, {
   Account? existing,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final saved = await showResponsiveSurface<bool>(
+    context,
     builder: (context) => _AccountForm(
       existing: existing,
       onSave: (draft) async {
@@ -285,7 +287,7 @@ Future<void> editAccount(
         content: Text(
           existing == null ? 'Conta cadastrada.' : 'Conta atualizada.',
         ),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -454,21 +456,21 @@ class _AccountFormState extends State<_AccountForm> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: context.palette.danger.withValues(alpha: .12),
+                  color: context.palette.negative.withValues(alpha: .12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.error_outline_rounded,
-                      color: context.palette.danger,
+                      color: context.palette.negative,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _failure!,
                         style: TextStyle(
-                          color: context.palette.danger,
+                          color: context.palette.negative,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

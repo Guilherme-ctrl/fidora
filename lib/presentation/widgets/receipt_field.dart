@@ -104,7 +104,7 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
           const SizedBox(height: 8),
           Text(
             _failure!,
-            style: TextStyle(color: palette.danger, fontSize: 12.5),
+            style: TextStyle(color: palette.negative, fontSize: 12.5),
           ),
         ],
         const SizedBox(height: 10),
@@ -266,7 +266,7 @@ class _ScanSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: palette.brandSoft.withValues(alpha: .5),
+        color: palette.accentSoft.withValues(alpha: .5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -275,7 +275,7 @@ class _ScanSummary extends StatelessWidget {
           Text(
             'Li na nota: ${parts.join(' · ')}',
             style: TextStyle(
-              color: palette.onBrandSoft,
+              color: palette.accent,
               fontSize: 13,
               fontWeight: FontWeight.w700,
               height: 1.4,
@@ -313,7 +313,7 @@ class _StoredReceipt extends ConsumerWidget {
       ),
       error: (_, _) => Text(
         'Não foi possível carregar o comprovante.',
-        style: TextStyle(color: context.palette.danger, fontSize: 12.5),
+        style: TextStyle(color: context.palette.negative, fontSize: 12.5),
       ),
       data: (value) => ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -324,7 +324,7 @@ class _StoredReceipt extends ConsumerWidget {
           fit: BoxFit.cover,
           errorBuilder: (context, _, _) => Text(
             'Não foi possível carregar o comprovante.',
-            style: TextStyle(color: context.palette.danger, fontSize: 12.5),
+            style: TextStyle(color: context.palette.negative, fontSize: 12.5),
           ),
         ),
       ),

@@ -238,19 +238,44 @@ Ficou de fora, com motivo:
       tela de fatura para abrir; a fatura é renderizada dentro da lista de
       cartões. Vai com o painel lateral, no PR 6.
 
-### PR 5 — Superfícies e limpeza · ~1,5 dia
+### PR 5 — Superfícies e limpeza · **entregue** (2026-08-19)
 
-- [ ] Substituir os 30 `Card(` brutos
-- [ ] `ResponsiveSheet` no lugar dos 22 `showModalBottomSheet`/`showDialog`
-      — sheet < 600, dialog 600–1239, painel lateral ≥ 1240
-- [ ] 24 `Chip(` → `MonoTag`; 39 `FilledButton` → `InkButton`;
-      7 `LinearProgressIndicator` → `RuleBar`
-- [ ] **Remover os getters depreciados do PR 1** e resolver as ~145 decisões
-      semânticas restantes de `brand`/`danger`
-- [ ] Zerar `TextStyle(` e `EdgeInsets` literais na apresentação
+- [x] **As 203 pontes de depreciação foram resolvidas e apagadas**
+- [x] `flutter analyze --fatal-infos` restaurado no CI — a porta deste PR
+- [x] `showResponsiveSheet` e `showResponsiveSurface`: sheet < 600, dialog
+      600–1239, painel lateral direito ≥ 1240
+- [x] **Zero `showModalBottomSheet` fora do componente** — os 10 formulários e o
+      recategorizar em lote passaram pela superfície responsiva
+- [x] `SectionCard` e `MetricCard` deletados; 19 chamadas viraram
+      `RuledSection` e `LedgerTile`
+- [x] O ocre saiu do seletor de cor de categoria; as 12 vieram da mesma busca
+      que produziu a paleta de gráfico
+- [x] `responsive_sheet_test.dart` — as três apresentações
 
-**Pronto quando:** `dart analyze` limpo e
-`grep -rn "BorderRadius.circular(22)" lib` vazio.
+**A estimativa do plano estava errada, e para melhor.** Eu previa ~145 decisões
+semânticas em `brand` e `danger`. Lendo as 134 ocorrências uma a uma, `danger`
+era **erro de verdade em todas**: banner de falha, ação destrutiva, fatura
+vencida, saldo negativo, orçamento estourado, variação desfavorável. Virou
+renomeação. `brand` se dividiu em três, e só **8** eram sentido de dinheiro —
+toast de sucesso, fatura paga, preço que caiu, gasto abaixo da meta, tendência
+para baixo. O resto era ênfase.
+
+Um erro meu no caminho: usei uma expressão regular para tirar `icon:` de dentro
+do `MetricCard` e ela apagou o ícone do `_OperationTile`, que não tem nada a ver
+com métrica. Refeito varrendo o bloco de cada chamada em vez de casar texto
+solto.
+
+Fica para o PR 6, com motivo:
+
+- [ ] 28 `Card(`, 22 `Chip(`, 40 `FilledButton`, 7 `LinearProgressIndicator`.
+      Os componentes existem (`RuledSection`, `MonoTag`, `InkButton`,
+      `RuleBar`); a troca é por chamada e mistura-se com o trabalho de tabela e
+      painel do PR 6, então vai junto em vez de duas passagens pelos mesmos
+      arquivos.
+- [ ] `TextStyle` e `EdgeInsets` literais — mesma razão.
+- [ ] Endereço próprio da tela de entrada e recuperação de senha: continua no
+      PR 7, onde a recuperação já estava. O que eu disse no PR 4 ("vai no PR 5")
+      estava desalinhado com o plano.
 
 ### PR 6 — Densidade do desktop · ~2 dias
 

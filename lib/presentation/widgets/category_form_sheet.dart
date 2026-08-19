@@ -5,6 +5,7 @@ import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,10 +14,8 @@ Future<void> editCategory(
   WidgetRef ref, {
   FinanceCategory? existing,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final saved = await showResponsiveSurface<bool>(
+    context,
     builder: (context) => _CategoryForm(
       existing: existing,
       onSave: (draft) async {
@@ -31,7 +30,7 @@ Future<void> editCategory(
         content: Text(
           existing == null ? 'Categoria criada.' : 'Categoria atualizada.',
         ),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -225,21 +224,21 @@ class _CategoryFormState extends State<_CategoryForm> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: context.palette.danger.withValues(alpha: .12),
+                    color: context.palette.negative.withValues(alpha: .12),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.error_outline_rounded,
-                        color: context.palette.danger,
+                        color: context.palette.negative,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           _failure!,
                           style: TextStyle(
-                            color: context.palette.danger,
+                            color: context.palette.negative,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -342,7 +341,7 @@ class _IconChoice extends StatelessWidget {
               : context.palette.canvas,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: selected ? color : context.palette.hairline,
+            color: selected ? color : context.palette.rule,
             width: selected ? 2 : 1,
           ),
         ),

@@ -8,6 +8,7 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/card_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_forecast_card.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
@@ -154,7 +155,7 @@ class _CreditCardView extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: context.palette.brand.withValues(alpha: .18),
+              color: context.palette.accent.withValues(alpha: .18),
               blurRadius: 28,
               offset: const Offset(0, 12),
             ),
@@ -206,7 +207,7 @@ class _CreditCardView extends StatelessWidget {
                     minHeight: 6,
                     backgroundColor: Colors.white24,
                     color: usage.isTight
-                        ? context.palette.warning
+                        ? context.palette.pending
                         : Colors.white,
                   ),
                 ),
@@ -270,7 +271,7 @@ class _CardDetail extends StatelessWidget {
         style: TextStyle(
           fontWeight: FontWeight.w700,
           fontSize: 12,
-          color: highlight ? context.palette.warning : Colors.white,
+          color: highlight ? context.palette.pending : Colors.white,
         ),
       ),
     ],
@@ -289,7 +290,7 @@ class _InvoicesList extends ConsumerWidget {
       .where((item) => period.contains(item.referenceMonth))
       .toList();
   @override
-  Widget build(BuildContext context, WidgetRef ref) => SectionCard(
+  Widget build(BuildContext context, WidgetRef ref) => RuledSection(
     title: 'Faturas recentes',
     tooltip: 'Abrir todas as faturas e suas competências',
     onTap: () => showDetailSheet(
@@ -457,10 +458,10 @@ class _InvoicesList extends ConsumerWidget {
 /// Paid is settled, overdue is the alarm, closed is awaiting payment and open
 /// is still accumulating — four states the interface used to collapse into two.
 Color _stateColor(BuildContext context, InvoiceState state) => switch (state) {
-  InvoiceState.paid => context.palette.brand,
-  InvoiceState.overdue => context.palette.danger,
-  InvoiceState.closed => context.palette.onWarning,
-  InvoiceState.open => context.palette.info,
+  InvoiceState.paid => context.palette.income,
+  InvoiceState.overdue => context.palette.negative,
+  InvoiceState.closed => context.palette.pending,
+  InvoiceState.open => context.palette.accent,
 };
 
 /// Settling an invoice also frees the limit it was holding, because
@@ -484,7 +485,7 @@ Future<void> _setPaid(
           content: Text(
             paid ? 'Fatura marcada como paga.' : 'Fatura reaberta.',
           ),
-          backgroundColor: context.palette.brand,
+          backgroundColor: context.palette.accent,
         ),
       );
     }
@@ -493,7 +494,7 @@ Future<void> _setPaid(
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.message),
-          backgroundColor: context.palette.danger,
+          backgroundColor: context.palette.negative,
         ),
       );
     }

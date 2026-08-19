@@ -188,46 +188,6 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
     onCard: Color(0xFFFFFFFF),
   );
 
-  // ---------------------------------------------------------------------------
-  // Migration bridges.
-  //
-  // 270 call sites read this palette. Renaming the fields in one commit would
-  // mean resolving every one of them before anything compiles, and ~145 of them
-  // are judgement calls rather than renames: `brand` was used for both action
-  // and emphasis, `danger` for both an ordinary spend and a real problem.
-  //
-  // These getters keep the app building, and the deprecation warnings are the
-  // worklist. PR 2 removes most of them by absorbing the call sites into
-  // components; PR 5 deletes what is left, and a clean `dart analyze` is the
-  // gate.
-  // ---------------------------------------------------------------------------
-
-  @Deprecated('Split into `action` (a button) and `accent` (emphasis). PR 5.')
-  Color get brand => accent;
-
-  @Deprecated('Use `accentSoft`. PR 5.')
-  Color get brandSoft => accentSoft;
-
-  @Deprecated('Use `accent`. PR 5.')
-  Color get onBrandSoft => accent;
-
-  @Deprecated(
-    'Split into `expense` (ordinary) and `negative` (a problem). PR 5.',
-  )
-  Color get danger => negative;
-
-  @Deprecated('Use `pending`. PR 5.')
-  Color get warning => pending;
-
-  @Deprecated('Use `pending`. PR 5.')
-  Color get onWarning => pending;
-
-  @Deprecated('Use `rule`, or `ruleStrong` for a component boundary. PR 5.')
-  Color get hairline => rule;
-
-  @Deprecated('Use `accent`. PR 5.')
-  Color get info => accent;
-
   @override
   FinoraPalette copyWith({
     Color? ink,

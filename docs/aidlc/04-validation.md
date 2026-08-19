@@ -840,3 +840,55 @@ Build de desenvolvimento em `localhost:8087`, Chromium:
 O campo de busca foi um achado desta verificação: o filtro vinha da URL e era
 aplicado, mas o campo continuava vazio — filtro invisível sobre lista filtrada.
 Passou a ser semeado do endereço.
+
+## PR 5 — superfícies e limpeza (2026-08-19)
+
+### A porta
+
+`flutter analyze --fatal-infos` voltou ao CI, limpo. As 203 pontes
+`@Deprecated` que o PR 1 criou foram resolvidas e apagadas do
+`FinoraPalette`.
+
+### A estimativa do plano estava errada, e para melhor
+
+O plano previa ~145 decisões semânticas em `brand` e `danger`. Lendo as 134
+ocorrências:
+
+| Token | Usos | O que eram de fato |
+|---|---|---|
+| `danger` | 68 | **Erro de verdade em todas**: banner de falha, ação destrutiva, fatura vencida, saldo negativo, orçamento estourado, variação desfavorável. Renomeação, não decisão |
+| `brand` | 66 | 8 eram dinheiro (toast de sucesso, fatura paga, preço que caiu, gasto abaixo da meta, tendência para baixo) → `income`. O resto era ênfase → `accent` |
+
+A conclusão que eu tinha tirado no PR 2 — "as saídas continuam vermelhas nos 68
+`danger` restantes" — estava errada. Nenhum deles pintava uma saída comum de
+vermelho; isso já tinha sido resolvido quando o `AmountText` absorveu as linhas
+de lançamento.
+
+### Erro meu, e a correção
+
+Usei uma expressão regular para remover `icon:` de dentro das chamadas de
+`MetricCard`, e ela apagou também o ícone do `_OperationTile` em `more_page` —
+widget que não tem nada a ver com métrica. Revertido e refeito varrendo o bloco
+de cada chamada, contando parênteses, em vez de casar texto solto. O `git diff`
+por arquivo foi o que expôs: três arquivos perdiam `icon:` quando só dois
+deviam.
+
+### O bottom sheet no desktop
+
+Zero `showModalBottomSheet` fora do componente. Os dez formulários e o
+recategorizar em lote passaram por `showResponsiveSurface`:
+
+| Largura | Apresentação |
+|---|---|
+| < 600 | bottom sheet, que é o certo no telefone |
+| 600–1239 | dialog centralizado |
+| ≥ 1240 | painel deslizando da direita, deixando a lista visível atrás |
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --fatal-infos` | **sem problemas** |
+| `flutter test --exclude-tags golden` | **567 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam |

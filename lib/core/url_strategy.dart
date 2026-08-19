@@ -7,5 +7,7 @@
 ///
 /// The import is conditional because `flutter_web_plugins` only exists on the
 /// web, and this app also builds for iOS.
+library;
+
 export 'url_strategy_stub.dart'
     if (dart.library.js_interop) 'url_strategy_web.dart';

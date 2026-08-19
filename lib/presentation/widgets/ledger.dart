@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/core/typography.dart';
@@ -702,4 +703,228 @@ Color categoryColourFor(BuildContext context, String category) {
     hash = (hash * 31 + unit) & 0x7fffffff;
   }
   return palette[hash % palette.length];
+}
+
+/// One sheet, three presentations.
+///
+/// The product had 22 `showModalBottomSheet` and `showDialog` calls, and the
+/// bottom sheet is a thumb gesture — it was rising from the bottom edge of a
+/// monitor, which is the clearest single tell that a phone app had been
+/// stretched onto the web.
+///
+/// Below 600 it is still a bottom sheet, because that is right on a phone.
+/// Between 600 and 1240 it is a centred dialog. At 1240 and above it is a panel
+/// that slides in from the right and leaves the list on screen behind it, which
+/// is what a form on a desktop should do.
+Future<T?> showResponsiveSheet<T>(
+  BuildContext context, {
+  required String title,
+  required WidgetBuilder builder,
+  String? description,
+  bool scrollable = true,
+}) {
+  final layout = Breakpoint.of(context);
+  final palette = context.palette;
+
+  Widget frame(BuildContext context, {required bool panel}) {
+    final body = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: Text(title, style: context.type.titleLg)),
+            IconButton(
+              tooltip: 'Fechar',
+              iconSize: 18,
+              visualDensity: VisualDensity.compact,
+              onPressed: () => Navigator.of(context).maybePop(),
+              icon: const Icon(Icons.close_rounded),
+            ),
+          ],
+        ),
+        if (description != null) ...[
+          const SizedBox(height: Space.xxs),
+          Text(
+            description,
+            style: context.type.bodySm.copyWith(color: palette.inkMuted),
+          ),
+        ],
+        const SizedBox(height: Space.lg),
+        Flexible(child: builder(context)),
+      ],
+    );
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        Space.xl,
+        panel ? Space.xl : Space.md,
+        Space.xl,
+        Space.xl + MediaQuery.viewInsetsOf(context).bottom,
+      ),
+      child: scrollable ? SingleChildScrollView(child: body) : body,
+    );
+  }
+
+  if (layout.hasSidePanel) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: title,
+      barrierColor: Colors.black.withValues(alpha: .28),
+      transitionDuration: Motion.panel,
+      pageBuilder: (context, _, _) => Align(
+        alignment: Alignment.centerRight,
+        child: Material(
+          color: palette.canvas,
+          child: SafeArea(
+            child: SizedBox(
+              width: 420,
+              height: double.infinity,
+              child: Container(
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: palette.rule,
+                      width: Strokes.hairline,
+                    ),
+                  ),
+                ),
+                child: frame(context, panel: true),
+              ),
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (context, animation, _, child) => SlideTransition(
+        position: Tween(begin: const Offset(1, 0), end: Offset.zero).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  if (layout.isPhone) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: palette.canvas,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.md)),
+      ),
+      builder: (context) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .86,
+          ),
+          child: frame(context, panel: false),
+        ),
+      ),
+    );
+  }
+
+  return showDialog<T>(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: palette.canvas,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.md),
+        side: BorderSide(color: palette.rule, width: Strokes.hairline),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 560,
+          maxHeight: MediaQuery.sizeOf(context).height * .82,
+        ),
+        child: frame(context, panel: false),
+      ),
+    ),
+  );
+}
+
+/// The same three presentations, with no chrome of its own.
+///
+/// The form sheets already draw their own header and actions, so they need the
+/// surface and nothing else. This is what turns a call site into a one-line
+/// change instead of a rewrite.
+Future<T?> showResponsiveSurface<T>(
+  BuildContext context, {
+  required WidgetBuilder builder,
+  double panelWidth = 460,
+  double dialogWidth = 560,
+}) {
+  final layout = Breakpoint.of(context);
+  final palette = context.palette;
+
+  if (layout.hasSidePanel) {
+    return showGeneralDialog<T>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Fechar',
+      barrierColor: Colors.black.withValues(alpha: .28),
+      transitionDuration: Motion.panel,
+      pageBuilder: (context, _, _) => Align(
+        alignment: Alignment.centerRight,
+        child: Material(
+          color: palette.canvas,
+          child: SafeArea(
+            child: Container(
+              width: panelWidth,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                border: Border(
+                  left: BorderSide(
+                    color: palette.rule,
+                    width: Strokes.hairline,
+                  ),
+                ),
+              ),
+              child: builder(context),
+            ),
+          ),
+        ),
+      ),
+      transitionBuilder: (context, animation, _, child) => SlideTransition(
+        position: Tween(begin: const Offset(1, 0), end: Offset.zero).animate(
+          CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+        ),
+        child: child,
+      ),
+    );
+  }
+
+  if (layout.isPhone) {
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      backgroundColor: palette.canvas,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(Radii.md)),
+      ),
+      builder: builder,
+    );
+  }
+
+  return showDialog<T>(
+    context: context,
+    builder: (context) => Dialog(
+      backgroundColor: palette.canvas,
+      insetPadding: const EdgeInsets.all(Space.xl),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.md),
+        side: BorderSide(color: palette.rule, width: Strokes.hairline),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: dialogWidth,
+          maxHeight: MediaQuery.sizeOf(context).height * .86,
+        ),
+        child: builder(context),
+      ),
+    ),
+  );
 }

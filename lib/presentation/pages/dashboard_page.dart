@@ -82,11 +82,9 @@ class DashboardPage extends ConsumerWidget {
         Builder(
           builder: (context) {
             final metrics = <Widget>[
-              MetricCard(
+              LedgerTile(
                 label: 'Saídas — faturas + conta',
                 value: currency.format(analytics.expenses),
-                icon: Icons.south_east_rounded,
-                color: context.palette.danger,
                 detail:
                     '${analytics.transactions.where((item) => item.affectsExpenses && isCardTransaction(item)).length} no cartão',
                 trendLabel: _expenseTrend(comparison),
@@ -103,11 +101,9 @@ class DashboardPage extends ConsumerWidget {
                       .toList(),
                 ),
               ),
-              MetricCard(
+              LedgerTile(
                 label: 'Entradas no período',
                 value: currency.format(analytics.income),
-                icon: Icons.south_west_rounded,
-                color: context.palette.brand,
                 detail:
                     '${analytics.transactions.where((item) => item.isIncome).length} entradas',
                 tooltip: 'Ver créditos e entradas do período',
@@ -119,13 +115,9 @@ class DashboardPage extends ConsumerWidget {
                       .toList(),
                 ),
               ),
-              MetricCard(
+              LedgerTile(
                 label: 'Saldo do período',
                 value: currency.format(analytics.balance),
-                icon: Icons.account_balance_wallet_rounded,
-                color: analytics.balance >= 0
-                    ? const Color(0xFF5D65A8)
-                    : context.palette.danger,
                 detail: '${analytics.savingsRate.toStringAsFixed(1)}% poupado',
                 tooltip: 'Entender como entradas e saídas formam o saldo',
                 onTap: () => showDetailSheet(
@@ -159,11 +151,9 @@ class DashboardPage extends ConsumerWidget {
                   ),
                 ),
               ),
-              MetricCard(
+              LedgerTile(
                 label: 'Faturas no período',
                 value: currency.format(invoiceTotal),
-                icon: Icons.credit_card_rounded,
-                color: context.palette.warning,
                 detail:
                     '${snapshot.invoices.where((item) => period.contains(item.referenceMonth)).length} faturas',
                 tooltip: 'Ver faturas cuja competência está no período',
@@ -319,7 +309,7 @@ class _TrendCard extends StatelessWidget {
     final daysWithMovement = totals.keys.length;
     final peak = totals.values.isEmpty ? 0.0 : totals.values.reduce(math.max);
 
-    return SectionCard(
+    return RuledSection(
       title: 'Ritmo de gastos',
       tooltip: 'Clique para ver os totais de cada dia',
       onTap: () => showDetailSheet(
@@ -341,7 +331,7 @@ class _TrendCard extends StatelessWidget {
       trailing: Text(
         '$daysWithMovement de ${days.length} dias',
         style: TextStyle(
-          color: context.palette.brand,
+          color: context.palette.accent,
           fontWeight: FontWeight.w700,
         ),
       ),
@@ -357,7 +347,7 @@ class _TrendCard extends StatelessWidget {
                   gridData: FlGridData(
                     drawVerticalLine: false,
                     getDrawingHorizontalLine: (_) =>
-                        FlLine(color: context.palette.hairline, strokeWidth: 1),
+                        FlLine(color: context.palette.rule, strokeWidth: 1),
                   ),
                   titlesData: FlTitlesData(
                     topTitles: const AxisTitles(
@@ -428,12 +418,12 @@ class _TrendCard extends StatelessWidget {
                     LineChartBarData(
                       spots: spots,
                       isCurved: true,
-                      color: context.palette.brand,
+                      color: context.palette.accent,
                       barWidth: 4,
                       dotData: const FlDotData(show: false),
                       belowBarData: BarAreaData(
                         show: true,
-                        color: context.palette.brand.withValues(alpha: .10),
+                        color: context.palette.accent.withValues(alpha: .10),
                       ),
                     ),
                   ],
@@ -458,7 +448,7 @@ class _CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final entries = analytics.byCategory.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-    return SectionCard(
+    return RuledSection(
       title: 'Por categoria — faturas + conta',
       tooltip: 'Clique para abrir o detalhamento de todas as categorias',
       onTap: () => _showCategories(context, entries),
@@ -492,7 +482,7 @@ class _CategoryCard extends StatelessWidget {
                       width: 10,
                       height: 34,
                       decoration: BoxDecoration(
-                        color: category?.color ?? context.palette.brand,
+                        color: category?.color ?? context.palette.accent,
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
@@ -510,8 +500,8 @@ class _CategoryCard extends StatelessWidget {
                             value: ratio,
                             minHeight: 5,
                             borderRadius: BorderRadius.circular(8),
-                            color: category?.color ?? context.palette.brand,
-                            backgroundColor: context.palette.hairline,
+                            color: category?.color ?? context.palette.accent,
+                            backgroundColor: context.palette.rule,
                           ),
                         ],
                       ),
@@ -566,7 +556,7 @@ class _BudgetComparison extends StatelessWidget {
     final items = snapshot.categories
         .where((item) => (item.monthlyBudget ?? 0) > 0)
         .toList();
-    return SectionCard(
+    return RuledSection(
       title: 'Metas — faturas + conta versus realizado',
       tooltip:
           'Clique para comparar orçamento, realizado e saldo por categoria',
@@ -616,8 +606,8 @@ class _BudgetComparison extends StatelessWidget {
                               '${currency.format(actual)} / ${currency.format(category.monthlyBudget)}',
                               style: TextStyle(
                                 color: over
-                                    ? context.palette.danger
-                                    : context.palette.brand,
+                                    ? context.palette.negative
+                                    : context.palette.accent,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -626,7 +616,7 @@ class _BudgetComparison extends StatelessWidget {
                               value: ratio.clamp(0.0, 1.0),
                               minHeight: 8,
                               color: over
-                                  ? context.palette.danger
+                                  ? context.palette.negative
                                   : category.color,
                               backgroundColor: category.color.withValues(
                                 alpha: .10,
@@ -703,7 +693,7 @@ class _RecentTransactions extends StatelessWidget {
   final List<FinanceTransaction> transactions;
 
   @override
-  Widget build(BuildContext context) => SectionCard(
+  Widget build(BuildContext context) => RuledSection(
     title: 'Últimas transações do período',
     tooltip: 'Clique para abrir todos os lançamentos deste período',
     onTap: () => showDetailSheet(
@@ -715,7 +705,7 @@ class _RecentTransactions extends StatelessWidget {
     trailing: Icon(
       Icons.open_in_new_rounded,
       size: 18,
-      color: context.palette.brand,
+      color: context.palette.accent,
     ),
     child: _TransactionDetails(transactions: transactions.take(5).toList()),
   );
@@ -798,7 +788,7 @@ class _MonthOverMonth extends StatelessWidget {
         .toList();
     final previousLabel = monthYear.format(comparison.previousPeriod.start);
 
-    return SectionCard(
+    return RuledSection(
       title: 'Comparado com $previousLabel',
       tooltip: 'Ver o detalhe da variação por categoria',
       onTap: () => _showAll(context),
@@ -831,8 +821,8 @@ class _MonthOverMonth extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w800,
                       color: comparison.spentMore
-                          ? context.palette.danger
-                          : context.palette.brand,
+                          ? context.palette.negative
+                          : context.palette.accent,
                     ),
                   ),
                 ),
@@ -885,7 +875,7 @@ class _DeltaRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final up = item.delta > 0;
-    final color = up ? context.palette.danger : context.palette.brand;
+    final color = up ? context.palette.negative : context.palette.income;
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -976,8 +966,8 @@ class _BudgetWarning extends StatelessWidget {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: danger
-                  ? context.palette.danger.withValues(alpha: .12)
-                  : context.palette.warning.withValues(alpha: .16),
+                  ? context.palette.negative.withValues(alpha: .12)
+                  : context.palette.pending.withValues(alpha: .16),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -987,8 +977,8 @@ class _BudgetWarning extends StatelessWidget {
                       ? Icons.error_outline_rounded
                       : Icons.warning_amber_rounded,
                   color: danger
-                      ? context.palette.danger
-                      : context.palette.onWarning,
+                      ? context.palette.negative
+                      : context.palette.pending,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1006,16 +996,16 @@ class _BudgetWarning extends StatelessWidget {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       color: danger
-                          ? context.palette.danger
-                          : context.palette.onWarning,
+                          ? context.palette.negative
+                          : context.palette.pending,
                     ),
                   ),
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
                   color: danger
-                      ? context.palette.danger
-                      : context.palette.onWarning,
+                      ? context.palette.negative
+                      : context.palette.pending,
                 ),
               ],
             ),

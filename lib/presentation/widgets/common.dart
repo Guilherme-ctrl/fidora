@@ -102,76 +102,6 @@ class PageHeading extends StatelessWidget {
   );
 }
 
-/// Kept so the eight call sites keep compiling while they move to
-/// [LedgerTile]. The icon and its tint are dropped on purpose: a tinted glyph
-/// in a rounded square was the Material signature, and the label already says
-/// what the number is.
-@Deprecated('Use LedgerTile. PR 4.')
-class MetricCard extends StatelessWidget {
-  @Deprecated('Use LedgerTile. PR 4.')
-  const MetricCard({
-    super.key,
-    required this.label,
-    required this.value,
-    this.icon,
-    this.color,
-    this.detail,
-    this.onTap,
-    this.tooltip,
-    this.trendLabel,
-    this.trendGood,
-  });
-  final String label;
-  final String value;
-  final IconData? icon;
-  final Color? color;
-  final String? detail;
-  final VoidCallback? onTap;
-  final String? tooltip;
-  final String? trendLabel;
-  final bool? trendGood;
-
-  @override
-  Widget build(BuildContext context) => LedgerTile(
-    label: label,
-    value: value,
-    detail: detail,
-    trendLabel: trendLabel,
-    trendGood: trendGood,
-    onTap: onTap,
-    tooltip: tooltip,
-  );
-}
-
-/// Kept so the thirteen call sites keep compiling while they move to
-/// [RuledSection].
-@Deprecated('Use RuledSection. PR 4.')
-class SectionCard extends StatelessWidget {
-  @Deprecated('Use RuledSection. PR 4.')
-  const SectionCard({
-    super.key,
-    required this.title,
-    required this.child,
-    this.trailing,
-    this.onTap,
-    this.tooltip,
-  });
-  final String title;
-  final Widget child;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final String? tooltip;
-
-  @override
-  Widget build(BuildContext context) => RuledSection(
-    title: title,
-    trailing: trailing,
-    onTap: onTap,
-    tooltip: tooltip,
-    child: child,
-  );
-}
-
 class PeriodFilterBar extends StatelessWidget {
   const PeriodFilterBar({
     super.key,
@@ -296,48 +226,23 @@ class PeriodFilterBar extends StatelessWidget {
   }
 }
 
+/// The detail sheet, now responsive.
+///
+/// Every call site kept its shape; what changed is where the panel comes from.
+/// On a desktop it slides in from the right and leaves the list behind it, so
+/// the number someone is checking stays on screen.
 Future<void> showDetailSheet(
   BuildContext context, {
   required String title,
   required String description,
   required Widget child,
-}) => showModalBottomSheet<void>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
-  builder: (context) => SafeArea(
-    child: ConstrainedBox(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * .82,
-      ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              description,
-              style: TextStyle(color: context.palette.inkMuted),
-            ),
-            const SizedBox(height: 22),
-            child,
-          ],
-        ),
-      ),
-    ),
-  ),
+}) => showResponsiveSheet<void>(
+  context,
+  title: title,
+  description: description,
+  builder: (_) => child,
 );
 
-/// A labelled value inside a detail sheet. 49 call sites, the widest reach of
-/// anything in this file: the label went to mono small caps and the value to
-/// the tabular figure, so a sheet full of amounts now lines up.
 class DetailValue extends StatelessWidget {
   const DetailValue({super.key, required this.label, required this.value});
   final String label;

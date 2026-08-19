@@ -148,7 +148,7 @@ class _AuthPageState extends State<AuthPage> {
                           width: 54,
                           height: 54,
                           decoration: BoxDecoration(
-                            color: context.palette.brand,
+                            color: context.palette.accent,
                             borderRadius: BorderRadius.circular(18),
                           ),
                           child: const Icon(

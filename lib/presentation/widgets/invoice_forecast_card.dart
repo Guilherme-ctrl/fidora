@@ -2,6 +2,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/invoice_forecast.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -27,7 +28,7 @@ class InvoiceForecastCard extends StatelessWidget {
     final forecasts = forecastInvoices(snapshot, now: now);
     if (forecasts.isEmpty) return const SizedBox.shrink();
 
-    return SectionCard(
+    return RuledSection(
       title: 'Previsão de fechamento',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,13 +118,13 @@ class _ForecastRow extends StatelessWidget {
                 _Part(
                   label: 'já lançado',
                   value: forecast.committed,
-                  color: palette.brand,
+                  color: palette.accent,
                 ),
                 if (forecast.scheduled > 0)
                   _Part(
                     label: 'parcelas',
                     value: forecast.scheduled,
-                    color: palette.warning,
+                    color: palette.pending,
                   ),
                 if (forecast.estimated > 0)
                   _Part(
@@ -201,12 +202,12 @@ class _Bar extends StatelessWidget {
             if (forecast.committed > 0)
               Expanded(
                 flex: (forecast.committed / total * 1000).round(),
-                child: ColoredBox(color: palette.brand),
+                child: ColoredBox(color: palette.accent),
               ),
             if (forecast.scheduled > 0)
               Expanded(
                 flex: (forecast.scheduled / total * 1000).round(),
-                child: ColoredBox(color: palette.warning),
+                child: ColoredBox(color: palette.pending),
               ),
             if (forecast.estimated > 0)
               Expanded(

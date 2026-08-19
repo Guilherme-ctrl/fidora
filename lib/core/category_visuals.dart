@@ -52,21 +52,31 @@ String categoryIconName(IconData icon) => categoryIcons.entries
     )
     .key;
 
-/// A palette wide enough to tell a dozen categories apart, with every entry
-/// legible against both the page and the card surface.
+/// The colours someone can pick for a category.
+///
+/// Separate from `FinoraPalette.categorical`, which is the chart palette: this
+/// one is **stored data** — `categories.color` has held a hex string since the
+/// first migration — so changing an entry only affects categories created from
+/// here on. Rows already in the database keep whatever they were given.
+///
+/// The first twelve were never measured. `#8D6414` was ochre, which the design
+/// system removed from the product entirely, and several pairs sat within a few
+/// points of luminance of each other. These are drawn from the same search that
+/// produced the chart palette: no yellow band, and a spread in lightness rather
+/// than only in hue.
 const categoryColors = <Color>[
-  Color(0xFF1F6B4F),
-  Color(0xFFB23F22),
-  Color(0xFF4A5488),
-  Color(0xFF8D6414),
-  Color(0xFFBF5C7A),
-  Color(0xFF377D71),
-  Color(0xFF7D63A8),
-  Color(0xFF477D9B),
-  Color(0xFF98734E),
-  Color(0xFF6B7B58),
-  Color(0xFF4B6473),
-  Color(0xFF8A5A3B),
+  Color(0xFF06485B),
+  Color(0xFF8D2F36),
+  Color(0xFF695299),
+  Color(0xFF177B63),
+  Color(0xFF677B98),
+  Color(0xFF788E57),
+  Color(0xFF4F8397),
+  Color(0xFFB05A63),
+  Color(0xFF5E4A8C),
+  Color(0xFF2F6F5B),
+  Color(0xFF8A6A8C),
+  Color(0xFF3B5C8A),
 ];
 
 /// Parses `#RRGGBB` or `RRGGBB`, tolerating an alpha prefix.

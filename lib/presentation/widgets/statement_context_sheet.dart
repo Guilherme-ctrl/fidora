@@ -4,6 +4,7 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/statement_import.dart';
 import 'package:financeiro_ai/domain/statement_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -20,9 +21,8 @@ Future<StatementContext?> askStatementContext(
   required List<CreditCard> cards,
   required StatementParse parse,
   required String fileName,
-}) => showModalBottomSheet<StatementContext>(
-  context: context,
-  isScrollControlled: true,
+}) => showResponsiveSurface<StatementContext>(
+  context,
   builder: (_) =>
       _StatementContextSheet(cards: cards, parse: parse, fileName: fileName),
 );
@@ -108,7 +108,7 @@ class _StatementContextSheetState extends State<_StatementContextSheet> {
               Text(
                 'Cadastre um cartão antes de importar: a planilha não diz a '
                 'qual cartão ela pertence.',
-                style: TextStyle(color: palette.danger, height: 1.45),
+                style: TextStyle(color: palette.negative, height: 1.45),
               )
             else ...[
               DropdownButtonFormField<String>(
@@ -245,7 +245,7 @@ class _Summary extends StatelessWidget {
             Text(
               '${skipped.length} ${skipped.length == 1 ? 'linha não foi lida' : 'linhas não foram lidas'}:',
               style: TextStyle(
-                color: palette.onWarning,
+                color: palette.pending,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
               ),

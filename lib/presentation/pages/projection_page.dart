@@ -64,29 +64,23 @@ class ProjectionPage extends StatelessWidget {
               ? 2
               : 1,
           tiles: [
-            MetricCard(
+            LedgerTile(
               label: 'Média mensal projetada',
               value: currency.format(average),
-              icon: Icons.auto_graph_rounded,
-              color: context.palette.brand,
               detail: 'próximos 6 meses',
               tooltip: 'Abrir a composição da média projetada',
               onTap: () => _showProjectionComposition(context, projection),
             ),
-            MetricCard(
+            LedgerTile(
               label: 'Parcelas futuras',
               value: currency.format(installments),
-              icon: Icons.calendar_view_month_rounded,
-              color: context.palette.danger,
               detail: '${_activeInstallments(snapshot)} compromissos',
               tooltip: 'Ver as parcelas que ainda impactarão suas faturas',
               onTap: () => _showInstallments(context, snapshot),
             ),
-            MetricCard(
+            LedgerTile(
               label: 'Total projetado',
               value: currency.format(projectedTotal),
-              icon: Icons.stacked_line_chart_rounded,
-              color: const Color(0xFF5D65A8),
               detail: '6 meses',
               tooltip: 'Ver o total acumulado da projeção',
               onTap: () => _showProjectionComposition(context, projection),
@@ -94,7 +88,7 @@ class ProjectionPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        SectionCard(
+        RuledSection(
           title: 'Próximos seis meses',
           tooltip: 'Clique para ver os valores mensais em detalhes',
           onTap: () => _showProjectionComposition(context, projection),
@@ -220,7 +214,7 @@ class _ProjectionChart extends StatelessWidget {
         gridData: FlGridData(
           drawVerticalLine: false,
           getDrawingHorizontalLine: (_) =>
-              FlLine(color: context.palette.hairline, strokeWidth: 1),
+              FlLine(color: context.palette.rule, strokeWidth: 1),
         ),
         titlesData: FlTitlesData(
           topTitles: const AxisTitles(
@@ -274,7 +268,7 @@ class _ProjectionChart extends StatelessWidget {
                       top: Radius.circular(8),
                     ),
                     gradient: LinearGradient(
-                      colors: [context.palette.brand, const Color(0xFF5D65A8)],
+                      colors: [context.palette.accent, const Color(0xFF5D65A8)],
                     ),
                   ),
                 ],
@@ -297,7 +291,7 @@ class _GoalsOutlook extends StatelessWidget {
     final categories = snapshot.categories
         .where((item) => item.monthlyBudget != null && item.monthlyBudget! > 0)
         .toList();
-    return SectionCard(
+    return RuledSection(
       title: 'Metas versus realizado',
       tooltip: 'Abrir a comparação de cada orçamento no período',
       onTap: () => showDetailSheet(
@@ -343,8 +337,8 @@ class _GoalsOutlook extends StatelessWidget {
                         textAlign: TextAlign.end,
                         style: TextStyle(
                           color: over
-                              ? context.palette.danger
-                              : context.palette.brand,
+                              ? context.palette.negative
+                              : context.palette.income,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -355,8 +349,10 @@ class _GoalsOutlook extends StatelessWidget {
                 LinearProgressIndicator(
                   value: ratio,
                   minHeight: 9,
-                  color: over ? context.palette.danger : context.palette.brand,
-                  backgroundColor: context.palette.brandSoft,
+                  color: over
+                      ? context.palette.negative
+                      : context.palette.income,
+                  backgroundColor: context.palette.accentSoft,
                   borderRadius: BorderRadius.circular(9),
                 ),
               ],

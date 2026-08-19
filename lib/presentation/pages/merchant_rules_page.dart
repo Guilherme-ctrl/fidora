@@ -3,6 +3,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -29,7 +30,7 @@ class MerchantRulesPage extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => _RulesMessage(
             icon: Icons.cloud_off_rounded,
-            color: context.palette.danger,
+            color: context.palette.negative,
             title: 'Não foi possível carregar as regras',
             body: 'Verifique sua conexão e tente novamente.',
             onRetry: () => ref.invalidate(merchantRulesProvider),
@@ -37,7 +38,7 @@ class MerchantRulesPage extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? _RulesMessage(
                   icon: Icons.psychology_alt_rounded,
-                  color: context.palette.brand,
+                  color: context.palette.accent,
                   title: 'Nenhuma regra ainda',
                   body:
                       'Uma regra diz “sempre que o nome contiver IFOOD, use Alimentação”. '
@@ -103,7 +104,7 @@ class MerchantRulesPage extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.danger,
+              backgroundColor: context.palette.negative,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Excluir'),
@@ -119,7 +120,7 @@ class MerchantRulesPage extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Regra excluída.'),
-            backgroundColor: context.palette.brand,
+            backgroundColor: context.palette.accent,
           ),
         );
       }
@@ -128,7 +129,7 @@ class MerchantRulesPage extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.message),
-            backgroundColor: context.palette.danger,
+            backgroundColor: context.palette.negative,
           ),
         );
       }
@@ -179,7 +180,7 @@ class _RuleTile extends StatelessWidget {
                         rule.categoryName,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: context.palette.brand,
+                          color: context.palette.accent,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -211,7 +212,7 @@ class _RuleTile extends StatelessWidget {
             onPressed: onDelete,
             icon: Icon(
               Icons.delete_outline_rounded,
-              color: context.palette.danger,
+              color: context.palette.negative,
             ),
           ),
         ],
@@ -275,10 +276,8 @@ Future<void> editRule(
   MerchantRule? existing,
   String? suggestedPattern,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final saved = await showResponsiveSurface<bool>(
+    context,
     builder: (context) => _RuleForm(
       snapshot: snapshot,
       existing: existing,
@@ -293,7 +292,7 @@ Future<void> editRule(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(existing == null ? 'Regra criada.' : 'Regra atualizada.'),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -522,21 +521,21 @@ class _RuleFormState extends State<_RuleForm> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: context.palette.danger.withValues(alpha: .12),
+                      color: context.palette.negative.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.error_outline_rounded,
-                          color: context.palette.danger,
+                          color: context.palette.negative,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             _failure!,
                             style: TextStyle(
-                              color: context.palette.danger,
+                              color: context.palette.negative,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

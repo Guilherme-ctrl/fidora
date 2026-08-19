@@ -70,7 +70,7 @@ class _ReviewCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.all(9),
                   decoration: BoxDecoration(
-                    color: context.palette.warning.withValues(alpha: .16),
+                    color: context.palette.pending.withValues(alpha: .16),
                     borderRadius: BorderRadius.circular(11),
                   ),
                   child: const Icon(
@@ -108,14 +108,14 @@ class _ReviewCard extends ConsumerWidget {
                   Icon(
                     Icons.lightbulb_outline_rounded,
                     size: 15,
-                    color: context.palette.brand,
+                    color: context.palette.accent,
                   ),
                   const SizedBox(width: 7),
                   Expanded(
                     child: Text(
                       item.suggestedAction!,
                       style: TextStyle(
-                        color: context.palette.brand,
+                        color: context.palette.accent,
                         fontWeight: FontWeight.w600,
                         fontSize: 13.5,
                       ),
@@ -220,8 +220,8 @@ class _ReviewCard extends ConsumerWidget {
         SnackBar(
           content: Text(message),
           backgroundColor: error
-              ? context.palette.danger
-              : context.palette.brand,
+              ? context.palette.negative
+              : context.palette.income,
         ),
       );
 }
@@ -233,7 +233,7 @@ class _QueueEmpty extends StatelessWidget {
     physics: const AlwaysScrollableScrollPhysics(),
     padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
     children: [
-      Icon(Icons.task_alt_rounded, size: 52, color: context.palette.brand),
+      Icon(Icons.task_alt_rounded, size: 52, color: context.palette.accent),
       const SizedBox(height: 18),
       const Text(
         'Nada para revisar',
@@ -258,7 +258,7 @@ class _QueueError extends StatelessWidget {
     physics: const AlwaysScrollableScrollPhysics(),
     padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
     children: [
-      Icon(Icons.cloud_off_rounded, size: 48, color: context.palette.danger),
+      Icon(Icons.cloud_off_rounded, size: 48, color: context.palette.negative),
       const SizedBox(height: 16),
       const Text(
         'Não foi possível carregar a fila',

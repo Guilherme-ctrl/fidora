@@ -265,3 +265,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 4. Branch `feat/ui-remake-pr4`.
 
 ---
+
+## Construction — Code Generation (PR 5: superfícies e limpeza)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Segue pro PR 5"
+**AI Response**: "PR 5 na branch `feat/ui-remake-pr5`. A porta deste PR era restaurar `flutter analyze --fatal-infos`, e ela está aberta: as 203 pontes de depreciação foram resolvidas e apagadas. O que vale registrar é que **minha estimativa estava errada, e para melhor**: o plano previa ~145 decisões semânticas em `brand` e `danger`, mas lendo as 134 ocorrências uma a uma, `danger` era erro de verdade em todas — banner de falha, ação destrutiva, fatura vencida, saldo negativo, orçamento estourado — então virou renomeação; e `brand` se dividiu em três, com apenas 8 sendo sentido de dinheiro. Isso também corrige uma conclusão que eu tinha tirado no PR 2, de que as saídas continuavam vermelhas nesses 68 usos: nenhum deles pintava saída comum de vermelho, o `AmountText` já tinha resolvido. Um erro meu: usei expressão regular para tirar `icon:` de dentro do `MetricCard` e ela apagou o ícone do `_OperationTile`, que não tem relação com métrica; revertido e refeito varrendo o bloco de cada chamada, contando parênteses. O `git diff` por arquivo foi o que expôs. Entreguei também `showResponsiveSurface` — sheet abaixo de 600, dialog até 1240, painel lateral direito acima — e converti os dez formulários mais o recategorizar em lote: **zero `showModalBottomSheet` fora do componente**. O ocre saiu do seletor de cor de categoria. Deixei para o PR 6, com motivo, as trocas de `Card`, `Chip`, `FilledButton` e `LinearProgressIndicator`: os componentes existem, mas a troca é por chamada e mistura-se com o trabalho de tabela e painel do PR 6 — fazer agora seria passar duas vezes pelos mesmos arquivos. 567 testes passam."
+**Context**: Construction / Code Generation — PR 5. Branch `feat/ui-remake-pr5`.
+
+---

@@ -26,7 +26,7 @@ class ShortcutTokensPage extends ConsumerWidget {
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, _) => _Message(
             icon: Icons.cloud_off_rounded,
-            color: context.palette.danger,
+            color: context.palette.negative,
             title: 'Não foi possível carregar os tokens',
             body: 'Verifique sua conexão e tente novamente.',
             onRetry: () => ref.invalidate(shortcutTokensProvider),
@@ -34,7 +34,7 @@ class ShortcutTokensPage extends ConsumerWidget {
           data: (items) => items.isEmpty
               ? _Message(
                   icon: Icons.key_rounded,
-                  color: context.palette.brand,
+                  color: context.palette.accent,
                   title: 'Nenhum token ainda',
                   body:
                       'O Atalho do iOS usa um token para enviar suas compras. '
@@ -129,7 +129,7 @@ class ShortcutTokensPage extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: context.palette.canvas,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: context.palette.hairline),
+                  border: Border.all(color: context.palette.rule),
                 ),
                 child: SelectableText(
                   issued.secret,
@@ -182,7 +182,7 @@ class ShortcutTokensPage extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.danger,
+              backgroundColor: context.palette.negative,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Revogar'),
@@ -205,8 +205,8 @@ class ShortcutTokensPage extends ConsumerWidget {
         SnackBar(
           content: Text(message),
           backgroundColor: error
-              ? context.palette.danger
-              : context.palette.brand,
+              ? context.palette.negative
+              : context.palette.income,
         ),
       );
 }
@@ -247,7 +247,7 @@ class _TokenTile extends StatelessWidget {
                           style: TextStyle(fontSize: 11),
                         ),
                         visualDensity: VisualDensity.compact,
-                        backgroundColor: context.palette.danger.withValues(
+                        backgroundColor: context.palette.negative.withValues(
                           alpha: .14,
                         ),
                       ),
@@ -273,7 +273,7 @@ class _TokenTile extends StatelessWidget {
             IconButton(
               tooltip: 'Revogar',
               onPressed: onRevoke,
-              icon: Icon(Icons.block_rounded, color: context.palette.danger),
+              icon: Icon(Icons.block_rounded, color: context.palette.negative),
             ),
         ],
       ),

@@ -82,7 +82,7 @@ class DataPage extends ConsumerWidget {
               ),
               error: (_, _) => _Message(
                 text: 'Não foi possível carregar o histórico de importações.',
-                color: context.palette.danger,
+                color: context.palette.negative,
               ),
               data: (items) => items.isEmpty
                   ? _Message(
@@ -137,7 +137,7 @@ class DataPage extends ConsumerWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Não foi possível abrir o compartilhamento.'),
-            backgroundColor: context.palette.danger,
+            backgroundColor: context.palette.negative,
           ),
         );
       }
@@ -208,7 +208,7 @@ class _Count extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
     decoration: BoxDecoration(
       color: highlight
-          ? context.palette.warning.withValues(alpha: .18)
+          ? context.palette.pending.withValues(alpha: .18)
           : context.palette.canvas,
       borderRadius: BorderRadius.circular(9),
     ),
@@ -217,7 +217,7 @@ class _Count extends StatelessWidget {
       style: TextStyle(
         fontSize: 12,
         fontWeight: FontWeight.w700,
-        color: highlight ? context.palette.onWarning : context.palette.inkMuted,
+        color: highlight ? context.palette.pending : context.palette.inkMuted,
       ),
     ),
   );

@@ -6,6 +6,7 @@ import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -14,10 +15,8 @@ Future<void> editGoal(
   WidgetRef ref, {
   Goal? existing,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final saved = await showResponsiveSurface<bool>(
+    context,
     builder: (context) => _GoalForm(
       existing: existing,
       onSave: (draft) async {
@@ -30,7 +29,7 @@ Future<void> editGoal(
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(existing == null ? 'Meta criada.' : 'Meta atualizada.'),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -217,21 +216,21 @@ class _GoalFormState extends State<_GoalForm> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: context.palette.danger.withValues(alpha: .12),
+                  color: context.palette.negative.withValues(alpha: .12),
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
                   children: [
                     Icon(
                       Icons.error_outline_rounded,
-                      color: context.palette.danger,
+                      color: context.palette.negative,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _failure!,
                         style: TextStyle(
-                          color: context.palette.danger,
+                          color: context.palette.negative,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

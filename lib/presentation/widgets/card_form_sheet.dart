@@ -4,6 +4,7 @@ import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,10 +16,8 @@ Future<void> editCard(
   required List<Holder> holders,
   CreditCard? existing,
 }) async {
-  final saved = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true,
-    showDragHandle: true,
+  final saved = await showResponsiveSurface<bool>(
+    context,
     builder: (context) => _CardForm(
       existing: existing,
       holders: holders,
@@ -34,7 +33,7 @@ Future<void> editCard(
         content: Text(
           existing == null ? 'Cartão cadastrado.' : 'Cartão atualizado.',
         ),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -337,18 +336,18 @@ class _FailureBanner extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: context.palette.danger.withValues(alpha: .12),
+      color: context.palette.negative.withValues(alpha: .12),
       borderRadius: BorderRadius.circular(14),
     ),
     child: Row(
       children: [
-        Icon(Icons.error_outline_rounded, color: context.palette.danger),
+        Icon(Icons.error_outline_rounded, color: context.palette.negative),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             message,
             style: TextStyle(
-              color: context.palette.danger,
+              color: context.palette.negative,
               fontWeight: FontWeight.w700,
             ),
           ),

@@ -393,7 +393,7 @@ class _Brand extends StatelessWidget {
         width: 38,
         height: 38,
         decoration: BoxDecoration(
-          color: context.palette.brand,
+          color: context.palette.accent,
           borderRadius: BorderRadius.circular(13),
         ),
         child: const Icon(Icons.auto_graph_rounded, color: Colors.white),
@@ -413,13 +413,13 @@ class _Brand extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: context.palette.brandSoft,
+            color: context.palette.accentSoft,
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(
             onSignOut == null ? 'Demo' : 'Online',
             style: TextStyle(
-              color: context.palette.brand,
+              color: context.palette.accent,
               fontWeight: FontWeight.w700,
               fontSize: 12,
             ),
@@ -452,7 +452,7 @@ class _ErrorState extends StatelessWidget {
           Icon(
             Icons.cloud_off_rounded,
             size: 48,
-            color: context.palette.danger,
+            color: context.palette.negative,
           ),
           const SizedBox(height: 16),
           Text(
@@ -519,7 +519,7 @@ class _SnapshotSkeleton extends StatelessWidget {
       height: height,
       width: width,
       decoration: BoxDecoration(
-        color: context.palette.hairline,
+        color: context.palette.rule,
         borderRadius: BorderRadius.circular(14),
       ),
     );
@@ -566,18 +566,18 @@ class _TruncatedLedgerBanner extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
-      color: palette.warning.withValues(alpha: .18),
+      color: palette.pending.withValues(alpha: .18),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.warning_amber_rounded, size: 18, color: palette.onWarning),
+          Icon(Icons.warning_amber_rounded, size: 18, color: palette.pending),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               'Seu histórico passa do que o app carrega de uma vez. Os totais '
               'e comparações desta tela consideram apenas a parte carregada.',
               style: TextStyle(
-                color: palette.onWarning,
+                color: palette.pending,
                 fontSize: 12.5,
                 height: 1.4,
                 fontWeight: FontWeight.w600,

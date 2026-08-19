@@ -11,6 +11,7 @@ import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'dart:async';
 
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -152,7 +153,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.fromLTRB(14, 8, 8, 8),
                     decoration: BoxDecoration(
-                      color: context.palette.brandSoft,
+                      color: context.palette.accentSoft,
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
@@ -162,7 +163,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                             '${_selected.length} selecionado${_selected.length == 1 ? '' : 's'}',
                             style: TextStyle(
                               fontWeight: FontWeight.w800,
-                              color: context.palette.onBrandSoft,
+                              color: context.palette.accent,
                             ),
                           ),
                         ),
@@ -275,7 +276,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.danger,
+              backgroundColor: context.palette.negative,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Excluir'),
@@ -292,7 +293,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Lançamento excluído.'),
-            backgroundColor: context.palette.brand,
+            backgroundColor: context.palette.accent,
           ),
         );
       }
@@ -301,7 +302,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.message),
-            backgroundColor: context.palette.danger,
+            backgroundColor: context.palette.negative,
           ),
         );
       }
@@ -320,9 +321,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   /// Applies one category to everything selected, then offers to remember it —
   /// the moment right after a correction is when the intent is clearest.
   Future<void> _recategorizeSelection() async {
-    final category = await showModalBottomSheet<FinanceCategory>(
-      context: context,
-      showDragHandle: true,
+    final category = await showResponsiveSurface<FinanceCategory>(
+      context,
       builder: (context) => SafeArea(
         child: ListView(
           shrinkWrap: true,
@@ -371,7 +371,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
           content: Text(
             '${ids.length} ${ids.length == 1 ? 'lançamento movido' : 'lançamentos movidos'} para ${category.name}.',
           ),
-          backgroundColor: context.palette.brand,
+          backgroundColor: context.palette.accent,
           action: pattern.length < 3
               ? null
               : SnackBarAction(
@@ -391,7 +391,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(error.message),
-            backgroundColor: context.palette.danger,
+            backgroundColor: context.palette.negative,
           ),
         );
       }
@@ -433,10 +433,10 @@ class _TransactionRow extends StatelessWidget {
             height: 46,
             decoration: BoxDecoration(
               color: selected
-                  ? context.palette.brand
+                  ? context.palette.accent
                   : item.status == TransactionStatus.pending
-                  ? context.palette.warning.withValues(alpha: .18)
-                  : context.palette.brandSoft,
+                  ? context.palette.pending.withValues(alpha: .18)
+                  : context.palette.accentSoft,
               borderRadius: BorderRadius.circular(15),
             ),
             child: Icon(
@@ -449,8 +449,8 @@ class _TransactionRow extends StatelessWidget {
                   ? Colors.white
                   // Was a hardcoded hex that survived the palette migration.
                   : item.status == TransactionStatus.pending
-                  ? context.palette.onWarning
-                  : context.palette.brand,
+                  ? context.palette.pending
+                  : context.palette.accent,
             ),
           ),
           const SizedBox(width: 13),
@@ -510,7 +510,7 @@ class _TransactionRow extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
-                    color: context.palette.brand,
+                    color: context.palette.accent,
                   ),
                 ),
             ],
@@ -583,7 +583,7 @@ class _TransactionRow extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: context.palette.danger,
+                  foregroundColor: context.palette.negative,
                 ),
                 onPressed: () {
                   Navigator.of(context).pop();

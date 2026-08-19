@@ -29,13 +29,7 @@ jobs:
         # formatter produces on someone else's branch is noise in review.
         run: dart format --output=none --set-exit-if-changed lib test
 
-      # Infos are not fatal until the palette migration is done. The Ledger
-      # tokens landed with `@Deprecated` bridges so 270 call sites keep
-      # compiling, and every use is reported as an info — 197 of them, which is
-      # the worklist, not a regression. Warnings and errors still fail the
-      # build. PR 5 deletes the bridges and restores `--fatal-infos`; that
-      # restoration is the gate on PR 5.
-      - run: flutter analyze --no-fatal-infos
+      - run: flutter analyze --fatal-infos
 
       # Goldens are excluded: a reference image rendered on macOS does not
       # match one rendered on Linux, and these exist to be looked at during

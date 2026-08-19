@@ -2,6 +2,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_filter.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 
 /// Returns the edited filter, or null when the sheet was dismissed.
@@ -9,10 +10,8 @@ Future<TransactionFilter?> showFilterSheet(
   BuildContext context, {
   required FinanceSnapshot snapshot,
   required TransactionFilter filter,
-}) => showModalBottomSheet<TransactionFilter>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
+}) => showResponsiveSurface<TransactionFilter>(
+  context,
   builder: (context) => _FilterSheet(snapshot: snapshot, filter: filter),
 );
 

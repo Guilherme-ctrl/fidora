@@ -3,6 +3,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -59,10 +60,8 @@ class HoldersPage extends ConsumerWidget {
     final nameController = TextEditingController(text: existing?.name ?? '');
     var include = existing?.includeInTotals ?? true;
 
-    final draft = await showModalBottomSheet<HolderDraft>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
+    final draft = await showResponsiveSurface<HolderDraft>(
+      context,
       builder: (context) => StatefulBuilder(
         builder: (context, setSheetState) => SafeArea(
           child: Padding(
@@ -152,7 +151,7 @@ class HoldersPage extends ConsumerWidget {
           ),
           FilledButton(
             style: FilledButton.styleFrom(
-              backgroundColor: context.palette.danger,
+              backgroundColor: context.palette.negative,
             ),
             onPressed: () => Navigator.of(context).pop(true),
             child: const Text('Excluir'),
@@ -175,8 +174,8 @@ class HoldersPage extends ConsumerWidget {
         SnackBar(
           content: Text(message),
           backgroundColor: error
-              ? context.palette.danger
-              : context.palette.brand,
+              ? context.palette.negative
+              : context.palette.income,
         ),
       );
 }
@@ -224,7 +223,7 @@ class _HolderTile extends StatelessWidget {
                           style: TextStyle(fontSize: 11),
                         ),
                         visualDensity: VisualDensity.compact,
-                        backgroundColor: context.palette.warning.withValues(
+                        backgroundColor: context.palette.pending.withValues(
                           alpha: .18,
                         ),
                       ),
@@ -254,7 +253,7 @@ class _HolderTile extends StatelessWidget {
             onPressed: onDelete,
             icon: Icon(
               Icons.delete_outline_rounded,
-              color: context.palette.danger,
+              color: context.palette.negative,
             ),
           ),
         ],
@@ -271,7 +270,7 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(28, 80, 28, 24),
     children: [
-      Icon(Icons.people_alt_rounded, size: 50, color: context.palette.brand),
+      Icon(Icons.people_alt_rounded, size: 50, color: context.palette.accent),
       const SizedBox(height: 18),
       const Text(
         'Nenhum portador ainda',

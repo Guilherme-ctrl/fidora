@@ -8,6 +8,7 @@ import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/domain/receipt_scan.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/receipt_field.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -17,10 +18,8 @@ Future<bool?> showTransactionFormSheet(
   required FinanceSnapshot snapshot,
   required Future<void> Function(TransactionDraft draft) onSave,
   FinanceTransaction? existing,
-}) => showModalBottomSheet<bool>(
-  context: context,
-  isScrollControlled: true,
-  showDragHandle: true,
+}) => showResponsiveSurface<bool>(
+  context,
   builder: (context) =>
       _TransactionForm(snapshot: snapshot, onSave: onSave, existing: existing),
 );
@@ -533,21 +532,21 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: context.palette.danger.withValues(alpha: .12),
+                      color: context.palette.negative.withValues(alpha: .12),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       children: [
                         Icon(
                           Icons.error_outline_rounded,
-                          color: context.palette.danger,
+                          color: context.palette.negative,
                         ),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             _failure!,
                             style: TextStyle(
-                              color: context.palette.danger,
+                              color: context.palette.negative,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -599,7 +598,7 @@ class _CompetenceHint extends StatelessWidget {
           Icon(
             Icons.info_outline_rounded,
             size: 16,
-            color: context.palette.brand,
+            color: context.palette.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -607,7 +606,7 @@ class _CompetenceHint extends StatelessWidget {
               'Entra na fatura de ${monthYear.format(competence)} '
               '— o cartão fecha dia ${card.closingDay}.',
               style: TextStyle(
-                color: context.palette.brand,
+                color: context.palette.accent,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),
@@ -643,7 +642,7 @@ Future<void> createTransaction(
         content: Text(
           existing == null ? 'Transação salva.' : 'Transação atualizada.',
         ),
-        backgroundColor: context.palette.brand,
+        backgroundColor: context.palette.accent,
       ),
     );
   }
@@ -669,7 +668,7 @@ class _ShareSummary extends StatelessWidget {
           Icon(
             Icons.info_outline_rounded,
             size: 16,
-            color: context.palette.brand,
+            color: context.palette.accent,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -679,7 +678,7 @@ class _ShareSummary extends StatelessWidget {
                   : '${currency.format(others)} ficam de fora dos seus totais; '
                         'a fatura segue com ${currency.format(total)}.',
               style: TextStyle(
-                color: context.palette.brand,
+                color: context.palette.accent,
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
               ),

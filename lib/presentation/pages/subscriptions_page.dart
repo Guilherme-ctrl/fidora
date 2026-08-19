@@ -59,7 +59,7 @@ class SubscriptionsPage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: context.palette.warning.withValues(alpha: .16),
+                      color: context.palette.pending.withValues(alpha: .16),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
@@ -67,7 +67,7 @@ class SubscriptionsPage extends StatelessWidget {
                       children: [
                         Icon(
                           Icons.trending_up_rounded,
-                          color: context.palette.onWarning,
+                          color: context.palette.pending,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -76,7 +76,7 @@ class SubscriptionsPage extends StatelessWidget {
                                 ? '${changed.single.merchant} mudou de valor.'
                                 : '${changed.length} cobranças mudaram de valor.',
                             style: TextStyle(
-                              color: context.palette.onWarning,
+                              color: context.palette.pending,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -143,8 +143,8 @@ class _ChargeTile extends StatelessWidget {
                     fontSize: 11.5,
                     fontWeight: FontWeight.w700,
                     color: charge.priceDelta > 0
-                        ? context.palette.danger
-                        : context.palette.brand,
+                        ? context.palette.negative
+                        : context.palette.income,
                   ),
                 ),
             ],
@@ -162,7 +162,11 @@ class _Empty extends StatelessWidget {
   Widget build(BuildContext context) => ListView(
     padding: const EdgeInsets.fromLTRB(28, 80, 28, 24),
     children: [
-      Icon(Icons.subscriptions_rounded, size: 50, color: context.palette.brand),
+      Icon(
+        Icons.subscriptions_rounded,
+        size: 50,
+        color: context.palette.accent,
+      ),
       const SizedBox(height: 18),
       const Text(
         'Nenhuma cobrança recorrente',
