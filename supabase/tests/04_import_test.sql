@@ -5,7 +5,7 @@
 -- reached only through a network call that no test has ever made.
 
 begin;
-select plan(7);
+select plan(10);
 
 create extension if not exists pgtap with schema extensions;
 
@@ -118,6 +118,31 @@ select is(
    where user_id = 'cccccccc-cccc-cccc-cccc-cccccccccccc'),
   'sheet',
   'the declared source is recorded, not the literal chatgpt'
+);
+
+-- ------------------------------------------------------- the two functions --
+
+-- Migration 005 renamed the original body to `_v1` and made
+-- `import_finora_invoice` a wrapper that adds item-level review. Nothing here
+-- covered that, so a later migration restating the wrapper with the old body
+-- passed the whole suite while quietly reverting the review. These three
+-- assertions are what would have caught it.
+
+select has_function(
+  'public', 'import_finora_invoice_v1', array['jsonb'],
+  'the original body still exists under its renamed identity'
+);
+
+select ok(
+  pg_get_functiondef('public.import_finora_invoice(jsonb)'::regprocedure)
+    like '%import_finora_invoice_v1%',
+  'import_finora_invoice is still the wrapper, not a copy of the old body'
+);
+
+select ok(
+  pg_get_functiondef('public.import_finora_invoice(jsonb)'::regprocedure)
+    like '%item_review%',
+  'and it still performs the item-level review'
 );
 
 -- ------------------------------------------------------------- duplicates --
