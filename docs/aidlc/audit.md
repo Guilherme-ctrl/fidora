@@ -249,3 +249,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 2. Branch `feat/ui-remake-pr2`.
 
 ---
+
+## Construction — Code Generation (PR 3: shell, navegação e IA)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Pode seguir"
+**AI Response**: "PR 3 na branch `feat/ui-remake-pr3`. Saíram `NavigationRail` e `NavigationBar` — os dois últimos widgets que carregavam a aparência Material inteira — e entraram `LedgerSidebar` e `LedgerTabBar`, com os quatro espaços: Hoje, Dinheiro, Futuro e Ajustes. Sete destinos nomeados no desktop; 'Mais' desaparece acima de 905pt. `today_page.dart` é a tela que não existia: fila de revisão em primeiro plano com contador na navegação, fatura fechando, orçamento no limite e a narrativa quando não há nada a resolver. A projeção saiu do porão. Adotei `Breakpoint` no shell e nas seis páginas, e os números mágicos de largura caíram de 23 para 14 — os que sobraram decidem contagem de colunas dentro de uma página, não navegação. Tema agora é escolhido e persistido. Dois defeitos meus no caminho: o cabeçalho da sidebar reusava `_Brand`, que é a barra do telefone, e estourava 200px num trilho de 68pt; e o teste de navegação **travava** em vez de falhar, porque `pumpAndSettle` não retorna enquanto há uma barra de progresso indeterminada na tela — troquei por um número limitado de frames. Marco: com a grade de categorias deixando de fixar proporção, a lista de casos adiados por Dynamic Type está vazia pela primeira vez; eram seis no PR 0. 548 testes passam, nenhum adiado. Também acrescentei três goldens do shell, porque as goldens de página não enxergam a navegação — que é justamente o que este PR muda."
+**Context**: Construction / Code Generation — PR 3. Branch `feat/ui-remake-pr3`.
+
+---

@@ -6,6 +6,7 @@ import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
+import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -37,6 +38,11 @@ void main() {
   });
 
   Widget page(String name) => switch (name) {
+    'hoje' => TodayPage(
+      snapshot: snapshot,
+      period: goldenPeriod,
+      onOpenInvoices: _nothing,
+    ),
     'visão geral' => DashboardPage(
       snapshot: snapshot,
       period: goldenPeriod,
@@ -63,6 +69,7 @@ void main() {
   };
 
   const names = [
+    'hoje',
     'visão geral',
     'histórico',
     'categorias',
@@ -91,19 +98,15 @@ void main() {
     }
   }
 
-  // One page still overflows under Dynamic Type: the categories grid fixes its
-  // cell aspect ratio, so the cell cannot grow with the text. It is the same
-  // defect the dashboard fixed once by replacing a fixed-ratio grid with rows
-  // of intrinsic height, and PR 3 replaces this grid outright.
+  // Empty, and it took three PRs to get here. Every page now grows with the
+  // text.
   //
-  // PR 2 cleared the other two. The attribution in the first version of this
-  // comment was wrong: they were not both `MetricCard`. Fixing that widget
-  // fixed the projection page; the invoices page was overflowing on the credit
-  // card face, where a long bank name in spaced capitals pushed the
-  // contactless glyph off the card at 1.3x.
-  const fixedRatioGrid = {
-    'categorias': 'categories_page.dart:82, grade de proporção fixa, PR 3',
-  };
+  // The defect was always the same shape — a cell with a fixed aspect ratio, or
+  // a row with no give — and it was in four different places. The attribution
+  // in the first version of this comment was wrong: the invoices page was not
+  // `MetricCard`, it was the credit card face, where a long bank name in spaced
+  // capitals pushed the contactless glyph off the card at 1.3x.
+  const fixedRatioGrid = <String, String>{};
 
   for (final scale in [1.3, 2.0]) {
     for (final name in names) {
@@ -130,3 +133,5 @@ void main() {
 }
 
 void _ignore(FinancePeriod _) {}
+
+void _nothing() {}

@@ -1,6 +1,8 @@
 @Tags(['golden'])
 library;
 
+import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -9,10 +11,14 @@ import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
+import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
+import 'package:financeiro_ai/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/golden.dart';
 
@@ -47,6 +53,11 @@ void main() {
   });
 
   Widget page(String name) => switch (name) {
+    'hoje' => TodayPage(
+      snapshot: snapshot,
+      period: goldenPeriod,
+      onOpenInvoices: _nothing,
+    ),
     'visao-geral' => DashboardPage(
       snapshot: snapshot,
       period: goldenPeriod,
@@ -73,6 +84,7 @@ void main() {
   };
 
   const pages = [
+    'hoje',
     'visao-geral',
     'historico',
     'categorias',
@@ -111,6 +123,55 @@ void main() {
       });
     });
   }
+
+  for (final entry in {
+    '390': const Size(390, 900),
+    '768': const Size(768, 1024),
+    '1440': const Size(1440, 1000),
+  }.entries) {
+    testWidgets('shell at ${entry.key}', (tester) async {
+      await withGoldenClock(() async {
+        SharedPreferences.setMockInitialValues(<String, Object>{});
+        await _pumpShell(tester, entry.value);
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/shell-${entry.key}.png'),
+        );
+      });
+    });
+  }
+}
+
+/// The shell itself, which the page goldens cannot see.
+///
+/// PR 3's whole change is navigation, and every other golden pumps a page in
+/// isolation — so without this the sidebar, the rail and the tab bar would have
+/// no reference image at all.
+Future<void> _pumpShell(WidgetTester tester, Size size) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        home: MediaQuery(
+          data: MediaQueryData(size: size, disableAnimations: true),
+          child: const AppShell(),
+        ),
+      ),
+    ),
+  );
+  for (var i = 0; i < 8; i++) {
+    await tester.pump(const Duration(milliseconds: 50));
+  }
 }
 
 void _ignore(FinancePeriod _) {}
+
+void _nothing() {}

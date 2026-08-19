@@ -1,4 +1,6 @@
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/category_form_sheet.dart';
@@ -20,21 +22,21 @@ class CategoriesPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
-    final columns = width >= 1200
-        ? 4
-        : width >= 700
-        ? 3
-        : width >= 470
-        ? 2
-        : 1;
+    final layout = Breakpoint.of(context);
+    final columns = switch (layout) {
+      Breakpoint.large => 4,
+      Breakpoint.expanded => 3,
+      Breakpoint.medium => 2,
+      Breakpoint.compact => width >= 470 ? 2 : 1,
+    };
     final analytics = analyzePeriod(snapshot, period);
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
-        width < 600 ? 18 : 32,
-        24,
-        width < 600 ? 18 : 32,
-        36,
+        layout.gutter,
+        Space.xl,
+        layout.gutter,
+        Space.xxxl,
       ),
       children: [
         PageHeading(
@@ -53,17 +55,13 @@ class CategoriesPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: 18),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: snapshot.categories.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: columns,
-            crossAxisSpacing: 14,
-            mainAxisSpacing: 14,
-            childAspectRatio: columns == 1 ? 2.25 : 1.25,
-          ),
-          itemBuilder: (context, index) {
+        // A fixed `childAspectRatio` cannot grow with the text: this was the
+        // last page still overflowing under Dynamic Type. Rows take their
+        // height from their tallest cell instead.
+        _CategoryGrid(
+          columns: columns,
+          count: snapshot.categories.length,
+          builder: (context, index) {
             final category = snapshot.categories[index];
             final spend = analytics.byCategory[category.name] ?? 0;
             final ratio =
@@ -201,6 +199,51 @@ class CategoriesPage extends ConsumerWidget {
               ),
         ],
       ),
+    );
+  }
+}
+
+/// Rows of intrinsic height, in place of a grid with a fixed cell ratio.
+class _CategoryGrid extends StatelessWidget {
+  const _CategoryGrid({
+    required this.columns,
+    required this.count,
+    required this.builder,
+  });
+
+  final int columns;
+  final int count;
+  final Widget Function(BuildContext, int) builder;
+
+  @override
+  Widget build(BuildContext context) {
+    final rows = <Widget>[];
+    for (var start = 0; start < count; start += columns) {
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var slot = 0; slot < columns; slot++) ...[
+                if (slot > 0) const SizedBox(width: Space.sm),
+                Expanded(
+                  child: start + slot < count
+                      ? builder(context, start + slot)
+                      : const SizedBox.shrink(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+    return Column(
+      children: [
+        for (var i = 0; i < rows.length; i++) ...[
+          if (i > 0) const SizedBox(height: Space.sm),
+          rows[i],
+        ],
+      ],
     );
   }
 }

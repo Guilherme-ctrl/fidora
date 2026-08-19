@@ -173,18 +173,33 @@ Depreciações: 197 → **204**, porque `SectionCard` (12) e `MetricCard` (7)
 entraram na lista. `brand` caiu de 69 para 66 e `danger` de 73 para 68 — os
 componentes começaram a absorver as chamadas, como o plano previa.
 
-### PR 3 — Shell, navegação e IA · ~1,5 dia
+### PR 3 — Shell, navegação e IA · **entregue** (2026-08-19)
 
-- [ ] `LedgerSidebar` e `LedgerTabBar` no lugar de `NavigationRail`/`NavigationBar`
-- [ ] Adotar `breakpoints.dart`; remover os onze valores mágicos
-      (470, 600, 650, 680, 700, 850, 900, 1100, 1180, 1200, 1250)
-- [ ] Quatro espaços — Hoje, Dinheiro, Futuro, Ajustes — conforme [04](04-ia-flows.md)
-- [ ] `hoje_page.dart` nova, com a fila de revisão em primeiro plano
-- [ ] `maxWidth: 1440` no contêiner de conteúdo
-- [ ] Seletor de tema persistido em `shared_preferences` (já é dependência)
+- [x] `LedgerSidebar` e `LedgerTabBar` no lugar de `NavigationRail` e
+      `NavigationBar` — os dois últimos widgets que carregavam a aparência
+      Material por inteiro
+- [x] Os quatro espaços: **Hoje, Dinheiro, Futuro, Ajustes**. Sete destinos
+      nomeados no desktop; "Mais" some acima de 905pt
+- [x] `today_page.dart` — a tela que não existia, com a fila de revisão em
+      primeiro plano e contador na navegação
+- [x] Projeção saiu do porão e virou destino de primeira classe
+- [x] `Breakpoint` adotado no shell e nas seis páginas; `maxContentWidth` de
+      1440 no contêiner de conteúdo
+- [x] Seletor de tema persistido em `shared_preferences`
+- [x] **A grade de categorias deixou de fixar proporção** — a lista de adiados
+      por Dynamic Type está vazia pela primeira vez
+- [x] `navigation_test.dart` — 10 casos
+- [x] Três goldens do shell (390, 768, 1440), que as goldens de página não veem
 
-**Pronto quando:** "Mais" não existe acima de 1024px e nenhuma página lê largura
-direto de `MediaQuery`.
+Dois defeitos meus no caminho, ambos pegos pela rede:
+
+| Onde | Sintoma |
+|---|---|
+| Cabeçalho da sidebar | `_Brand` é a barra do telefone; num trilho de 68pt estourava 200px |
+| `navigation_test` | `pumpAndSettle` não retorna enquanto há barra de progresso indeterminada — o teste travava em vez de falhar |
+
+Números mágicos de largura: **23 → 14**. Os que sobraram decidem contagem de
+colunas dentro de uma página, não navegação, e migram no PR 4 junto com a tabela.
 
 ### PR 4 — Roteamento · ~1,5 dia
 

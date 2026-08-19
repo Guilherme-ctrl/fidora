@@ -16,7 +16,11 @@ import 'package:flutter/material.dart';
 /// a selectable option.
 
 /// What an amount means, which decides its colour and its sign.
-enum Money {
+///
+/// Named `MoneyTone` rather than `Money` because `narrative.dart` already owns
+/// `Money` as the formatter typedef, and a page that shows both would not be
+/// able to import them together.
+enum MoneyTone {
   /// Decides from the sign of the number: positive reads as income.
   auto,
 
@@ -50,7 +54,7 @@ class AmountText extends StatelessWidget {
   const AmountText(
     this.value, {
     super.key,
-    this.tone = Money.auto,
+    this.tone = MoneyTone.auto,
     this.size = AmountSize.row,
     this.sign = true,
     this.align = TextAlign.end,
@@ -58,7 +62,7 @@ class AmountText extends StatelessWidget {
   });
 
   final double value;
-  final Money tone;
+  final MoneyTone tone;
   final AmountSize size;
 
   /// A ledger shows direction on every line. Turn it off for a total that is
@@ -68,17 +72,18 @@ class AmountText extends StatelessWidget {
   final TextAlign align;
   final String? semanticsLabel;
 
-  Money get _resolved =>
-      tone == Money.auto ? (value >= 0 ? Money.income : Money.expense) : tone;
+  MoneyTone get _resolved => tone == MoneyTone.auto
+      ? (value >= 0 ? MoneyTone.income : MoneyTone.expense)
+      : tone;
 
   Color _colour(FinoraPalette palette) => switch (_resolved) {
-    Money.income => palette.income,
-    Money.expense => palette.expense,
-    Money.negative => palette.negative,
-    Money.pending => palette.pending,
-    Money.ignored => palette.ignored,
-    Money.onCard => palette.onCard,
-    Money.auto => palette.ink,
+    MoneyTone.income => palette.income,
+    MoneyTone.expense => palette.expense,
+    MoneyTone.negative => palette.negative,
+    MoneyTone.pending => palette.pending,
+    MoneyTone.ignored => palette.ignored,
+    MoneyTone.onCard => palette.onCard,
+    MoneyTone.auto => palette.ink,
   };
 
   @override
@@ -91,7 +96,7 @@ class AmountText extends StatelessWidget {
     // tabular face, so the column still lines up.
     final prefix = !sign
         ? ''
-        : tone == Money.income
+        : tone == MoneyTone.income
         ? '+'
         : '−';
 
@@ -102,8 +107,10 @@ class AmountText extends StatelessWidget {
           AmountSize.row => type.amount,
         }.copyWith(
           color: _colour(palette),
-          decoration: tone == Money.ignored ? TextDecoration.lineThrough : null,
-          fontWeight: tone == Money.income ? FontWeight.w600 : null,
+          decoration: tone == MoneyTone.ignored
+              ? TextDecoration.lineThrough
+              : null,
+          fontWeight: tone == MoneyTone.income ? FontWeight.w600 : null,
         );
 
     return Text(
@@ -113,10 +120,10 @@ class AmountText extends StatelessWidget {
       semanticsLabel:
           semanticsLabel ??
           switch (tone) {
-            Money.income => 'entrada de $text',
-            Money.negative => 'saldo negativo de $text',
-            Money.ignored => '$text, fora dos totais pessoais',
-            Money.pending => 'saída de $text, aguardando revisão',
+            MoneyTone.income => 'entrada de $text',
+            MoneyTone.negative => 'saldo negativo de $text',
+            MoneyTone.ignored => '$text, fora dos totais pessoais',
+            MoneyTone.pending => 'saída de $text, aguardando revisão',
             _ => 'saída de $text',
           },
     );
@@ -225,7 +232,7 @@ class LedgerTile extends StatelessWidget {
     required this.label,
     required this.value,
     this.amount,
-    this.tone = Money.expense,
+    this.tone = MoneyTone.expense,
     this.detail,
     this.trendLabel,
     this.trendGood,
@@ -241,7 +248,7 @@ class LedgerTile extends StatelessWidget {
 
   /// Money, rendered through [AmountText] so the figure is tabular.
   final double? amount;
-  final Money tone;
+  final MoneyTone tone;
 
   final String? detail;
   final String? trendLabel;
@@ -451,7 +458,7 @@ class LedgerRow extends StatelessWidget {
     required this.title,
     required this.meta,
     required this.amount,
-    this.tone = Money.expense,
+    this.tone = MoneyTone.expense,
     this.mark,
     this.markColor,
     this.tag,
@@ -463,7 +470,7 @@ class LedgerRow extends StatelessWidget {
   final String title;
   final String meta;
   final double amount;
-  final Money tone;
+  final MoneyTone tone;
   final String? mark;
   final Color? markColor;
   final Widget? tag;

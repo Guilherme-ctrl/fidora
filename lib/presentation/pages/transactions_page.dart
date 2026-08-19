@@ -1,5 +1,7 @@
 import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -61,7 +63,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     // Selecting rows and then narrowing the filter would otherwise leave
     // invisible rows staged for a change.
     _selected.retainWhere((id) => filtered.any((item) => item.id == id));
-    final padding = EdgeInsets.symmetric(horizontal: width < 600 ? 18 : 32);
+    final padding = EdgeInsets.symmetric(
+      horizontal: Breakpoint.of(context).gutter,
+    );
 
     // A Column of every matching row inside a ListView built all 847 rows on
     // each rebuild. A sliver list recycles them, so only what is on screen is

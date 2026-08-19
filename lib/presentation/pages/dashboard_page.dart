@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/insights.dart';
@@ -50,10 +52,10 @@ class DashboardPage extends ConsumerWidget {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
-        width < 600 ? 18 : 32,
-        24,
-        width < 600 ? 18 : 32,
-        36,
+        Breakpoint.of(context).gutter,
+        Space.xl,
+        Breakpoint.of(context).gutter,
+        Space.xxxl,
       ),
       children: [
         PageHeading(
@@ -743,7 +745,7 @@ class _TransactionDetails extends StatelessWidget {
                   ? '${shortDate.format(item.date)} · fatura ${monthName.format(item.competence!)} · ${item.category}'
                   : '${shortDate.format(item.date)} · ${item.category}',
               amount: item.amount,
-              tone: item.isIncome ? Money.income : Money.expense,
+              tone: item.isIncome ? MoneyTone.income : MoneyTone.expense,
               markColor: categoryColourFor(context, item.category),
               zebra: index.isOdd,
               first: index == 0,

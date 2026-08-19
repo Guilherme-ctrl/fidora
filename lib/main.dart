@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/application/appearance.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
@@ -33,18 +34,18 @@ Future<void> main() async {
   );
 }
 
-class FinanceiroApp extends StatelessWidget {
+class FinanceiroApp extends ConsumerWidget {
   const FinanceiroApp({required this.useSupabase, super.key});
 
   final bool useSupabase;
 
   @override
-  Widget build(BuildContext context) => MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) => MaterialApp(
     title: 'Finora',
     debugShowCheckedModeBanner: false,
     theme: buildAppTheme(),
     darkTheme: buildAppTheme(brightness: Brightness.dark),
-    themeMode: ThemeMode.system,
+    themeMode: ref.watch(appearanceProvider),
     home: useSupabase ? const AuthGate() : const AppShell(),
   );
 }

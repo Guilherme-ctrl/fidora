@@ -1,7 +1,11 @@
 import 'package:clock/clock.dart';
+import 'package:financeiro_ai/application/appearance.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/reminder_service.dart';
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/load_failure.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -9,8 +13,11 @@ import 'package:financeiro_ai/presentation/pages/cards_page.dart';
 import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
+import 'package:financeiro_ai/presentation/pages/projection_page.dart';
+import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/navigation.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,39 +34,14 @@ class _AppShellState extends ConsumerState<AppShell> {
   int index = 0;
   FinancePeriod period = FinancePeriod.month(clock.now());
 
-  /// Five destinations, the Material maximum. Projeção used to be the sixth;
-  /// it is derived data consulted occasionally, so it now lives behind "Mais"
-  /// instead of crowding the bar on a 360pt screen.
-  static const destinations = [
-    NavigationDestination(
-      icon: Icon(Icons.space_dashboard_outlined),
-      selectedIcon: Icon(Icons.space_dashboard_rounded),
-      label: 'Visão geral',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.receipt_long_outlined),
-      selectedIcon: Icon(Icons.receipt_long_rounded),
-      label: 'Histórico',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.category_outlined),
-      selectedIcon: Icon(Icons.category_rounded),
-      label: 'Categorias',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.credit_card_outlined),
-      selectedIcon: Icon(Icons.credit_card_rounded),
-      label: 'Faturas',
-    ),
-    NavigationDestination(
-      icon: Icon(Icons.tune_outlined),
-      selectedIcon: Icon(Icons.tune_rounded),
-      label: 'Mais',
-    ),
-  ];
+  /// The destinations a phone shows, as indices into [destinations]. Categorias
+  /// and Projeção live behind "Mais" there and are first-class on the desktop —
+  /// the previous shell handed both surfaces the same five, which is why "Mais"
+  /// survived onto a monitor.
+  static const _phone = [0, 1, 2, 6];
 
   /// The tabs whose contents depend on the selected period.
-  static const _periodAware = {0, 1, 2, 3};
+  static const _periodAware = {1, 2, 3, 4, 5};
 
   /// Rescheduling on every fresh snapshot is what keeps a paid or re-dated
   /// invoice from still buzzing: the reminders screen only runs when someone
@@ -72,6 +54,11 @@ class _AppShellState extends ConsumerState<AppShell> {
     await service.sync(snapshot, settings, money: currency.format);
   }
 
+  List<Destination> _withBadge(int pending) => [
+    for (final item in destinations)
+      item.space == NavSpace.today ? item.withBadge(pending) : item,
+  ];
+
   @override
   Widget build(BuildContext context) {
     ref.listen(financeSnapshotProvider, (_, next) {
@@ -79,111 +66,139 @@ class _AppShellState extends ConsumerState<AppShell> {
       if (data != null) _syncReminders(data);
     });
     final state = ref.watch(financeSnapshotProvider);
-    final wide = MediaQuery.sizeOf(context).width >= 900;
+    final layout = Breakpoint.of(context);
     // Keeping the last snapshot on screen while a reload runs is what stops the
     // whole app blanking to a spinner after every write.
     final snapshot = state.value;
     if (snapshot != null) configureCurrency(snapshot.currencyCode);
 
-    return Scaffold(
-      body: Row(
+    final items = _withBadge(snapshot?.pendingReviews ?? 0);
+
+    Widget content() => switch ((snapshot, state.hasError)) {
+      (null, true) => _ErrorState(
+        failure: LoadFailure.from(state.error!),
+        onRetry: () => ref.invalidate(financeSnapshotProvider),
+      ),
+      (null, false) => const _SnapshotSkeleton(),
+      (final data?, _) => Column(
         children: [
-          if (wide)
-            NavigationRail(
-              extended: MediaQuery.sizeOf(context).width >= 1180,
-              selectedIndex: index,
-              onDestinationSelected: (value) => setState(() => index = value),
-              leading: Padding(
-                padding: const EdgeInsets.fromLTRB(8, 18, 8, 28),
-                child: _Brand(compact: false, onSignOut: widget.onSignOut),
-              ),
-              trailing: widget.onSignOut == null
-                  ? null
-                  : IconButton(
-                      tooltip: 'Sair',
-                      onPressed: widget.onSignOut,
-                      icon: const Icon(Icons.logout_rounded),
-                    ),
-              destinations: destinations
-                  .map(
-                    (item) => NavigationRailDestination(
-                      icon: item.icon,
-                      selectedIcon: item.selectedIcon,
-                      label: Text(item.label),
-                    ),
-                  )
-                  .toList(),
+          if (layout.isPhone)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 12, 2),
+              child: _Brand(compact: true, onSignOut: widget.onSignOut),
             ),
+          // One period control for the whole app. It used to be repeated
+          // inside four pages and missing from a fifth, which quietly
+          // ignored the selection.
+          if (_periodAware.contains(index))
+            Padding(
+              padding: EdgeInsets.fromLTRB(layout.gutter, 8, layout.gutter, 2),
+              child: PeriodFilterBar(
+                period: period,
+                onChanged: (value) => setState(() => period = value),
+              ),
+            ),
+          if (state.isLoading)
+            LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: context.palette.rule,
+            ),
+          if (data.truncated) const _TruncatedLedgerBanner(),
           Expanded(
-            child: SafeArea(
-              child: switch ((snapshot, state.hasError)) {
-                (null, true) => _ErrorState(
-                  failure: LoadFailure.from(state.error!),
-                  onRetry: () => ref.invalidate(financeSnapshotProvider),
-                ),
-                (null, false) => const _SnapshotSkeleton(),
-                (final data?, _) => Column(
-                  children: [
-                    if (!wide)
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
-                        child: _Brand(
-                          compact: true,
-                          onSignOut: widget.onSignOut,
-                        ),
-                      ),
-                    // One period control for the whole app. It used to be
-                    // repeated inside four pages and missing from a fifth,
-                    // which quietly ignored the selection.
-                    if (_periodAware.contains(index))
-                      Padding(
-                        padding: EdgeInsets.fromLTRB(wide ? 32 : 18, 8, 18, 4),
-                        child: PeriodFilterBar(
-                          period: period,
-                          onChanged: (value) => setState(() => period = value),
-                        ),
-                      ),
-                    if (state.isLoading)
-                      LinearProgressIndicator(
-                        minHeight: 2,
-                        backgroundColor: context.palette.hairline,
-                      ),
-                    if (data.truncated) const _TruncatedLedgerBanner(),
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: () => refreshFinanceSnapshot(ref),
-                        child: _SelectedPage(
-                          index: index,
-                          snapshot: data,
-                          period: period,
-                          onPeriodChanged: (value) =>
-                              setState(() => period = value),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              },
+            child: RefreshIndicator(
+              onRefresh: () => refreshFinanceSnapshot(ref),
+              child: _SelectedPage(
+                index: index,
+                snapshot: data,
+                period: period,
+                onPeriodChanged: (value) => setState(() => period = value),
+                onOpenInvoices: () => setState(() => index = 4),
+              ),
             ),
           ),
         ],
       ),
-      // Below the wide breakpoint the pages hide their header buttons, so the
-      // floating action button is the only path to creating a transaction.
-      floatingActionButton: wide || snapshot == null
-          ? null
-          : FloatingActionButton.extended(
-              onPressed: () => createTransaction(context, ref, snapshot),
-              icon: const Icon(Icons.add),
-              label: const Text('Transação'),
+    };
+
+    return Scaffold(
+      body: Row(
+        children: [
+          if (layout.hasRail)
+            LedgerSidebar(
+              items: items,
+              selected: index,
+              compact: !layout.hasSidebar,
+              onSelected: (value) => setState(() => index = value),
+              // Not `_Brand`: that one is the phone's top bar, with a status
+              // pill and a sign-out button, and it overflowed a 68pt rail by
+              // 200px.
+              header: _SidebarBrand(compact: !layout.hasSidebar),
+              footer: _ShellFooter(
+                compact: !layout.hasSidebar,
+                onSignOut: widget.onSignOut,
+              ),
             ),
-      bottomNavigationBar: wide
-          ? null
-          : NavigationBar(
-              selectedIndex: index,
-              onDestinationSelected: (value) => setState(() => index = value),
-              destinations: destinations,
+          Expanded(
+            child: SafeArea(
+              // A ledger row loses the eye between merchant and amount long
+              // before a 1920px monitor ends. Content is capped and centred.
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
+                  child: content(),
+                ),
+              ),
             ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: layout.hasRail || snapshot == null
+          ? null
+          : LedgerTabBar(
+              items: [for (final slot in _phone) items[slot]],
+              selected: _phone.indexOf(index) < 0 ? -1 : _phone.indexOf(index),
+              onSelected: (value) => setState(() => index = _phone[value]),
+              onCreate: () => createTransaction(context, ref, snapshot),
+            ),
+    );
+  }
+}
+
+/// Theme and sign-out, at the foot of the sidebar.
+class _ShellFooter extends ConsumerWidget {
+  const _ShellFooter({required this.compact, this.onSignOut});
+  final bool compact;
+  final Future<void> Function()? onSignOut;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mode = ref.watch(appearanceProvider);
+    return Row(
+      mainAxisAlignment: compact
+          ? MainAxisAlignment.center
+          : MainAxisAlignment.spaceBetween,
+      children: [
+        Tooltip(
+          message: 'Tema: ${mode.label}',
+          child: IconButton(
+            iconSize: 18,
+            visualDensity: VisualDensity.compact,
+            onPressed: () =>
+                ref.read(appearanceProvider.notifier).set(mode.next),
+            icon: Icon(mode.icon),
+          ),
+        ),
+        if (onSignOut != null && !compact)
+          Tooltip(
+            message: 'Sair',
+            child: IconButton(
+              iconSize: 18,
+              visualDensity: VisualDensity.compact,
+              onPressed: onSignOut,
+              icon: const Icon(Icons.logout_rounded),
+            ),
+          ),
+      ],
     );
   }
 }
@@ -194,15 +209,23 @@ class _SelectedPage extends StatelessWidget {
     required this.snapshot,
     required this.period,
     required this.onPeriodChanged,
+    required this.onOpenInvoices,
   });
   final int index;
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
   final ValueChanged<FinancePeriod> onPeriodChanged;
+  final VoidCallback onOpenInvoices;
+
   @override
   Widget build(BuildContext context) => IndexedStack(
     index: index,
     children: [
+      TodayPage(
+        snapshot: snapshot,
+        period: period,
+        onOpenInvoices: onOpenInvoices,
+      ),
       DashboardPage(
         snapshot: snapshot,
         period: period,
@@ -219,9 +242,53 @@ class _SelectedPage extends StatelessWidget {
         onPeriodChanged: onPeriodChanged,
       ),
       CardsPage(snapshot: snapshot, period: period),
+      ProjectionPage(
+        snapshot: snapshot,
+        period: period,
+        onPeriodChanged: onPeriodChanged,
+      ),
       MorePage(snapshot: snapshot, period: period),
     ],
   );
+}
+
+/// The mark alone on a narrow rail, the mark and the name on a full sidebar.
+class _SidebarBrand extends StatelessWidget {
+  const _SidebarBrand({required this.compact});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final mark = Container(
+      width: 26,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: palette.action,
+        borderRadius: BorderRadius.circular(Radii.xs),
+      ),
+      child: Text(
+        'F',
+        style: context.type.titleMd.copyWith(color: palette.onAction),
+      ),
+    );
+    if (compact) return Center(child: mark);
+    return Row(
+      children: [
+        mark,
+        const SizedBox(width: Space.xs),
+        Expanded(
+          child: Text(
+            'Finora',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: context.type.titleMd,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _Brand extends StatelessWidget {

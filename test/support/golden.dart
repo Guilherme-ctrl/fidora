@@ -18,7 +18,7 @@ final goldenInstant = DateTime(2026, 8, 19, 9);
 FinancePeriod get goldenPeriod => FinancePeriod.month(goldenInstant);
 
 /// Runs [body] with the clock frozen at [goldenInstant].
-Future<void> withGoldenClock(Future<void> Function() body) =>
+Future<T> withGoldenClock<T>(Future<T> Function() body) =>
     withClock(Clock.fixed(goldenInstant), body);
 
 /// The widths the design system names, plus the one where the current shell

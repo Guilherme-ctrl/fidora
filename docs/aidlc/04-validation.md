@@ -712,3 +712,45 @@ proporção da célula e é substituída no PR 3.
 Depreciações 197 → 204: `SectionCard` (12) e `MetricCard` (7) entraram, enquanto
 `brand` caiu de 69 para 66 e `danger` de 73 para 68 — os componentes começaram a
 absorver chamadas em vez de migrá-las.
+
+## PR 3 — shell, navegação e os quatro espaços (2026-08-19)
+
+`NavigationRail` recebia os mesmos cinco destinos da barra inferior — um máximo
+do Material escrito para uma tela de 360pt — e por isso um monitor de 27
+polegadas também ganhava um menu "Mais" com onze destinos reais dentro. Agora
+são sete destinos nomeados em quatro espaços, e "Mais" desaparece acima de
+905pt.
+
+### O que passou a existir
+
+| Arquivo | O que faz |
+|---|---|
+| `widgets/navigation.dart` | `LedgerSidebar`, `LedgerTabBar`, os quatro espaços |
+| `pages/today_page.dart` | a tela que não existia: revisões, fatura fechando, orçamento no limite, narrativa |
+| `application/appearance.dart` | tema escolhido e persistido |
+| `test/navigation_test.dart` | 10 casos, incluindo o iPad em retrato |
+| `goldens/shell-*.png` | o shell, que as goldens de página não enxergam |
+
+### Defeitos meus, pegos pela rede
+
+| Onde | Sintoma |
+|---|---|
+| Cabeçalho da sidebar | `_Brand` é a barra do telefone; num trilho de 68pt estourava 200px |
+| `navigation_test` | `pumpAndSettle` não retorna enquanto uma `LinearProgressIndicator` indeterminada está na tela — o teste **travava**, não falhava. Trocado por um número limitado de frames |
+
+### Marco
+
+A lista de casos adiados por Dynamic Type está **vazia pela primeira vez**. Eram
+seis no PR 0, dois no PR 2, zero agora. O defeito era sempre a mesma forma —
+célula de proporção fixa ou linha sem folga — em quatro lugares diferentes.
+
+Números mágicos de largura na apresentação: **23 → 14**.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings, 203 infos |
+| `flutter test --exclude-tags golden` | **548 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam (7 páginas + 3 do shell) |

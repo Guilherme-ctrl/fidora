@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
+import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
@@ -39,10 +41,10 @@ class ProjectionPage extends StatelessWidget {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
-        width < 600 ? 18 : 32,
-        24,
-        width < 600 ? 18 : 32,
-        36,
+        Breakpoint.of(context).gutter,
+        Space.xl,
+        Breakpoint.of(context).gutter,
+        Space.xxxl,
       ),
       children: [
         const PageHeading(
