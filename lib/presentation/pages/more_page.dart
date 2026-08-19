@@ -1,9 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
+import 'package:financeiro_ai/domain/statement_import.dart';
+import 'package:financeiro_ai/domain/statement_sheet.dart';
+import 'package:financeiro_ai/presentation/widgets/statement_context_sheet.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
@@ -212,6 +216,16 @@ class MorePage extends ConsumerWidget {
                 onTap: () => _pickInvoice(context, ref),
               ),
               _OperationTile(
+                icon: Icons.table_chart_outlined,
+                color: const Color(0xFF3F6E8C),
+                title: 'Importar extrato do banco',
+                subtitle: 'Planilha CSV ou XLSX, sem passo manual fora do app',
+                tooltip:
+                    'Ler o extrato exportado pelo banco e revisar antes '
+                    'de gravar',
+                onTap: () => _pickStatement(context, ref),
+              ),
+              _OperationTile(
                 icon: Icons.download_rounded,
                 color: const Color(0xFF6B7B58),
                 title: 'Seus dados',
@@ -269,7 +283,6 @@ class MorePage extends ConsumerWidget {
   }
 
   Future<void> _pickInvoice(BuildContext context, WidgetRef ref) async {
-    var loadingOpen = false;
     try {
       const jsonType = XTypeGroup(
         label: 'JSON do Finora',
@@ -282,6 +295,85 @@ class MorePage extends ConsumerWidget {
       final bytes = await picked.readAsBytes();
       final document = InvoiceImportDocument.decode(utf8.decode(bytes));
       if (!context.mounted) return;
+      await _runImport(context, ref, document);
+    } on InvoiceImportException catch (error) {
+      if (context.mounted) _message(context, error.message, error: true);
+    } catch (error) {
+      if (context.mounted) {
+        _message(context, _friendlyImportError(error), error: true);
+      }
+    }
+  }
+
+  /// Reads a bank's own spreadsheet export, so the ledger stops depending on a
+  /// JSON produced outside the app.
+  Future<void> _pickStatement(BuildContext context, WidgetRef ref) async {
+    try {
+      const sheetType = XTypeGroup(
+        label: 'Extrato (CSV ou XLSX)',
+        extensions: ['csv', 'txt', 'xlsx'],
+      );
+      final picked = await openFile(acceptedTypeGroups: const [sheetType]);
+      if (picked == null || !context.mounted) return;
+
+      final bytes = await picked.readAsBytes();
+      final isXlsx = picked.name.toLowerCase().endsWith('.xlsx');
+      final cells = isXlsx
+          ? readXlsxCells(bytes)
+          // Falls back to Latin-1 because a statement exported by an older
+          // banking site is not always UTF-8, and a decode failure would look
+          // like an unreadable file rather than an encoding mismatch.
+          : readDelimitedCells(_decodeText(bytes));
+      final parse = parseStatementSheet(cells);
+
+      if (!context.mounted) return;
+      final statementContext = await askStatementContext(
+        context,
+        cards: snapshot.cards,
+        parse: parse,
+        fileName: picked.name,
+      );
+      if (statementContext == null || !context.mounted) return;
+
+      await _runImport(
+        context,
+        ref,
+        buildStatementImport(parse, statementContext),
+      );
+    } on StatementParseException catch (error) {
+      if (context.mounted) _message(context, error.message, error: true);
+    } on InvoiceImportException catch (error) {
+      if (context.mounted) _message(context, error.message, error: true);
+    } catch (error) {
+      if (context.mounted) {
+        _message(context, _friendlyImportError(error), error: true);
+      }
+    }
+  }
+
+  /// Preview, review and write. Shared by both readers on purpose: a second
+  /// path into the ledger would be a second place for the duplicate check and
+  /// the category rules to drift.
+  /// UTF-8 when it decodes, Latin-1 otherwise.
+  ///
+  /// A statement exported by an older banking site is not always UTF-8, and a
+  /// hard decode failure would surface as "arquivo ilegível" when the file is
+  /// perfectly readable in another encoding.
+  String _decodeText(Uint8List bytes) {
+    try {
+      return utf8.decode(bytes);
+    } on FormatException {
+      return latin1.decode(bytes, allowInvalid: true);
+    }
+  }
+
+  Future<void> _runImport(
+    BuildContext context,
+    WidgetRef ref,
+    InvoiceImportDocument document,
+  ) async {
+    var loadingOpen = false;
+    try {
       _showLoading(context, 'Validando e conciliando…');
       loadingOpen = true;
       final preview = await ref

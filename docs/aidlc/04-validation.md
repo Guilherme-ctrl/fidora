@@ -274,3 +274,260 @@ Two defects were found by these tests before shipping:
 
 Reminder preferences live in `shared_preferences`, deliberately: whether this
 phone buzzes is a property of the phone, not of the account.
+
+## Invoice closing forecast (fase 4)
+
+Covered by tests: 18 on the derivation, 12 on the widget. The ones that
+carry real weight:
+
+- **Instalments are never counted twice.** They feed `scheduled` and are
+  excluded from the daily rate; an instalment already captured for the target
+  month lands in `committed` and drops out of `scheduled`.
+- **A month absent from the data is not a frugal month.** Without the
+  `_hasCycle` guard, every cycle predating the first import would contribute
+  thirty days of zero spend and halve the rate. A cycle that *was* observed
+  and holds only instalments still counts, with zero rhythm — that one is
+  genuine evidence.
+- **The forecast uses `amount`, not `personalShare`.** The issuer bills the
+  whole purchase regardless of who it is attributed to.
+- **Cycles, not calendar months.** A card closing on the 20th collects the
+  tail of one month and the head of the next; a calendar average would
+  misplace roughly a third of the spend.
+- **No baseline means no projection.** The card says so in words rather than
+  presenting `committed` as if it were a forecast.
+
+The bar's proportions are asserted on flex values, so the check does not
+depend on the width the test runs at.
+
+**Not verified:** the screen has not been driven by hand. The browser pane in
+this environment does not deliver clicks into the Flutter canvas — the app
+boots and renders, but the Faturas tab could not be reached by clicking.
+A golden render was used to inspect layout and was discarded afterwards:
+widget tests load no font, so every glyph renders as a box and line wrapping
+in that image says nothing about the real app. Layout facts were recovered
+from the render tree instead, which is font-independent.
+
+## Natural-language insights (fase 4)
+
+**Derived, not generated.** No model writes these sentences. Every figure in
+them comes from the same arithmetic the other screens use, so a reader who
+checks a number will find it. Wording that cannot be backed by a computed
+figure is not written.
+
+Covered by tests: 20 on the derivation, 6 on the widget. The guards that
+carry the weight:
+
+- **Two observed months minimum.** One month is an anecdote.
+- **A month absent from the data is not a month of restraint** — the same trap
+  as the invoice forecast. Without the guard, opening the app for the first
+  time would report every category as a spike.
+- **Both a money floor and a proportion floor.** 30 reais over a 40-real
+  average is a large percentage and a meaningless amount; ranking is by money
+  for the same reason.
+- **No percentage from zero.** A category with no baseline is left alone
+  rather than described as an infinite increase.
+- **Custom ranges produce nothing**, as with budget alerts: a monthly average
+  against an arbitrary window is a number that means nothing.
+- **A price change is weighed against a year**, because a monthly charge keeps
+  costing the difference every month.
+- **Concentrated and diffuse increases are worded differently.** "Puxado por 3
+  compras" is a fact to act on; the same phrase over fourteen purchases would
+  be the wrong word for a habit.
+
+A test fixture caught something worth recording: the same merchant at the same
+amount every month is this app's own definition of a subscription, so a naive
+fixture produced a price-change insight alongside the category one and changed
+what the test was measuring. Fixtures now vary the merchant per month.
+
+**Demo data cannot exercise either phase-4 feature.** `DemoFinanceRepository`
+holds 8 transactions spanning 8–18 August 2026 — a single month. Insights
+therefore produce nothing (correctly: no baseline), and the forecast shows
+`hasBaseline: false` for both cards, so the estimate is always zero and the
+card says "sem ciclo anterior". Both features are invisible in demo mode. The
+guards are behaving; the demo fixture is what is too thin to show them.
+
+**Not verified:** the screen has not been driven by hand, for the same reason
+as the forecast — the browser pane here does not deliver clicks into the
+Flutter canvas.
+
+## Demo ledger extended to four months (fase 4)
+
+`DemoFinanceRepository` held 8 transactions in a single month, which silently
+disabled every feature that needs a baseline. It now carries three prior
+months plus the current one, with past invoices and salary rows.
+
+Two mistakes of mine in the first pass, both caught by running the derivations
+against the seeded data rather than by reading it:
+
+- **A malformed income row.** Written as `movementType: 'income'` on
+  `cardLastFour: ''`. Neither is what the model checks: income is `credit` on
+  something that is *not* a card, and `isCard` only excludes the literal
+  `----`. The row became a 9.800 expense on a phantom card, and the insights
+  panel reported "você gastou 100% a menos em Renda" as good news.
+- **Amounts too uniform.** Derived from the loop index, so a bakery, a
+  supermarket and a petrol station all passed the recurring detector's
+  steadiness test and were reported as subscriptions. The detector was right;
+  the fixture was fake. Amounts are now listed per month, and only Netflix and
+  the telecom bill hold still.
+
+Past invoice totals were also invented near 2.400 while the seeded ledger
+spends about 500 per card, so the forecast reported every open invoice as
+closing "76% abaixo da média" — correct arithmetic about data that
+contradicted itself. The totals now track the ledger.
+
+A guard test asserts the demo still spans at least three months. Without it, a
+future trim back to one month would make the layout tests below stop
+exercising the trend line and pass for the wrong reason.
+
+## Metric grid overflow (found by extending the demo)
+
+Extending the demo exposed a layout bug that had been shipping invisible: the
+metric cards overflowed by 24 pixels once a trend line rendered, and the trend
+line only renders when there is a previous month to compare against.
+
+The cause was structural, not cosmetic. `GridView.count` sized every cell from
+a fixed `childAspectRatio`, chosen for a card without a trend line. Two rounds
+of tuning that number each left a smaller overflow at some other width, which
+is the signature of the wrong approach. The grid is now rows of
+`IntrinsicHeight`, which measure their own content, with
+`CrossAxisAlignment.stretch` so values in a row share a baseline.
+
+Two further defects surfaced at large Dynamic Type:
+
+- the metric label could grow unbounded in a narrow column — now capped at two
+  lines with an ellipsis;
+- the caption beside the icon overflowed horizontally at 2× text — now
+  `Flexible` so it gives way instead of pushing the row past the card.
+
+`test/dashboard_layout_test.dart` pumps the real dashboard with the real demo
+snapshot at four widths and three text scales, and fails on any overflow. This
+is the first coverage of Dynamic Type in the project; the standing gate about
+it is narrowed, not closed — only the dashboard is covered.
+
+## Receipt attachment and OCR (fase 4)
+
+Reading is **on device** — the photograph never leaves the phone. For a
+document that shows a merchant, an amount and a date, that is the point, and
+it also means no API key and no per-scan cost. Chosen by the owner on
+2026-08-18 over a cloud recognizer.
+
+Covered by tests: 30 on the parser, 8 on the field and its wiring into the
+form. The design decisions the tests pin:
+
+- **Nothing is guessed.** Every field of `ReceiptScan` is nullable, and a
+  field is either supported by something the receipt says or comes back null.
+  Prefilling a wrong amount is worse than prefilling nothing: it gets
+  confirmed along with everything else and becomes a fact in the ledger.
+- **No fallback to "the largest number on the page."** Without a labelled
+  total there is no amount, because the largest number is as likely to be a
+  CNPJ fragment, a barcode or a card number.
+- **"TOTAL DE ITENS 7" is not seven reais.** Labels containing *total* that
+  never carry a price are excluded explicitly.
+- **A specific label beats a bare one** regardless of order, so a receipt
+  printing both a subtotal and a total to pay reads the one charged.
+- **`1.234` is one thousand.** With no comma, three digits after a dot is a
+  thousands separator and two digits is a decimal point. Getting this
+  backwards understates a purchase by a thousandfold.
+- **Reading is offered, not applied.** The button says "preencher os campos
+  vazios" and does exactly that; a typed value is never overwritten. The date
+  is special-cased because it is never empty — it defaults to today — so only
+  a date the person has not touched gives way.
+- **A failed reading never loses the photograph.** The attachment is useful on
+  its own.
+- **Upload happens before the row is written**, so the transaction carries the
+  path in the same call. Writing first and attaching after would leave a saved
+  transaction with a lost receipt whenever the second call failed.
+
+Storage: a private bucket, 10 MB limit, image mime types only. Policies match
+on the first path segment being the owner's user id, which is the shape the
+upload code writes. Reads go through a ten-minute signed URL — a public bucket
+would make every receipt readable by anyone holding the URL.
+
+Deleting a transaction does not delete its object: Postgres cannot reach into
+Storage. An orphan stays private and unreferenced rather than becoming public.
+A sweeper is not written.
+
+**iOS deployment target raised 15.0 → 15.5**, required by `google_mlkit_commons`.
+No device is lost: everything that runs 15.0 can run 15.5.
+
+**Not verified, and this one cannot be verified here at all.** ML Kit ships no
+arm64 simulator slices:
+
+    MLImage, MLKitCommon, MLKitVision — no arm64 simulator support
+
+On an Apple Silicon Mac the recognizer cannot run in the Simulator. The device
+build compiles and links, and the permission strings are present in the built
+`Info.plist`, but no receipt has been photographed or read. Everything up to
+the recognizer call is covered by tests with a stubbed recognizer; the call
+itself needs a real iPhone.
+
+## Phase 5 — technical debt (2026-08-19)
+
+### The snapshot split
+
+The `.limit(2000)` was a correctness bug, not a performance choice: past that
+row the ledger was silently short and every derived figure was wrong with
+nothing on screen to say so. The loader pages through everything; the 50.000
+ceiling exists only to bound the loop and raises a banner when reached.
+
+The load is split into catalog and ledger and composed by the provider, so no
+screen changed. Transaction writes refresh only the ledger.
+
+A trap worth recording: the first version of these tests deadlocked. The fake
+extended the demo repository, whose loaders sleep, and a `Future.delayed`
+cannot resolve while the test body is blocked on an await instead of pumping
+the clock.
+
+### The spreadsheet reader
+
+CSV and XLSX go in directly. The rules live in a pure function over extracted
+cells, so they are tested without fixture files. **PDF is not done** — text
+extraction in Dart needs a heavy, licence-encumbered dependency, and a wrong
+number read off an invoice is worse than a manual step. The plan item is half
+closed, deliberately.
+
+Two defects found while wiring it: the payload validator rejects duplicate
+external ids, so two identical charges on one day would have failed the whole
+file; and `raw_source` recorded the literal `chatgpt` for every import, which
+would file a bank export as if a model had transcribed it.
+
+### Database tests — the standing gap is now closed
+
+**32 pgTAP tests run against a real Postgres**, and `.github/workflows/ci.yml`
+runs them on every push. This closes the gap recorded above since the first
+audit: "everything that talks to Supabase is covered only through the demo
+repository, never executed against Postgres."
+
+Now demonstrated rather than assumed:
+
+- The paid/`paid_at` invariant holds in both directions.
+- Competence is pinned to the first of a month.
+- A personal share larger than the amount is refused.
+- **RLS isolates.** A signed-in user sees only their own rows and is refused
+  when writing a row owned by someone else. This is what makes shipping the
+  publishable key safe and it had never been shown.
+- The receipts bucket is private, capped and image-only, and all four policies
+  key on the owner folder — the same shape the upload code writes.
+- The import RPC creates, queues for review, and recognises a re-import as a
+  duplicate batch instead of writing it twice.
+- The provenance fix records `sheet`, not `chatgpt`.
+
+The CI also runs `supabase db reset`, proving the migrations replay from
+scratch rather than only working against today's production database.
+
+Every gate was run locally before committing. Two would have failed on first
+push: fifteen unformatted files and one brace lint.
+
+### What is still not verified
+
+- **No receipt has been photographed or read.** ML Kit ships no arm64
+  simulator slices, so on Apple Silicon the recognizer cannot run in the
+  Simulator at all. Needs a real iPhone.
+- **No invoice reminder has been delivered.** Same reason: needs a device.
+- **The two new migrations have not been applied to production** —
+  `202608200001_receipts` and `202608200002_import_source`. Both pass against
+  a local Postgres and replay from scratch.
+- **Dynamic Type is covered only on the dashboard.**
+- **The app has not been driven by hand against the production Supabase.** The
+  browser pane here does not deliver clicks into the Flutter canvas; the
+  overview was driven with synthesised wheel events, no other screen was.

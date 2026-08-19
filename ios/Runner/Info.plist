@@ -4,6 +4,13 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Required by image_picker: iOS terminates the app on first use when
+	     these are absent, rather than showing a prompt. The wording says what
+	     the photograph is for, which is what the system dialog shows. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Para fotografar o comprovante e ler o valor, o estabelecimento e a data. A foto fica na sua conta e a leitura acontece no próprio aparelho.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Para anexar a foto de um comprovante já salvo no seu aparelho.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

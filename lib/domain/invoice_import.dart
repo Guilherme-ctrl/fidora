@@ -13,6 +13,10 @@ const invoiceImportMovements = {
 
 const invoiceImportModalities = {'cash', 'installment'};
 
+/// Who produced the payload. Recorded as provenance, not trusted for
+/// anything: the rows are validated the same way whatever wrote them.
+const invoiceImportSources = {'chatgpt', 'sheet'};
+
 class InvoiceImportDocument {
   InvoiceImportDocument._({required this.payload, required this.transactions});
 
@@ -93,8 +97,10 @@ class InvoiceImportDocument {
       errors.add('schema_version deve ser "1.0"');
     }
     _requiredText(payload, 'request_id', errors);
-    if (payload['source'] != 'chatgpt') {
-      errors.add('source deve ser "chatgpt"');
+    // Widened when the spreadsheet reader arrived: the check hardcoded the
+    // assumption that ChatGPT was the only thing that could produce a payload.
+    if (!invoiceImportSources.contains(payload['source'])) {
+      errors.add('source deve ser um de: ${invoiceImportSources.join(', ')}');
     }
     final invoiceValue = payload['invoice'];
     final transactionValue = payload['transactions'];

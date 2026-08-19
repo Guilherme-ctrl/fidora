@@ -117,10 +117,17 @@ void main() {
     test('orders by when each reminder fires, not by invoice order', () {
       final reminders = dueReminders(
         _snapshot(
-          cards: [_card(), _card(id: 'card-2', name: 'Itaú')],
+          cards: [
+            _card(),
+            _card(id: 'card-2', name: 'Itaú'),
+          ],
           invoices: [
             _invoice(id: 'later', dueDate: DateTime(2026, 9, 10)),
-            _invoice(id: 'sooner', cardId: 'card-2', dueDate: DateTime(2026, 8, 27)),
+            _invoice(
+              id: 'sooner',
+              cardId: 'card-2',
+              dueDate: DateTime(2026, 8, 27),
+            ),
           ],
         ),
         daysBefore: 3,
@@ -188,10 +195,17 @@ void main() {
     test('differs between invoices and is a positive 32-bit value', () {
       final reminders = dueReminders(
         _snapshot(
-          cards: [_card(), _card(id: 'card-2', name: 'Itaú')],
+          cards: [
+            _card(),
+            _card(id: 'card-2', name: 'Itaú'),
+          ],
           invoices: [
             _invoice(id: 'inv-a', dueDate: DateTime(2026, 8, 27)),
-            _invoice(id: 'inv-b', cardId: 'card-2', dueDate: DateTime(2026, 8, 28)),
+            _invoice(
+              id: 'inv-b',
+              cardId: 'card-2',
+              dueDate: DateTime(2026, 8, 28),
+            ),
           ],
         ),
         daysBefore: 3,

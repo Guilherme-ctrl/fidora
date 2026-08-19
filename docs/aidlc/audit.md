@@ -145,3 +145,43 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Build and Test — limpeza de disco autorizada pelo usuário após aviso explícito de que apagar o Docker.raw destrói imagens, containers e volumes.
 
 ---
+
+## Construction — Code Generation (Fase 4: previsão de fechamento)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode seguir para a fase 4"
+**AI Response**: "Comecei pela previsão de fechamento de fatura. `lib/domain/invoice_forecast.dart` separa o valor em três partes por grau de confiança — já lançado (fato), parcelas contratadas (compromisso) e estimativa (palpite do ritmo do próprio cartão) — e o widget na aba Faturas mostra as três separadas, nunca uma soma única. 30 testes novos, 305 no total, analyze limpo. A tela não foi dirigida à mão: o pane do browser não entrega cliques no canvas do Flutter neste ambiente. Usei um golden para inspecionar layout e descartei — teste de widget não carrega fonte, então quebra de linha ali não diz nada sobre o app real; os fatos de layout vieram da árvore de renderização."
+**Context**: Construction / Code Generation — primeiro item da fase 4. Branch feat/fase-4-previsao.
+
+---
+
+## Construction — Code Generation (Fase 4: insights em linguagem natural)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Sim, pode seguir com os insights"
+**AI Response**: "Insights derivados, não gerados por LLM: `lib/domain/narrative.dart` produz frases cujos números saem das mesmas contas das outras telas. Três geradores — movimento de categoria contra a média dos meses anteriores (com os estabelecimentos que explicam a alta, e distinção entre alta concentrada e diluída), mudança de preço de assinatura, e fatura em aberto acima da média. Card na Visão geral que se remove sozinho quando não tem nada a dizer. 26 testes novos, 331 no total, analyze limpo. Uma constatação para o usuário: o repositório de demonstração tem 8 lançamentos num único mês, então nem os insights nem a estimativa da previsão aparecem em modo demo — as guardas estão certas, o fixture é que é raso demais."
+**Context**: Construction / Code Generation — segundo item da fase 4.
+
+---
+
+## Construction — Build and Test (dados de demonstração e overflow da grade)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Sim, estende os dados de demo"
+**AI Response**: "Estendi o repositório de demonstração para quatro meses, com faturas passadas e salário. Dois erros meus na primeira passada, pegos ao rodar as derivações contra os dados e não ao relê-los: escrevi a entrada como `movementType: 'income'` num cartão em branco, o que a tornou uma despesa de 9.800 num cartão fantasma; e derivei os valores do índice do laço, deixando padaria, mercado e posto uniformes o bastante para serem classificados como assinatura. Isso expôs um bug de layout que estava invisível: os cards de indicador estouravam 24px assim que a linha de tendência aparecia — e ela só aparece quando existe mês anterior. Troquei a grade de proporção fixa por linhas de altura intrínseca, o que remove a classe do bug em vez de ajustar o número. Mais dois defeitos em texto grande: rótulo sem limite de linhas e legenda sem flexibilidade. `test/dashboard_layout_test.dart` roda o dashboard real em quatro larguras e três escalas de texto. 340 testes no total."
+**Context**: Construction / Build and Test — primeira cobertura de Dynamic Type do projeto.
+
+---
+
+## Construction — Code Generation (Fase 4: anexo de comprovante com OCR)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Atulaize o deocumento, não quero esse widget agora nem substituir o nativo, pode fazer só o OCR na fase 04" / "No aparelho, ML Kit (recomendado)"
+**AI Response**: "Documento atualizado: Widget iOS e App Intents marcados como fora do escopo por decisão sua, e previsão e insights marcados como feitos. OCR entregue com reconhecimento no próprio aparelho: migration com bucket privado e políticas por dono, parser puro em `lib/domain/receipt_scan.dart`, reconhecedor atrás de interface (o web degrada para só anexar), e campo no formulário que oferece a leitura em vez de aplicá-la. 38 testes novos, 378 no total. Precisei subir o alvo do iOS de 15.0 para 15.5, exigência do ML Kit — nenhum aparelho se perde, todo dispositivo que roda 15.0 pode atualizar. Uma limitação que não consigo contornar: o ML Kit não publica fatia arm64 para simulador, então em Mac Apple Silicon o reconhecimento não roda no Simulator. O build de device compila e as permissões estão no bundle, mas nenhuma nota foi fotografada nem lida."
+**Context**: Construction / Code Generation — último item da fase 4.
+
+---
+
+## Construction — Fase 5 (dívida técnica)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Pode continuar a fase 4 e depois fazer a fase 5 sem me perguntar, voce esta rodando enquanto estou dormindo"
+**AI Response**: "Fase 5 concluída em três commits. (1) O snapshot deixou de truncar em silêncio: pagina o histórico inteiro, e a carga foi partida em catálogo e histórico, composta no provider — nenhuma tela mudou, mas registrar uma compra não recarrega mais cartões e categorias. (2) Leitor de extrato CSV/XLSX do próprio banco, com as regras numa função pura testada sem arquivo de exemplo; PDF ficou de fora por exigir dependência pesada e licenciada. (3) 32 testes pgTAP contra Postgres real mais um workflow de CI — fecha a lacuna que estava aberta desde a primeira auditoria, incluindo a primeira demonstração de que o RLS isola de fato. Subi o Docker e rodei tudo localmente: as quatro portas do CI passam. Duas teriam falhado no primeiro push (quinze arquivos fora de formatação e um lint de chaves), corrigidas antes. Encerrei o Docker e o Supabase local ao final."
+**Context**: Construction / Build and Test — trabalho autônomo autorizado. Nada foi enviado ao remoto nem aplicado em produção.
+
+---

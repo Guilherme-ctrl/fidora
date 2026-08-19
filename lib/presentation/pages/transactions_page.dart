@@ -257,7 +257,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 
     try {
       await ref.read(financeRepositoryProvider).deleteTransaction(item.id);
-      await refreshFinanceSnapshot(ref);
+      await refreshLedger(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -332,7 +332,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       await ref
           .read(financeRepositoryProvider)
           .recategorizeTransactions(ids, category.id);
-      await refreshFinanceSnapshot(ref);
+      await refreshLedger(ref);
       if (!mounted) return;
       setState(_selected.clear);
       final pattern = sample == null ? '' : suggestRulePattern(sample.merchant);

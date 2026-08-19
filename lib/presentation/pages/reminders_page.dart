@@ -108,8 +108,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
                               ),
                               selected: settings.hour == hour,
                               onSelected: settings.enabled && !_busy
-                                  ? (_) =>
-                                        _apply(settings.copyWith(hour: hour))
+                                  ? (_) => _apply(settings.copyWith(hour: hour))
                                   : null,
                             ),
                           )
