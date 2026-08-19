@@ -1,0 +1,802 @@
+<title>Finora Ledger</title>
+<style>
+/* ============ CHROME TOKENS (a superfície de revisão) ============ */
+:root{
+  --c-bg:#EBECE9; --c-panel:#FBFBF9; --c-ink:#0E1112; --c-muted:#565E5F;
+  --c-faint:#7C8586; --c-line:#DCDEDA; --c-line2:#C3C7C2;
+  --c-accent:#8A6A18; --c-accent-ink:#5E4810; --c-accent-soft:#F2EBD7;
+  --c-onaccent:#FFFFFF; --c-flag:#A33A1F; --c-shadow:0 1px 2px rgba(20,30,25,.06),0 12px 34px -12px rgba(20,30,25,.22);
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,monospace;
+  --ui:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,Roboto,sans-serif;
+  --serif:ui-serif,"New York","Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --c-bg:#090B0B; --c-panel:#121514; --c-ink:#EDEFEC; --c-muted:#98A1A0;
+  --c-faint:#798382; --c-line:#212625; --c-line2:#333937;
+  --c-accent:#D9B860; --c-accent-ink:#E9D296; --c-accent-soft:#221D0F;
+  --c-onaccent:#151206; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --c-bg:#090B0B; --c-panel:#121514; --c-ink:#EDEFEC; --c-muted:#98A1A0;
+  --c-faint:#798382; --c-line:#212625; --c-line2:#333937;
+  --c-accent:#D9B860; --c-accent-ink:#E9D296; --c-accent-soft:#221D0F;
+  --c-onaccent:#151206; --c-flag:#E5836A; --c-shadow:0 1px 2px rgba(0,0,0,.4),0 16px 40px -14px rgba(0,0,0,.7);
+}
+
+/* ============ APP TOKENS — "Fólio": tinta sobre papel, pautado a latão ============ */
+[data-app="light"]{
+  --a-canvas:#FBFBF9; --a-surface:#FFFFFF; --a-sunken:#F3F4F1;
+  --a-ink:#0E1112; --a-muted:#525A5B; --a-subtle:#6B7476;
+  --a-rule:#E3E5E1; --a-rule2:#C7CBC6; --a-rule3:#0E1112;
+  --a-brand:#0E1112; --a-onbrand:#FBFBF9;
+  --a-accent:#8A6A18; --a-accent-soft:#F4EDD9;
+  --a-income:#0B6B4F; --a-negative:#A33A1F; --a-pending:#8A6A18;
+  --a-pendbg:#F4EDD9; --a-ignored:#8B9394;
+  --a-card:linear-gradient(148deg,#14181A 0%,#252E2E 55%,#3A4441 100%);
+  --a-c1:#2F6F5B; --a-c2:#3B5C8A; --a-c3:#B8892E; --a-c4:#A8452F; --a-c5:#5A7D8C; --a-c6:#7A5A8C;
+}
+[data-app="dark"]{
+  --a-canvas:#0E1112; --a-surface:#161A1B; --a-sunken:#0A0D0D;
+  --a-ink:#EDEFEC; --a-muted:#9AA3A2; --a-subtle:#7F8988;
+  --a-rule:#232827; --a-rule2:#343A39; --a-rule3:#EDEFEC;
+  --a-brand:#EDEFEC; --a-onbrand:#0E1112;
+  --a-accent:#D9B860; --a-accent-soft:#241E10;
+  --a-income:#5CC79B; --a-negative:#E5836A; --a-pending:#D9B860;
+  --a-pendbg:#241E10; --a-ignored:#6E7877;
+  --a-card:linear-gradient(148deg,#0C0F10 0%,#1E2626 55%,#333D3A 100%);
+  --a-c1:#5CC79B; --a-c2:#7C9BD1; --a-c3:#D9B860; --a-c4:#E5836A; --a-c5:#93B4C4; --a-c6:#B197C4;
+}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--c-bg);color:var(--c-ink);font-family:var(--ui);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--c-accent);outline-offset:2px;border-radius:4px}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---- page shell ---- */
+.wrap{max-width:1500px;margin:0 auto;padding:0 clamp(16px,3vw,40px) 96px}
+.masthead{padding:44px 0 26px;border-bottom:1px solid var(--c-line);
+  display:flex;gap:28px;align-items:flex-end;flex-wrap:wrap;justify-content:space-between}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--c-faint);margin-bottom:12px}
+.masthead h1{font-family:var(--serif);font-size:clamp(32px,4.6vw,50px);letter-spacing:-.018em;font-weight:500;line-height:1.02}
+.masthead h1 em{font-style:normal;color:var(--c-accent)}
+.lede{margin:14px 0 0;max-width:56ch;color:var(--c-muted);font-size:16px}
+.toggles{display:flex;gap:8px;flex-wrap:wrap}
+.tog{border:1px solid var(--c-line2);border-radius:999px;padding:8px 15px;font-size:13px;
+  font-family:var(--mono);color:var(--c-muted);background:var(--c-panel);transition:.15s}
+.tog:hover{border-color:var(--c-accent);color:var(--c-ink)}
+.tog[aria-pressed="true"]{background:var(--c-accent);border-color:var(--c-accent);color:var(--c-onaccent)}
+
+/* ---- layout ---- */
+.cols{display:grid;grid-template-columns:210px minmax(0,1fr);gap:36px;margin-top:32px;align-items:start}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.nav{position:sticky;top:20px;display:flex;flex-direction:column;gap:2px}
+@media(max-width:900px){.nav{position:static;flex-direction:row;overflow-x:auto;padding-bottom:8px}}
+.navgrp{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--c-faint);padding:18px 10px 6px}
+@media(max-width:900px){.navgrp{display:none}}
+.navi{text-align:left;padding:8px 11px;border-radius:8px;font-size:14px;color:var(--c-muted);
+  white-space:nowrap;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.navi:hover{background:var(--c-panel);color:var(--c-ink)}
+.navi[aria-current="true"]{background:var(--c-accent-soft);color:var(--c-accent-ink);font-weight:600}
+.navi kbd{font-family:var(--mono);font-size:10px;color:var(--c-faint)}
+
+.stagehead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+.stagehead h2{font-size:23px;letter-spacing:-.02em;font-weight:600}
+.route{font-family:var(--mono);font-size:12px;color:var(--c-accent);background:var(--c-accent-soft);
+  padding:3px 9px;border-radius:6px}
+.stagesub{color:var(--c-muted);font-size:14.5px;max-width:70ch;margin:0 0 22px}
+
+/* ---- device frames ---- */
+.stage{display:flex;gap:30px;align-items:flex-start;flex-wrap:wrap}
+.browser{flex:1 1 640px;min-width:0;border:1px solid var(--c-line2);border-radius:10px;
+  overflow:hidden;background:var(--c-panel);box-shadow:var(--c-shadow)}
+.bbar{display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--c-line);
+  background:var(--c-panel)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--c-line2)}
+.urlbar{flex:1;background:var(--c-bg);border:1px solid var(--c-line);border-radius:7px;
+  padding:5px 11px;font-family:var(--mono);font-size:11.5px;color:var(--c-muted);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.urlbar b{color:var(--c-ink);font-weight:600}
+.bnavbtn{color:var(--c-faint);font-size:15px;padding:0 3px}
+.viewport{container-type:inline-size;background:var(--a-canvas);color:var(--a-ink);height:660px;overflow:auto;position:relative}
+.viewport::-webkit-scrollbar{width:9px}
+.viewport::-webkit-scrollbar-thumb{background:var(--a-rule);border-radius:9px}
+
+.phonewrap{flex:0 0 auto;display:flex;flex-direction:column;gap:12px;align-items:center}
+.phone{width:322px;height:660px;border-radius:42px;padding:11px;background:#101413;
+  box-shadow:0 2px 3px rgba(0,0,0,.3),0 26px 50px -18px rgba(0,0,0,.5);position:relative;flex:0 0 auto}
+.pscreen{width:100%;height:100%;border-radius:32px;overflow:hidden;background:var(--a-canvas);
+  color:var(--a-ink);display:flex;flex-direction:column;position:relative}
+.notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:108px;height:26px;
+  background:#101413;border-radius:0 0 16px 16px;z-index:40}
+.pstatus{display:flex;justify-content:space-between;padding:9px 22px 3px;font-size:11.5px;
+  font-weight:600;color:var(--a-ink);flex:0 0 auto}
+.pbody{flex:1;overflow:auto}
+.pbody::-webkit-scrollbar{width:0}
+.devlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--c-faint)}
+
+/* ============ APP INTERNALS — sem cards, o que separa é a pauta ============ */
+.app{display:flex;min-height:100%;font-size:14px}
+.side{width:212px;flex:0 0 auto;background:var(--a-canvas);border-right:1px solid var(--a-rule);
+  padding:16px 0;display:flex;flex-direction:column;gap:1px;min-height:660px}
+.brand{display:flex;align-items:center;gap:9px;padding:2px 16px 16px}
+.mark{width:24px;height:24px;border-radius:3px;background:var(--a-ink);color:var(--a-canvas);
+  display:grid;place-items:center;font-family:var(--serif);font-size:15px;flex:0 0 auto}
+.brand span{font-weight:600;letter-spacing:.01em;font-size:15px}
+.cmdk{margin:0 12px 10px;display:flex;justify-content:space-between;align-items:center;
+  border:1px solid var(--a-rule2);border-radius:5px;padding:5px 8px;color:var(--a-subtle);font-size:12px}
+.cmdk kbd{font-family:var(--mono);font-size:10px;color:var(--a-subtle)}
+.sgrp{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--a-subtle);padding:16px 16px 6px;margin-top:4px;border-top:1px solid var(--a-rule)}
+.side .sgrp:first-of-type{border-top:0;margin-top:0}
+.sitem{display:flex;align-items:center;gap:9px;padding:6px 16px;color:var(--a-muted);
+  text-align:left;width:100%;font-size:13.5px;border-left:2px solid transparent}
+.sitem:hover{color:var(--a-ink);background:var(--a-sunken)}
+.sitem[aria-current="true"]{color:var(--a-ink);font-weight:600;border-left-color:var(--a-accent);background:var(--a-sunken)}
+.sitem .dot{width:14px;text-align:center;font-size:12px;color:var(--a-subtle)}
+.sitem[aria-current="true"] .dot{color:var(--a-accent)}
+.pill{margin-left:auto;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--a-onbrand);
+  background:var(--a-negative);border-radius:2px;padding:0 5px}
+[data-app="light"] .pill{color:#fff}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.mhead{padding:22px 30px 16px;border-bottom:1px solid var(--a-rule);
+  display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.mhead h3{font-size:19px;letter-spacing:-.005em;font-weight:600}
+.mhead p{margin:4px 0 0;color:var(--a-subtle);font-size:12.5px}
+.periodbar{display:flex;gap:0;align-items:center;border:1px solid var(--a-rule2);border-radius:5px;overflow:hidden}
+.pchip{padding:5px 12px;font-size:12.5px;color:var(--a-muted);border-right:1px solid var(--a-rule2)}
+.pchip:last-child{border-right:0}
+.pchip[aria-pressed="true"]{background:var(--a-ink);color:var(--a-canvas);font-weight:600}
+.mbody{padding:0 30px 40px;display:flex;flex-direction:column}
+.mbody>:first-child{margin-top:20px}
+.pcontent>:first-child{margin-top:14px}
+.pcontent{padding:0 18px 96px;display:flex;flex-direction:column}
+
+/* “card” virou seção pautada — o que era Material vira documento */
+.card{background:transparent;border:0;border-top:1px solid var(--a-rule);border-radius:0;
+  padding:20px 0 22px;min-width:0}
+.mbody>.card:first-child,.pcontent>.card:first-child{border-top:0}
+.card.tight{padding:16px 0 18px}
+/* objeto discreto: mantém superfície */
+.card.obj{background:var(--a-surface);border:1px solid var(--a-rule);border-radius:10px;padding:18px}
+.cardhead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:14px}
+.cardhead h4{font-size:13px;font-weight:600;letter-spacing:.005em}
+.cardhead a,.more{font-family:var(--mono);font-size:11px;color:var(--a-accent);letter-spacing:.02em}
+.lbl{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--a-subtle)}
+
+.hero{padding:26px 0 24px;border-bottom:2px solid var(--a-rule3);
+  display:flex;justify-content:space-between;gap:22px;align-items:flex-end;flex-wrap:wrap}
+.heronum{font-family:var(--serif);font-size:58px;line-height:.95;font-weight:500;
+  letter-spacing:-.022em;font-variant-numeric:tabular-nums lining-nums;margin-top:8px}
+.heronum small{font-size:.42em;color:var(--a-subtle);letter-spacing:0}
+.delta{font-family:var(--mono);font-size:11.5px;font-weight:500;font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.up{color:var(--a-negative)}.down{color:var(--a-income)}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+@container (max-width:620px){.grid3{grid-template-columns:1fr 1fr}}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0}
+@container (max-width:820px){.grid2{grid-template-columns:1fr}}
+.grid2>.card{padding-right:26px}
+.grid2>.card+.card{border-left:1px solid var(--a-rule);padding-left:26px;padding-right:0}
+@container (max-width:820px){.grid2>.card+.card{border-left:0;padding-left:0}}
+
+/* tile: pauta pesada no topo, como cabeçalho de coluna de livro-razão */
+.tile{border-top:2px solid var(--a-rule3);padding:11px 20px 16px 0;margin-top:20px}
+.grid3>.tile+.tile{border-left:1px solid var(--a-rule);padding-left:20px}
+.tile .v{font-family:var(--serif);font-size:27px;font-weight:500;letter-spacing:-.012em;
+  font-variant-numeric:tabular-nums lining-nums;margin-top:7px}
+.tile .m{font-family:var(--mono);font-size:10.5px;color:var(--a-subtle);margin-top:5px;letter-spacing:.02em}
+
+/* linha do razão: marca tipográfica, zebra, e a coluna de valor separada por pauta */
+.row{display:flex;align-items:center;gap:11px;padding:8px 10px 8px 0;border-top:1px solid var(--a-rule)}
+.row:first-of-type{border-top:0}
+.row:nth-of-type(even){background:var(--a-sunken)}
+.ico,.mk{width:26px;height:26px;border-radius:3px;flex:0 0 auto;display:grid;place-items:center;
+  font-family:var(--mono);font-size:10px;font-weight:600;letter-spacing:.02em;
+  color:var(--a-muted);background:var(--a-surface);
+  border:1px solid var(--a-rule2);border-left:3px solid var(--a-c1)}
+.rmain{flex:1;min-width:0}
+.rmain b{display:block;font-weight:500;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rmain span{font-family:var(--mono);font-size:10.5px;color:var(--a-subtle);letter-spacing:.01em}
+.amt{font-variant-numeric:tabular-nums;font-weight:500;font-size:14px;text-align:right;white-space:nowrap;
+  min-width:104px;padding-left:16px;border-left:1px solid var(--a-rule)}
+.amt.in{color:var(--a-income);font-weight:600}
+.amt.ign{color:var(--a-ignored);text-decoration:line-through}
+
+.tag{font-family:var(--mono);font-size:9.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  border-radius:2px;padding:2px 5px;white-space:nowrap;border:1px solid transparent}
+.tag.pend{color:var(--a-pending);border-color:var(--a-pending)}
+.tag.ok{color:var(--a-subtle);border-color:var(--a-rule2)}
+.tag.neu{color:var(--a-ignored);border-color:var(--a-rule2)}
+
+table.led{width:100%;border-collapse:collapse;font-size:13px}
+table.led th{background:var(--a-canvas);text-align:left;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--a-subtle);font-weight:600;
+  padding:0 10px 8px;border-bottom:2px solid var(--a-rule3);white-space:nowrap}
+table.led td{padding:8px 10px;border-bottom:1px solid var(--a-rule);vertical-align:middle}
+table.led tbody tr:nth-child(even) td{background:var(--a-sunken)}
+table.led tr:hover td{background:var(--a-accent-soft)}
+table.led .r{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap;
+  border-left:1px solid var(--a-rule)}
+table.led tr.sel td{box-shadow:inset 2px 0 0 var(--a-accent)}
+.bulkbar{display:flex;align-items:center;gap:12px;background:var(--a-ink);color:var(--a-canvas);
+  border-radius:5px;padding:9px 13px;font-size:12.5px;font-weight:500;margin-top:16px}
+.bulkbar button{border:1px solid rgba(150,150,150,.4);border-radius:4px;padding:3px 9px;font-size:11.5px}
+
+.bar{height:4px;background:var(--a-rule);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--a-ink)}
+.bar i.over{background:var(--a-negative)}
+
+.btn{border-radius:5px;padding:7px 14px;font-size:12.5px;font-weight:600;border:1px solid transparent;
+  letter-spacing:.005em}
+.btn.pri{background:var(--a-brand);color:var(--a-onbrand)}
+.btn.gho{border-color:var(--a-rule2);color:var(--a-ink);background:transparent}
+.btn.gho:hover{border-color:var(--a-ink)}
+.btn.sm{padding:5px 11px;font-size:12px}
+
+.tl{display:flex;align-items:center;gap:0;margin:16px 0 8px}
+.tl .seg{flex:1;height:1px;background:var(--a-rule2)}
+.tl .seg.done{background:var(--a-accent);height:2px}
+.tl .nd{width:9px;height:9px;border-radius:50%;border:2px solid var(--a-accent);background:var(--a-canvas);flex:0 0 auto}
+.tl .nd.fill{background:var(--a-accent)}
+.tl .nd.open{border-color:var(--a-rule2)}
+.tlx{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;
+  color:var(--a-subtle);font-variant-numeric:tabular-nums;letter-spacing:.02em}
+
+.tabbar{display:flex;background:var(--a-canvas);border-top:1px solid var(--a-rule);
+  padding:0 2px calc(6px + env(safe-area-inset-bottom));position:absolute;bottom:0;left:0;right:0;z-index:30}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:var(--mono);
+  font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-subtle);
+  padding:9px 0 5px;position:relative;border-top:2px solid transparent;margin-top:-1px}
+.tb[aria-current="true"]{color:var(--a-ink);border-top-color:var(--a-accent);font-weight:700}
+.tb .g{font-size:15px;line-height:1}
+.tb .bdg{position:absolute;top:4px;right:calc(50% - 18px);background:var(--a-negative);color:#fff;
+  font-family:var(--mono);font-size:8.5px;font-weight:700;border-radius:2px;padding:0 3px}
+.tb.mid .g{width:34px;height:26px;border-radius:4px;background:var(--a-brand);color:var(--a-onbrand);
+  display:grid;place-items:center;font-size:16px}
+.ptop{padding:8px 18px 14px;display:flex;justify-content:space-between;align-items:flex-end;
+  border-bottom:1px solid var(--a-rule);margin-bottom:2px}
+.ptop h3{font-size:21px;letter-spacing:-.01em;font-weight:600;margin-top:3px}
+.ptop .ico{border-left-width:1px}
+
+.swipe{position:relative;overflow:hidden}
+.swipe .under{position:absolute;inset:0;display:flex;justify-content:flex-end;align-items:center;
+  padding-right:16px;background:var(--a-negative);color:#fff;font-family:var(--mono);
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+.swipe .over{position:relative;background:var(--a-canvas);transform:translateX(-62px)}
+
+/* ---- annotation ---- */
+.notes{margin-top:26px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.note{border:1px solid var(--c-line);border-left:3px solid var(--c-accent);border-radius:0 10px 10px 0;
+  background:var(--c-panel);padding:13px 15px}
+.note h5{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--c-accent);margin:0 0 6px;font-weight:600}
+.note p{margin:0;font-size:13.5px;color:var(--c-muted);line-height:1.55}
+.note p b{color:var(--c-ink);font-weight:600}
+.note.flag{border-left-color:var(--c-flag)}
+.note.flag h5{color:var(--c-flag)}
+
+/* ---- design system view ---- */
+.dsgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+.dscard{background:var(--c-panel);border:1px solid var(--c-line);border-radius:8px;padding:18px 20px}
+.dscard h4{font-size:13px;font-weight:600;margin-bottom:14px;letter-spacing:-.01em}
+.sw{display:flex;align-items:center;gap:11px;padding:6px 0;font-family:var(--mono);font-size:11.5px;color:var(--c-muted)}
+.sw i{width:30px;height:30px;border-radius:8px;border:1px solid var(--c-line2);flex:0 0 auto}
+.sw b{margin-left:auto;color:var(--c-faint);font-weight:400}
+.tyrow{display:flex;align-items:baseline;gap:14px;padding:8px 0;border-bottom:1px solid var(--c-line)}
+.tyrow:last-child{border:0}
+.tyrow code{font-family:var(--mono);font-size:10.5px;color:var(--c-faint);flex:0 0 92px}
+.scale{display:flex;align-items:flex-end;gap:5px;height:52px;margin-top:6px}
+.scale i{background:var(--c-accent);opacity:.75;border-radius:2px 2px 0 0;width:16px}
+.scale span{font-family:var(--mono);font-size:9px;color:var(--c-faint);writing-mode:vertical-rl}
+.bplist{font-family:var(--mono);font-size:11.5px;color:var(--c-muted);line-height:2}
+.bplist b{color:var(--c-ink)}
+.kbdlist{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:13px;color:var(--c-muted);align-items:center}
+.kbdlist kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--c-line2);border-bottom-width:2px;
+  border-radius:5px;padding:2px 6px;background:var(--c-bg);color:var(--c-ink);justify-self:start}
+
+.namegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:14px;margin-top:4px}
+.namecard{background:var(--c-panel);border:1px solid var(--c-line);border-radius:8px;padding:18px;
+  display:flex;flex-direction:column;gap:9px;transition:.18s}
+.namecard:hover{border-color:var(--c-accent);transform:translateY(-2px)}
+.namecard .n{font-family:var(--serif);font-size:29px;font-weight:500;letter-spacing:-.015em}
+.namecard .why{font-size:13px;color:var(--c-muted);line-height:1.5;flex:1}
+.namecard .rk{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--c-faint)}
+.namecard.top{border-color:var(--c-accent);background:var(--c-accent-soft)}
+.namecard.top .rk{color:var(--c-accent-ink)}
+.namecard.top .why{color:var(--c-accent-ink);opacity:.9}
+
+.hidden{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <div class="eyebrow">Protótipo navegável · remake de UI, UX e design system</div>
+      <h1>Finora vira <em>Ledger</em>.</h1>
+      <p class="lede">O modelo financeiro está certo — competência de fatura, dedupe, linhagem. O que falta é a interface saber disso. Este protótipo mostra a direção proposta para web e mobile, lado a lado com o que existe hoje.</p>
+    </div>
+    <div class="toggles">
+      <button class="tog" id="tTheme">◐ Tema da página</button>
+      <button class="tog" id="tApp" aria-pressed="false">☾ App em escuro</button>
+    </div>
+  </header>
+
+  <div class="cols">
+    <nav class="nav" id="nav" aria-label="Telas do protótipo"></nav>
+    <main>
+      <div class="stagehead">
+        <h2 id="sTitle"></h2><span class="route" id="sRoute"></span>
+      </div>
+      <p class="stagesub" id="sSub"></p>
+      <div id="sBody"></div>
+      <div class="notes" id="sNotes"></div>
+    </main>
+  </div>
+</div>
+<script>
+const $=s=>document.querySelector(s);
+const money=n=>n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const BRL=n=>'R$ '+money(n);
+
+/* ---------- dados de exemplo (pt-BR, realistas) ---------- */
+const TX=[
+ {d:'19/08',m:'iFood · Pedido 4471',c:'Alimentação',k:'Nubank ·1847',v:-67.90,s:'pend',i:'IF',cc:'c4'},
+ {d:'19/08',m:'Posto Ipiranga',c:'Transporte',k:'Nubank ·1847',v:-212.40,s:'ok',i:'PI',cc:'c2'},
+ {d:'18/08',m:'Mercado Extra',c:'Mercado',k:'Itaú ·9032',v:-486.15,s:'ok',i:'ME',cc:'c1'},
+ {d:'18/08',m:'Drogasil',c:'Saúde',k:'Pix · Conta',v:-89.70,s:'pend',i:'DR',cc:'c6'},
+ {d:'17/08',m:'Salário',c:'Renda',k:'Conta corrente',v:9850.00,s:'ok',i:'SA',cc:'c1'},
+ {d:'17/08',m:'Netflix',c:'Assinaturas',k:'Nubank ·1847',v:-59.90,s:'ok',i:'NF',cc:'c3'},
+ {d:'16/08',m:'Uber · 3 corridas',c:'Transporte',k:'Nubank ·1847',v:-74.30,s:'ok',i:'UB',cc:'c2'},
+ {d:'15/08',m:'Amazon · 2/6',c:'Casa',k:'Itaú ·9032',v:-149.90,s:'ok',i:'AM',cc:'c5'},
+ {d:'15/08',m:'Padaria Real',c:'Alimentação',k:'Débito ·9032',v:-38.20,s:'ign',i:'PR',cc:'c4'},
+ {d:'14/08',m:'Estorno Magalu',c:'Casa',k:'Itaú ·9032',v:212.00,s:'ok',i:'EM',cc:'c5'}
+];
+const CATS=[['Mercado',1284.60,1400,'c1'],['Alimentação',872.40,800,'c4'],['Transporte',631.20,700,'c2'],
+ ['Casa',548.90,600,'c5'],['Assinaturas',287.70,300,'c3'],['Saúde',163.10,250,'c6']];
+const RITMO=[38,62,41,78,55,92,47,64,88,52,71,45,96,60,83,49,74,58,91,66,42,80,57,69,86,51,77,63,95,72];
+
+/* ---------- blocos reutilizáveis ---------- */
+const txRow=t=>`<div class="row"><div class="mk" style="border-left-color:var(--a-${t.cc})">${t.i}</div><div class="rmain"><b>${t.m}</b>
+  <span>${t.c} · ${t.k}</span></div>
+  ${t.s==='pend'?'<span class="tag pend">revisar</span>':''}
+  ${t.s==='ign'?'<span class="tag neu">fora do pessoal</span>':''}
+  <div class="amt ${t.v>0?'in':''} ${t.s==='ign'?'ign':''}">${t.v>0?'+':'−'}${money(Math.abs(t.v))}</div></div>`;
+
+const TREND=[41,44,42,48,53,51,58,62,59,65,71,68,74,79,77,83,88,92];
+const sparkline=(w,h)=>{const p=TREND.map((v,i)=>`${(i/(TREND.length-1))*w},${h-((v-30)/70)*h}`).join(' ');
+ return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" aria-hidden="true" style="overflow:visible">
+  <polyline points="${p}" fill="none" stroke="var(--a-accent)" stroke-width="1.75" stroke-linejoin="round"/>
+  <polyline points="0,${h} ${p} ${w},${h}" fill="var(--a-accent)" opacity=".13" stroke="none"/>
+  <circle cx="${w}" cy="${h-((TREND.at(-1)-30)/70)*h}" r="3" fill="var(--a-accent)"/></svg>`;};
+
+const bars=h=>`<div style="display:flex;align-items:flex-end;gap:3px;height:${h}px">${
+ RITMO.map((v,i)=>`<div style="flex:1;height:${v}%;border-radius:2px 2px 0 0;background:${i>25?'var(--a-ink)':'var(--a-rule2)'}"></div>`).join('')}</div>
+ <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--a-subtle);margin-top:6px" class="num"><span>1 ago</span><span>hoje · 19 ago</span><span>31 ago</span></div>`;
+
+const catList=()=>CATS.map(([n,v,m,c])=>{const p=Math.min(100,v/m*100);
+ return `<div style="padding:9px 0;border-top:1px solid var(--a-rule)">
+  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:6px">
+   <span style="display:flex;align-items:center;gap:8px;font-size:13.5px"><i style="width:9px;height:9px;border-radius:3px;background:var(--a-${c});display:inline-block"></i>${n}</span>
+   <span class="num" style="font-size:13px;font-weight:500">${money(v)} <span style="color:var(--a-subtle);font-weight:400">/ ${money(m)}</span></span></div>
+  <div class="bar"><i class="${v>m?'over':''}" style="width:${p}%"></i></div></div>`}).join('');
+
+const reviewCard=(compact)=>`<div class="card">
+  <div class="cardhead"><h4>4 lançamentos aguardando revisão</h4>${compact?'':'<span class="more">ver todos →</span>'}</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+    <div class="mk" style="width:42px;height:42px;font-size:13px;border-left-color:var(--a-c4)">IF</div>
+    <div style="flex:1;min-width:0"><b style="font-size:15.5px;display:block">iFood · Pedido 4471</b>
+      <span style="font-size:12px;color:var(--a-subtle)">19 ago · Nubank ·1847 · capturado pelo Atalho</span></div>
+    <div class="num" style="font-family:var(--serif);font-size:24px;font-weight:500">−67,90</div></div>
+  <div style="background:var(--a-pendbg);color:var(--a-pending);border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:14px">
+    Sugestão <b>Alimentação › Delivery</b> — confiança 62%</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn pri sm">Aprovar</button>
+    <button class="btn gho sm">Corrigir categoria</button>
+    <button class="btn gho sm">Sempre assim ✦</button></div></div>`;
+
+const invoiceCard=()=>`<div class="card">
+  <div class="cardhead"><h4>Nubank ·1847 — fatura de setembro</h4><span class="tag pend">fecha em 3 dias</span></div>
+  <div class="tl"><span class="nd fill"></span><span class="seg done"></span><span class="nd fill"></span>
+    <span class="seg"></span><span class="nd open"></span></div>
+  <div class="tlx"><span>fechou 28 jul</span><span>hoje 19 ago</span><span>vence 10 set</span></div>
+  <div style="display:flex;gap:26px;margin-top:16px;flex-wrap:wrap">
+    <div><div class="lbl">Lançado</div><div class="num" style="font-family:var(--serif);font-size:26px;font-weight:500;margin-top:5px">2.180,45</div></div>
+    <div><div class="lbl">Previsto ao fechar</div><div class="num" style="font-family:var(--serif);font-size:26px;font-weight:500;margin-top:5px;color:var(--a-pending)">2.340,00</div></div></div>
+  <p style="margin:14px 0 0;font-size:12.5px;color:var(--a-subtle);line-height:1.5">
+    Compras entre <b style="color:var(--a-ink)">29 jul</b> e <b style="color:var(--a-ink)">28 ago</b> entram nesta fatura, porque o cartão fecha dia 28.</p></div>`;
+
+const budgetWarn=()=>`<div class="card obj tight" style="border-left:3px solid var(--a-pending);border-radius:0 8px 8px 0;margin-top:20px">
+  <div style="display:flex;align-items:center;gap:11px">
+    <div class="ico" style="background:var(--a-pendbg);color:var(--a-pending)">!</div>
+    <div style="flex:1"><b style="font-size:13.5px">Mercado passou de 92% da meta</b>
+      <div style="font-size:11.5px;color:var(--a-subtle)" class="num">1.284,60 de 1.400,00 · faltam 12 dias</div></div>
+    <button class="btn gho sm">Ajustar</button></div></div>`;
+</script>
+<script>
+/* ---------- navegação do app ---------- */
+const SIDE=[
+ ['HOJE',[['hoje','◈','Precisa de você','4']]],
+ ['DINHEIRO',[['visao','▤','Visão geral'],['historico','≣','Histórico'],['cats','◔','Categorias'],
+   ['fatura','▭','Cartões e faturas'],['contas','⛁','Contas']]],
+ ['FUTURO',[['proj','↗','Projeção 6 meses'],['metas','◎','Metas'],['assin','↻','Assinaturas']]],
+ ['AJUSTES',[['regras','✦','Regras'],['import','⇥','Importações'],['atalho','','Automação Apple Pay']]]
+];
+const sidebar=cur=>`<aside class="side">
+  <div class="brand"><span class="mark">F</span><span>Finora</span></div>
+  <div class="cmdk"><span>Buscar ou comandar</span><kbd>⌘K</kbd></div>
+  ${SIDE.map(([g,items])=>`<div class="sgrp">${g}</div>`+items.map(([id,ic,lb,bd])=>
+    `<button class="sitem" ${cur===id?'aria-current="true"':''} data-goto="${id}">
+      <span class="dot">${ic}</span>${lb}${bd?`<span class="pill">${bd}</span>`:''}</button>`).join('')).join('')}
+  <div style="flex:1"></div>
+  <button class="sitem"><span class="dot">◐</span>Tema e conta</button></aside>`;
+
+const TABS=[['hoje','◈','Hoje','4'],['visao','▤','Visão'],['novo','+','',''],['historico','≣','Histórico'],['mais','⋯','Mais']];
+const tabbar=cur=>`<nav class="tabbar">${TABS.map(([id,g,lb,bd])=>
+  `<button class="tb ${id==='novo'?'mid':''}" ${cur===id?'aria-current="true"':''} data-goto="${id}">
+   <span class="g">${g}</span>${lb?`<span>${lb}</span>`:''}${bd?`<span class="bdg">${bd}</span>`:''}</button>`).join('')}</nav>`;
+
+const mhead=(t,s,per)=>`<div class="mhead"><div><h3>${t}</h3><p>${s}</p></div>
+  ${per?`<div class="periodbar"><button class="pchip">‹</button><button class="pchip" aria-pressed="true">Agosto 2026</button>
+  <button class="pchip">›</button><button class="pchip">Personalizado</button></div>`:''}</div>`;
+
+/* ---------- telas: desktop ---------- */
+const DESK={
+hoje:()=>`${mhead('Hoje','Quarta, 19 de agosto · 4 itens exigem sua atenção',false)}
+ <div class="mbody"><div class="grid2">${reviewCard()}${invoiceCard()}</div>${budgetWarn()}
+ <div class="card"><div class="cardhead"><h4>O que mudou em agosto</h4></div>
+  <p style="margin:0;font-size:14px;line-height:1.65;color:var(--a-muted)">Agosto está <b style="color:var(--a-ink)">12% acima</b> de julho, puxado por <b style="color:var(--a-ink)">Mercado</b> (+R$ 218) e por três corridas de Uber num único dia. Alimentação já ultrapassou a meta em R$ 72. Nenhuma assinatura nova entrou no período.</p></div></div>`,
+
+visao:()=>`${mhead('Visão geral','Indicadores de agosto de 2026',true)}
+ <div class="mbody">
+  <div class="hero"><div><div class="lbl">Saldo do período</div>
+   <div class="heronum">R$ 3.482,<small>10</small></div>
+   <div class="delta down" style="margin-top:6px">↓ 12% melhor que julho · R$ 3.108,40</div></div>
+   <div>${sparkline(220,54)}</div></div>
+  <div class="grid3">
+   <div class="tile"><div class="lbl">Entradas</div><div class="v">9.850,00</div><div class="m">1 depósito</div></div>
+   <div class="tile"><div class="lbl">Saídas</div><div class="v">6.367,90</div><div class="m">↑ R$ 682 vs julho</div></div>
+   <div class="tile"><div class="lbl">Faturas do período</div><div class="v">4.128,40</div><div class="m">2 cartões · 1 fecha em 3 dias</div></div></div>
+  <div class="card"><div class="cardhead"><h4>Ritmo de gastos</h4><span class="more">R$ 212/dia · projeta R$ 6.572 no mês</span></div>${bars(96)}</div>
+  <div class="grid2">
+   <div class="card"><div class="cardhead"><h4>Por categoria — faturas + conta</h4><span class="more">detalhar →</span></div>${catList()}</div>
+   <div class="card"><div class="cardhead"><h4>Últimas transações</h4><span class="more">ver histórico →</span></div>
+    ${TX.slice(0,6).map(txRow).join('')}</div></div></div>`,
+
+historico:()=>`${mhead('Histórico','1.284 lançamentos · 10 no período filtrado',true)}
+ <div class="mbody">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+   <div class="pchip" style="flex:1;min-width:180px;color:var(--a-subtle)">⌕ Buscar comerciante ou categoria <kbd style="float:right;font-family:var(--mono);font-size:10px">/</kbd></div>
+   <button class="pchip" aria-pressed="true">Mercado ✕</button><button class="pchip" aria-pressed="true">Nubank ·1847 ✕</button>
+   <button class="pchip">+ Filtro</button></div>
+  <div class="bulkbar">2 selecionados<button>Recategorizar</button><button>Marcar como ignorado</button><button>Exportar</button>
+   <span style="margin-left:auto;opacity:.65">Esc para limpar</span></div>
+  <div class="card" style="padding:16px 10px;overflow-x:auto">
+   <table class="led" style="min-width:640px"><thead><tr><th style="width:26px"></th><th>Data</th><th>Comerciante</th><th>Categoria</th>
+    <th>Cartão / conta</th><th>Estado</th><th class="r">Valor</th></tr></thead><tbody>
+   ${TX.map((t,i)=>`<tr class="${i<2?'sel':''}"><td><input type="checkbox" ${i<2?'checked':''} aria-label="Selecionar ${t.m}"></td>
+    <td class="num" style="color:var(--a-subtle)">${t.d}</td>
+    <td><span style="display:flex;align-items:center;gap:8px"><span class="mk" style="border-left-color:var(--a-${t.cc})">${t.i}</span>${t.m}</span></td>
+    <td style="color:var(--a-muted)">${t.c}</td><td style="color:var(--a-muted)" class="num">${t.k}</td>
+    <td>${t.s==='pend'?'<span class="tag pend">revisar</span>':t.s==='ign'?'<span class="tag neu">ignorado</span>':'<span class="tag ok">confirmado</span>'}</td>
+    <td class="r ${t.v>0?'':''}" style="${t.v>0?'color:var(--a-income);font-weight:600':''}${t.s==='ign'?';color:var(--a-subtle);text-decoration:line-through':''}">${t.v>0?'+':'−'}${money(Math.abs(t.v))}</td></tr>`).join('')}
+   </tbody></table></div></div>`,
+
+fatura:()=>`${mhead('Nubank ·1847','Fatura de setembro · competência 29 jul – 28 ago',false)}
+ <div class="mbody"><div class="grid2">${invoiceCard()}
+  <div class="card"><div class="cardhead"><h4>Composição prevista</h4></div>
+   <div style="display:flex;gap:24px;flex-wrap:wrap;margin-bottom:12px">
+    <div><div class="lbl">Parcelas já comprometidas</div><div class="num" style="font-family:var(--serif);font-size:23px;font-weight:500;margin-top:5px">749,50</div></div>
+    <div><div class="lbl">Recorrentes</div><div class="num" style="font-family:var(--serif);font-size:23px;font-weight:500;margin-top:5px">287,70</div></div>
+    <div><div class="lbl">Variável até fechar</div><div class="num" style="font-size:20px;font-weight:600;margin-top:3px;color:var(--a-subtle)">1.302,80</div></div></div>
+   <div class="bar" style="height:10px;display:flex"><i style="width:32%"></i><i style="width:12%;background:var(--a-c3)"></i><i style="width:56%;background:var(--a-rule)"></i></div>
+   <p style="margin:12px 0 0;font-size:12.5px;color:var(--a-subtle)">A previsão usa o ritmo dos três ciclos anteriores deste cartão.</p></div></div>
+  <div class="card"><div class="cardhead"><h4>Lançamentos desta fatura</h4><span class="more">exportar CSV →</span></div>
+   ${TX.filter(t=>t.k.includes('1847')).map(txRow).join('')}</div></div>`,
+
+revisao:()=>`${mhead('Revisão','Item 1 de 4 · use J e K para navegar',false)}
+ <div class="mbody" style="align-items:center">
+  <div class="card obj" style="max-width:520px;width:100%;text-align:center;padding:34px 30px;margin-top:26px">
+   <div class="mk" style="width:56px;height:56px;font-size:17px;margin:0 auto 16px;border-left-color:var(--a-c4)">IF</div>
+   <h3 style="font-size:22px;letter-spacing:-.02em;font-weight:600">iFood · Pedido 4471</h3>
+   <div class="num" style="font-family:var(--serif);font-size:46px;font-weight:500;letter-spacing:-.02em;margin:10px 0 6px">−R$ 67,90</div>
+   <p style="margin:0;font-size:12.5px;color:var(--a-subtle)">19 ago · Nubank ·1847 · capturado pelo Atalho às 20h14</p>
+   <div style="background:var(--a-pendbg);color:var(--a-pending);border-radius:12px;padding:12px;font-size:13px;margin:20px 0">
+    Sugerimos <b>Alimentação › Delivery</b><div style="font-size:11.5px;opacity:.85;margin-top:3px">confiança 62% — abaixo do limite de 80%</div></div>
+   <div style="display:flex;gap:9px;justify-content:center;flex-wrap:wrap">
+    <button class="btn pri">Aprovar <span style="opacity:.7;font-family:var(--mono);font-size:11px">⏎</span></button>
+    <button class="btn gho">Corrigir <span style="opacity:.55;font-family:var(--mono);font-size:11px">C</span></button>
+    <button class="btn gho">Sempre assim <span style="opacity:.55;font-family:var(--mono);font-size:11px">R</span></button></div>
+   <p style="margin:18px 0 0;font-size:11.5px;color:var(--a-subtle)">“Sempre assim” cria uma regra de estabelecimento e some com as próximas.</p></div></div>`,
+
+inicio:()=>`${mhead('Bem-vindo ao Finora','Passo 1 de 4 · leva menos de dois minutos',false)}
+ <div class="mbody">
+  <div class="card" style="padding:28px">
+   <div class="lbl">Passo 1</div><h3 style="font-size:24px;letter-spacing:-.025em;font-weight:600;margin:6px 0 8px">Traga seus dados</h3>
+   <p style="margin:0 0 20px;color:var(--a-muted);font-size:14px;max-width:52ch">O painel só faz sentido com histórico dentro. Escolha por onde começar — dá para trocar depois.</p>
+   <div class="grid3">
+    ${[['⇥','Extrato do banco','CSV ou XLSX, direto do arquivo que o banco exporta','recomendado'],
+       ['{ }','JSON classificado','Contrato Finora 1.0, com conciliação e prévia',''],
+       ['✎','Começar do zero','Primeiro lançamento manual agora','']]
+     .map(([g,t,s,b])=>`<button class="card obj" style="text-align:left;padding:16px;border-color:${b?'var(--a-brand)':'var(--a-rule)'}">
+      <div style="font-size:22px;margin-bottom:8px">${g}</div><b style="font-size:14px;display:block">${t}</b>
+      <span style="font-size:12px;color:var(--a-subtle);line-height:1.45;display:block;margin-top:4px">${s}</span>
+      ${b?`<span class="tag ok" style="margin-top:9px;display:inline-block">${b}</span>`:''}</button>`).join('')}</div></div>
+  <div class="card" style="opacity:.55"><div class="lbl">Passo 2</div><b style="font-size:15px">Confirme os cartões</b>
+   <p style="margin:4px 0 0;font-size:13px;color:var(--a-subtle)">Dia de fechamento e vencimento — é o que decide em qual fatura cada compra cai.</p></div>
+  <div class="card" style="opacity:.55"><div class="lbl">Passo 3</div><b style="font-size:15px">Ative a captura no Apple Pay</b>
+   <p style="margin:4px 0 0;font-size:13px;color:var(--a-subtle)">Gerar token, instalar o Atalho e <b>verificar a primeira captura de verdade</b> — o passo só fica verde quando o servidor recebe.</p></div>
+  <div class="card" style="opacity:.55"><div class="lbl">Passo 4</div><b style="font-size:15px">Pronto</b>
+   <p style="margin:4px 0 0;font-size:13px;color:var(--a-subtle)">O painel abre já com seus números.</p></div></div>`
+};
+
+/* ---------- telas: mobile ---------- */
+const MOB={
+hoje:()=>`<div class="ptop"><div><div class="lbl">Quarta, 19 de agosto</div><h3>Hoje</h3></div>
+  <div class="ico">◐</div></div>
+ <div class="pcontent">${reviewCard(true)}${budgetWarn()}${invoiceCard()}</div>`,
+
+visao:()=>`<div class="ptop"><h3>Visão geral</h3><div class="ico">⌕</div></div>
+ <div style="padding:0 18px 8px"><div class="periodbar"><button class="pchip">‹</button>
+  <button class="pchip" aria-pressed="true">Agosto 2026</button><button class="pchip">›</button></div></div>
+ <div class="pcontent">
+  <div class="hero" style="flex-direction:column;align-items:stretch;gap:12px">
+   <div><div class="lbl">Saldo do período</div><div class="heronum" style="font-size:38px">R$ 3.482,<small>10</small></div>
+    <div class="delta down" style="margin-top:4px">↓ 12% melhor que julho</div></div>${sparkline(250,44)}</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+   <div class="tile"><div class="lbl">Entradas</div><div class="v" style="font-size:20px">9.850,00</div></div>
+   <div class="tile"><div class="lbl">Saídas</div><div class="v" style="font-size:20px">6.367,90</div></div></div>
+  <div class="card tight"><div class="cardhead"><h4>Ritmo de gastos</h4></div>${bars(64)}</div>
+  <div class="card tight"><div class="cardhead"><h4>Por categoria</h4><span class="more">ver →</span></div>${catList()}</div>
+  <div class="card tight"><div class="cardhead"><h4>Últimas transações</h4><span class="more">ver →</span></div>${TX.slice(0,4).map(txRow).join('')}</div></div>`,
+
+historico:()=>`<div class="ptop"><h3>Histórico</h3><div class="ico">⌕</div></div>
+ <div style="padding:0 18px 10px;display:flex;gap:6px;overflow-x:auto">
+  <button class="pchip" aria-pressed="true">Agosto</button><button class="pchip" aria-pressed="true">Mercado ✕</button>
+  <button class="pchip">Cartão</button><button class="pchip">+ Filtro</button></div>
+ <div class="pcontent" style="gap:10px">
+  <div class="lbl" style="display:flex;justify-content:space-between"><span>Terça, 19 de agosto</span><span class="num">−280,30</span></div>
+  <div class="swipe"><div class="under">Excluir</div><div class="over" style="padding:2px 12px">${TX.slice(0,2).map(txRow).join('')}</div></div>
+  <div class="lbl" style="display:flex;justify-content:space-between;margin-top:6px"><span>Segunda, 18 de agosto</span><span class="num">−575,85</span></div>
+  <div class="card tight">${TX.slice(2,4).map(txRow).join('')}</div>
+  <div class="lbl" style="display:flex;justify-content:space-between;margin-top:6px"><span>Domingo, 17 de agosto</span><span class="num">+9.790,10</span></div>
+  <div class="card tight">${TX.slice(4,7).map(txRow).join('')}</div></div>`,
+
+fatura:()=>`<div class="ptop"><div><div class="lbl">Cartão</div><h3>Nubank ·1847</h3></div><div class="ico">⋯</div></div>
+ <div class="pcontent">
+  <div style="background:var(--a-card);border-radius:12px;padding:18px;color:#fff;min-height:132px;display:flex;flex-direction:column;justify-content:space-between">
+   <div style="display:flex;justify-content:space-between;align-items:flex-start">
+    <span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;opacity:.75">Fatura de setembro</span>
+    <span style="font-size:12px;opacity:.75">·1847</span></div>
+   <div><div class="num" style="font-family:var(--serif);font-size:32px;font-weight:500;letter-spacing:-.015em">R$ 2.180,45</div>
+    <div style="font-size:11.5px;opacity:.8;margin-top:3px" class="num">previsto 2.340,00 · vence 10 set</div></div></div>
+  ${invoiceCard()}
+  <div class="card tight"><div class="cardhead"><h4>Lançamentos</h4></div>${TX.filter(t=>t.k.includes('1847')).map(txRow).join('')}</div></div>`,
+
+revisao:()=>`<div class="ptop"><div><div class="lbl">Item 1 de 4</div><h3>Revisão</h3></div><div class="ico">✕</div></div>
+ <div class="pcontent" style="align-items:center;text-align:center">
+  <div class="card obj" style="width:100%;padding:26px 20px;margin-top:16px">
+   <div class="mk" style="width:50px;height:50px;font-size:15px;margin:0 auto 14px;border-left-color:var(--a-c4)">IF</div>
+   <b style="font-size:18px">iFood · Pedido 4471</b>
+   <div class="num" style="font-family:var(--serif);font-size:38px;font-weight:500;letter-spacing:-.018em;margin:8px 0 4px">−R$ 67,90</div>
+   <div style="font-size:11.5px;color:var(--a-subtle)">19 ago · Nubank ·1847 · Atalho</div>
+   <div style="background:var(--a-pendbg);color:var(--a-pending);border-radius:11px;padding:11px;font-size:12.5px;margin:16px 0">
+    Sugerimos <b>Alimentação › Delivery</b><div style="font-size:11px;opacity:.85;margin-top:2px">confiança 62%</div></div>
+   <div style="display:flex;gap:8px;justify-content:center"><button class="btn gho sm">✕ Corrigir</button>
+    <button class="btn pri sm">✓ Aprovar</button></div></div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--a-subtle);margin-top:4px">
+   ← arraste para corrigir · arraste para aprovar →</div>
+  <button class="btn gho sm" style="margin-top:2px">✦ Sempre categorizar iFood assim</button></div>`,
+
+inicio:()=>`<div class="ptop"><div><div class="lbl">Passo 1 de 4</div><h3>Traga seus dados</h3></div></div>
+ <div class="pcontent">
+  <p style="margin:0;color:var(--a-muted);font-size:13.5px">O painel só faz sentido com histórico dentro. Escolha por onde começar.</p>
+  ${[['⇥','Extrato do banco','CSV ou XLSX do próprio banco','recomendado'],
+     ['{ }','JSON classificado','Contrato Finora 1.0, com prévia',''],
+     ['✎','Começar do zero','Primeiro lançamento manual','']]
+   .map(([g,t,s,b])=>`<div class="card obj tight" style="padding:14px;display:flex;gap:12px;align-items:center;border-color:${b?'var(--a-brand)':'var(--a-rule)'}">
+    <div class="ico" style="width:38px;height:38px;font-size:16px">${g}</div>
+    <div style="flex:1"><b style="font-size:14px">${t}</b><div style="font-size:11.5px;color:var(--a-subtle)">${s}</div></div>
+    ${b?`<span class="tag ok">${b}</span>`:'<span style="color:var(--a-subtle)">›</span>'}</div>`).join('')}
+  <div style="display:flex;gap:6px;justify-content:center;margin-top:8px">
+   ${[1,2,3,4].map(i=>`<i style="width:${i===1?18:6}px;height:6px;border-radius:99px;background:${i===1?'var(--a-brand)':'var(--a-rule)'};display:block"></i>`).join('')}</div></div>`
+};
+</script>
+<script>
+/* ---------- painéis de sistema ---------- */
+const SW=(n,l,d,t)=>`<div class="sw"><i style="background:${l}"></i>${n}<b>${t||l+' / '+d}</b></div>`;
+const panelSistema=()=>`<div class="dsgrid">
+ <div class="dscard"><h4>Papel e tinta — o bege sai</h4>
+  ${SW('canvas','#FBFBF9','#0E1112','papel neutro / grafite')}
+  ${SW('surface','#FFFFFF','#161A1B','só objeto discreto')}
+  ${SW('ink/strong','#0E1112','#EDEFEC','')}
+  ${SW('ink/muted','#525A5B','#9AA3A2','≥ 4.5:1')}
+  ${SW('rule','#E3E5E1','#232827','o que separa')}
+  ${SW('rule/heavy','#0E1112','#EDEFEC','pauta de cabeçalho')}
+  <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
+   O <code style="font-family:var(--mono);font-size:11px">#F5F3EC</code> anterior era o <b style="color:var(--c-ink)">surface tint</b> do Material 3 vestido de bege. Ele obrigava tudo a virar card branco flutuando — a assinatura visual que o produto quer perder.</p></div>
+
+ <div class="dscard"><h4>Latão, não verde institucional</h4>
+  ${SW('accent','#8A6A18','#D9B860','pauta, foco, atalho')}
+  ${SW('accent/soft','#F4EDD9','#241E10','linha sob o cursor')}
+  ${SW('brand (ação)','#0E1112','#EDEFEC','o botão é tinta')}
+  <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
+   <b style="color:var(--c-ink)">O botão primário deixa de ser colorido.</b> Botão tonal na cor da semente é o default do Material e o maior delator de app gerado. Ação primária vira tinta sólida; o latão fica para pauta, foco e estado.</p></div>
+
+ <div class="dscard"><h4>Semântica de dinheiro</h4>
+  ${SW('income','#0B6B4F','#5CC79B','sempre com +')}
+  ${SW('expense','#0E1112','#EDEFEC','tinta, não vermelho')}
+  ${SW('negative','#A33A1F','#E5836A','só problema')}
+  ${SW('pending','#8A6A18','#D9B860','em revisão')}
+  ${SW('ignored','#8B9394','#6E7877','fora do pessoal')}</div>
+
+ <div class="dscard"><h4>Categórica — segura em daltonismo</h4>
+  <div style="display:flex;gap:6px;margin-bottom:12px">${['#2F6F5B','#3B5C8A','#B8892E','#A8452F','#5A7D8C','#7A5A8C']
+   .map(c=>`<i style="flex:1;height:42px;border-radius:3px;background:${c}"></i>`).join('')}</div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Aparece como <b style="color:var(--c-ink)">barra de 3px na marca do lançamento</b>, não como ícone. Ordem fixa por categoria — Mercado é sempre o mesmo verde, no painel e na projeção.</p></div>
+
+ <div class="dscard"><h4>Duas vozes numéricas</h4>
+  <div class="tyrow"><code>display (serifa)</code><span class="num" style="font-family:var(--serif);font-size:34px;font-weight:500;letter-spacing:-.02em">3.482,10</span></div>
+  <div class="tyrow"><code>coluna (tabular)</code><span class="num" style="font-size:15px;font-weight:500">1.111,00<br>8.888,00</span></div>
+  <div class="tyrow"><code>meta (mono)</code><span style="font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase">Nubank ·1847 · parcela 2/6</span></div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">
+   <b style="color:var(--c-ink)">O número de manchete é impresso; a coluna é máquina.</b> Serifa no valor dominante, tabular na coluna que precisa alinhar, mono no que é metadado. É esse contraste que dá voz — uma única sans em tudo é o que soa genérico.</p>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:8px 0 0;line-height:1.55">No Flutter: New York/Charter para display, Inter com <code style="font-family:var(--mono);font-size:11px">tnum</code> para coluna, JetBrains Mono para metadado.</p></div>
+
+ <div class="dscard"><h4>Sem card, sem raio grande</h4>
+  <div style="display:flex;gap:14px;margin-bottom:12px">
+   <div style="flex:1"><div style="border:1px solid var(--c-line2);border-radius:14px;height:70px;background:var(--c-bg)"></div>
+    <div style="font-family:var(--mono);font-size:9.5px;color:var(--c-faint);margin-top:5px">antes · card 22px</div></div>
+   <div style="flex:1"><div style="border-top:2px solid var(--c-ink);height:70px;padding-top:6px">
+     <div style="height:7px;background:var(--c-line);margin-bottom:6px"></div>
+     <div style="height:7px;background:var(--c-line)"></div></div>
+    <div style="font-family:var(--mono);font-size:9.5px;color:var(--c-faint);margin-top:5px">depois · pauta</div></div></div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">Seção deixa de ser objeto e vira <b style="color:var(--c-ink)">pauta</b>. Superfície e raio (10px) sobram só para o que é objeto de verdade: o cartão, o item de revisão, a opção escolhível. Raio máximo do sistema cai de 22 para 10.</p></div>
+
+ <div class="dscard"><h4>A coluna do razão</h4>
+  <div style="border-top:2px solid var(--c-ink);padding-top:8px;margin-bottom:12px">
+   ${[['ME','Mercado Extra','486,15'],['UB','Uber · 3 corridas','74,30'],['NF','Netflix','59,90']]
+    .map(([k,n,v],i)=>`<div style="display:flex;align-items:center;gap:10px;padding:6px 0;border-top:${i?'1px solid var(--c-line)':'0'};background:${i%2?'var(--c-bg)':'transparent'}">
+     <span style="font-family:var(--mono);font-size:9.5px;font-weight:600;border:1px solid var(--c-line2);border-left:3px solid var(--c-accent);border-radius:2px;padding:2px 4px">${k}</span>
+     <span style="flex:1;font-size:12.5px">${n}</span>
+     <span style="font-variant-numeric:tabular-nums;font-size:12.5px;padding-left:14px;border-left:1px solid var(--c-line);min-width:78px;text-align:right">−${v}</span></div>`).join('')}</div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.55">A coluna de valor é separada por uma pauta vertical e zebrada — a estrutura de um livro-razão de verdade, que também é o que faz o olho não perder a linha numa tela larga.</p></div>
+
+ <div class="dscard"><h4>Breakpoints — de onze para quatro</h4>
+  <div class="bplist">
+   <b>compact</b> &lt; 600 — tab bar, bottom sheet, lista<br>
+   <b>medium</b> 600–904 — rail de ícones, dialog<br>
+   <b>expanded</b> 905–1239 — rail, tabela simples<br>
+   <b>large</b> ≥ 1240 — sidebar, painel lateral, seleção múltipla</div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">Hoje o código tem onze valores espalhados — 470, 600, 650, 680, 700, 850, 900, 1100, 1180, 1200, 1250 — e nenhum documentado.</p></div>
+
+ <div class="dscard"><h4>Teclado — o que falta inteiro hoje</h4>
+  <div class="kbdlist">
+   <kbd>⌘K</kbd><span>Paleta de comandos</span><kbd>N</kbd><span>Novo lançamento</span>
+   <kbd>/</kbd><span>Focar busca</span><kbd>J K</kbd><span>Navegar a lista</span>
+   <kbd>⏎</kbd><span>Abrir ou aprovar</span><kbd>R</kbd><span>Virar regra</span>
+   <kbd>⌘⏎</kbd><span>Salvar</span><kbd>Esc</kbd><span>Fechar painel</span></div>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:12px 0 0;line-height:1.55">Zero <code style="font-family:var(--mono);font-size:11px">Shortcuts</code> no código atual.</p></div>
+
+ <div class="dscard"><h4>O que o Flutter entrega além do default</h4>
+  <p style="font-size:12.5px;color:var(--c-muted);margin:0;line-height:1.6">
+   Nada aqui exige sair do Flutter — exige parar de aceitar o <code style="font-family:var(--mono);font-size:11px">ThemeData</code> pronto.
+   <b style="color:var(--c-ink)">CustomPaint</b> para a linha do tempo do ciclo e as pautas;
+   <b style="color:var(--c-ink)">fontFeatures: [tnum]</b> em <code style="font-family:var(--mono);font-size:11px">TextStyle</code>, que o app não usa em lugar nenhum;
+   <b style="color:var(--c-ink)">Shortcuts/Actions/Intent</b>, que já existem no framework;
+   <b style="color:var(--c-ink)">TwoDimensionalScrollView</b> para a tabela;
+   e <b style="color:var(--c-ink)">componentes próprios</b> no lugar de Card, NavigationBar e NavigationRail — os três widgets que carregam a aparência Material por inteiro.</p></div>
+</div>`;
+
+const NAMES=[
+ ['Razão','1º lugar','Livro-razão e bom senso na mesma palavra. “Suas contas, com razão.” O único nome que carrega o produto inteiro.','top'],
+ ['Lastro','2º lugar','Garantia que dá respaldo a um valor. Ancora o princípio: cada número tem lastro na transação que o gerou.',''],
+ ['Ciclo','3º lugar','O ciclo da fatura é o modelo mental exato do produto. Descritivo e seguro.',''],
+ ['Finora','manter','Legítimo se o produto seguir pessoal — mas então resolver a inconsistência: o repositório se chama fidora e o pacote, financeiro_ai.',''],
+ ['Folio','alternativa','A folha numerada do livro contábil. Curto, internacional, elegante.',''],
+ ['Compasso','alternativa','A métrica que organiza o tempo. O app já tem uma tela chamada “Ritmo de gastos”.',''],
+ ['Marco','alternativa','Ponto de referência no tempo. Também nome próprio — soa humano.',''],
+ ['Nora','evolução','Tira o fin-, mantém a sonoridade, vira nome de assistente. Combina com a narrativa em linguagem natural que o app já gera.','']
+];
+const panelNomes=()=>`<div class="namegrid">${NAMES.map(([n,r,w,c])=>
+ `<div class="namecard ${c}"><div class="rk">${r}</div><div class="n">${n}</div><div class="why">${w}</div></div>`).join('')}</div>
+ <div class="note flag" style="margin-top:18px;border-radius:0 10px 10px 0"><h5>Antes de decidir</h5>
+ <p>Nenhuma verificação de marca, domínio ou handle foi feita — não tenho como confirmar disponibilidade. Checar <b>INPI classes 09/36/42</b>, <b>registro.br</b> e as lojas antes de qualquer escolha. E nome é a última peça: ele deve caber no visual, não o contrário.</p></div>`;
+
+/* ---------- registro de telas ---------- */
+const S={
+ hoje:{g:'Telas',t:'Hoje',r:'app.finora.com.br/hoje',tab:'hoje',
+  s:'A tela que não existe hoje. Substitui o painel vazio como primeira parada e transforma a fila de revisão — hoje enterrada dentro de “Mais” — no ritual diário do produto.',
+  n:[['O vazamento V3','A fila de revisão já existe em <b>review_queue_page</b> e o snapshot já traz <b>pendingReviews</b>. O que faltava era um lugar onde ela fosse a primeira coisa vista.'],
+     ['Loop de crescimento','Captura → item de baixa confiança → revisão → regra de estabelecimento → menos revisão amanhã. É o loop com melhor razão impacto/esforço do produto.'],
+     ['flag|Sem tela vazia','Quando não há nada a resolver, entra a narrativa do período — <b>domain/narrative.dart</b> já a produz e ela aparece só como card perdido no painel.']]},
+ visao:{g:'Telas',t:'Visão geral',r:'app.finora.com.br/visao-geral?periodo=2026-08',tab:'visao',
+  s:'O painel atual empilha sete blocos de peso visual idêntico. Aqui há uma métrica dominante, três tiles e o resto abaixo — e a URL carrega o período, então F5 não perde a seleção.',
+  n:[['Hierarquia','Saldo em <b>display/hero</b> de 44px com sparkline; entradas, saídas e faturas como tiles; comparação mês a mês vira drill-down do card de categoria, não um bloco solto.'],
+     ['Numeral tabular','Todos os valores alinham à direita na mesma largura de dígito. É a diferença mais visível entre interface financeira e interface qualquer.'],
+     ['flag|O que a URL resolve','<b>MaterialApp(home:)</b> hoje significa que a barra de endereço nunca muda, o Voltar sai do app e F5 devolve à aba 0.']]},
+ historico:{g:'Telas',t:'Histórico',r:'app.finora.com.br/transacoes?de=2026-08-01&cat=mercado',tab:'historico',
+  s:'A mesma lista em duas apresentações. No desktop é tabela com seleção múltipla e ação em lote; no celular, lista agrupada por dia com gesto de arrastar.',
+  n:[['Destrava o que estava diferido','“Bulk recategorization” está listada como adiada em <b>03-specification.md</b>. Ela é impossível numa lista de cards e trivial numa tabela com seleção.'],
+     ['Filtro na URL','Cada chip de filtro é um query param. O recorte vira link — hoje nada no app é compartilhável.'],
+     ['Gesto no celular','Não há um único <b>Dismissible</b> no código atual: editar e excluir exigem abrir menu.']]},
+ fatura:{g:'Telas',t:'Fatura',r:'app.finora.com.br/faturas/nubank-1847/2026-09',tab:'mais',
+  s:'O conceito mais importante do produto, finalmente explicado na tela onde importa. A competência aparece como linha do tempo, com a janela de datas escrita por extenso.',
+  n:[['A regra sai do formulário','Hoje a competência só é explicada enquanto se cria um lançamento. Passa a estar onde o usuário pergunta: dentro da fatura.'],
+     ['Previsão já existe','<b>invoice_forecast</b> foi entregue na fase 4 e aparece como card. Aqui ela é parte da linha do tempo do ciclo.'],
+     ['Estado como cor','Aberta, fechada, paga e atrasada deixam de ser texto solto e passam a ter forma própria.']]},
+ revisao:{g:'Telas',t:'Revisão',r:'app.finora.com.br/revisao',tab:'hoje',
+  s:'Um item por vez, grande, com três saídas. O padrão que o Copilot provou — e para o qual o Finora já tem toda a estrutura de dados, incluindo confiança e regras de estabelecimento.',
+  n:[['Três ações, uma delas fecha o loop','Aprovar, corrigir, ou “sempre assim” — que cria a regra e faz o item nunca mais aparecer.'],
+     ['Teclado no desktop, gesto no celular','J e K navegam, ⏎ aprova, R vira regra. No celular, arrastar.'],
+     ['flag|Regras ainda não valem na captura','<b>03-specification.md</b> registra que a Edge Function resolve categoria por nome e nunca lê <b>merchant_rules</b>. Enquanto isso não mudar, “sempre assim” só vale na revisão seguinte.']]},
+ inicio:{g:'Telas',t:'Primeira sessão',r:'app.finora.com.br/inicio',tab:'',
+  s:'Dados antes de configuração. Hoje o usuário novo cria conta e cai num painel vazio, com a instalação do Atalho documentada num arquivo fora do produto.',
+  n:[['O vazamento V1','O painel só abre com algo dentro. Três caminhos de entrada, e o extrato do banco na frente porque é o que dá mais histórico em menos passos.'],
+     ['O vazamento V2','<b>docs/SHORTCUT.md</b> vira um passo com estado verificável: só fica verde quando a Edge Function recebe a primeira captura de verdade.'],
+     ['Onde isso importa','Benchmarks da categoria: ~14% dos usuários completam a ativação até D30, e onboarding otimizado responde por até +40% de retenção D30.']]},
+ sistema:{g:'Sistema',t:'Tokens e fundações',r:'design-system/ledger',kind:'panel',
+  s:'O que já está certo em lib/core/theme.dart é preservado — inclusive a correção de contraste do texto secundário. O que falta são escalas, semântica de dinheiro e disciplina numérica.',
+  n:[]},
+ nomes:{g:'Sistema',t:'Naming',r:'design-system/naming',kind:'panel',
+  s:'Finora é um nome seguro, não um nome forte: fin- é o prefixo mais saturado da categoria e o nome anuncia o setor sem dizer nada sobre o produto. Trocar é opcional e depende de o produto sair, ou não, de uso pessoal.',
+  n:[]}
+};
+
+/* ---------- render ---------- */
+let cur='hoje';
+const appMode=()=>$('#tApp').getAttribute('aria-pressed')==='true'?'dark':'light';
+const navHTML=()=>{let g='',h='';for(const [id,d] of Object.entries(S)){
+ if(d.g!==g){g=d.g;h+=`<div class="navgrp">${g}</div>`}
+ h+=`<button class="navi" data-screen="${id}" ${cur===id?'aria-current="true"':''}>${d.t}</button>`}return h};
+
+function draw(){
+ const d=S[cur];
+ $('#sTitle').textContent=d.t; $('#sRoute').textContent=d.r; $('#sSub').textContent=d.s;
+ $('#nav').innerHTML=navHTML();
+ if(d.kind==='panel'){
+   $('#sBody').innerHTML=`<div data-app="${appMode()}">`+(cur==='sistema'?panelSistema():panelNomes())+`</div>`;
+ }else{
+   const u=d.r.split('/'); const host=u.shift(); const path=u.length?'/'+u.join('/'):'';
+   $('#sBody').innerHTML=`<div class="stage" data-app="${appMode()}">
+    <div class="browser"><div class="bbar"><div class="dots"><i></i><i></i><i></i></div>
+      <span class="bnavbtn">‹</span><span class="bnavbtn">›</span>
+      <div class="urlbar">${host}<b>${path}</b></div><span class="bnavbtn">⋯</span></div>
+     <div class="viewport"><div class="app">${sidebar(cur)}<div class="main">${DESK[cur]()}</div></div></div></div>
+    <div class="phonewrap"><div class="phone"><div class="notch"></div><div class="pscreen">
+      <div class="pstatus"><span>9:41</span><span>▮▮▮ ⌁ ▰</span></div>
+      <div class="pbody">${MOB[cur]()}</div>${d.tab?tabbar(d.tab):''}</div></div>
+     <div class="devlabel">iPhone · 393 × 852</div></div></div>`;
+ }
+ $('#sNotes').innerHTML=(d.n||[]).map(([t,p])=>{const f=t.startsWith('flag|');
+   return `<div class="note ${f?'flag':''}"><h5>${f?t.slice(5):t}</h5><p>${p}</p></div>`}).join('');
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+
+document.addEventListener('click',e=>{
+ const n=e.target.closest('[data-screen]'); if(n){cur=n.dataset.screen;draw();return}
+ const g=e.target.closest('[data-goto]');
+ if(g){const k=g.dataset.goto; if(S[k]){cur=k;draw()} }
+});
+
+/* tema da página */
+$('#tTheme').addEventListener('click',()=>{
+ const r=document.documentElement;
+ const dark=r.getAttribute('data-theme')==='dark'||(!r.getAttribute('data-theme')&&matchMedia('(prefers-color-scheme:dark)').matches);
+ r.setAttribute('data-theme',dark?'light':'dark');
+});
+/* tema do app */
+$('#tApp').addEventListener('click',e=>{
+ const on=e.currentTarget.getAttribute('aria-pressed')==='true';
+ e.currentTarget.setAttribute('aria-pressed',String(!on));
+ e.currentTarget.textContent=on?'☾ App em escuro':'☀ App em claro';
+ document.querySelectorAll('[data-app]').forEach(n=>n.setAttribute('data-app',on?'light':'dark'));
+});
+
+draw();
+</script>

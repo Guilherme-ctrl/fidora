@@ -185,3 +185,27 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Build and Test — trabalho autônomo autorizado. Nada foi enviado ao remoto nem aplicado em produção.
 
 ---
+
+## Inception — Requirements Analysis (remake de UI, UX e design system)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Baseado em todas as docs no repo, quero fazer um remake no UI, UX e Design System tanto do web (ta com muita cara de app convertido para web) quanto no mobile. Quero que voce faça uma analise de growth, bench market, analise de mercado e procure melhor praticas para um sistema como esse, documente todo o processo, e a partir disso gere um protótipo navegavel aqui dentro do claude design para o finora (inclusive quero sugestões de outros nomes)"
+**AI Response**: "Auditoria, pesquisa e protótipo entregues em `docs/design/`. A percepção de 'app convertido' tem causa localizável: `main.dart` usa `MaterialApp(home:)` em vez de `MaterialApp.router`, então o web não tem URL, Voltar nem F5; e `app_shell.dart` mapeia os mesmos cinco destinos da barra inferior para o `NavigationRail`, levando o item 'Mais' — criado para caber num iPhone — para o desktop. Somam-se 22 bottom sheets, ausência de largura máxima, ausência de teclado, onze breakpoints diferentes e nenhuma fonte declarada, portanto nenhum numeral tabular. Sete documentos: mercado e benchmark, growth com o funil e os três vazamentos, auditoria com 16 achados ancorados em arquivo e linha, design system 'Ledger' com tokens, IA com quatro espaços no lugar de cinco abas planas, naming e roadmap em cinco ondas. Protótipo navegável publicado como artifact, com seis telas em web e mobile lado a lado, painel de tokens e painel de nomes; fonte em `docs/design/prototipo/index.html`. O que já estava certo foi preservado explicitamente: a paleta de `core/theme.dart` e sua correção de contraste, o snapshot como fonte única, a barra de período única e a dica de competência antes de salvar. Nenhum código de aplicação foi alterado."
+**Context**: Inception / Requirements Analysis — trabalho de design e documentação. Nada em `lib/`, `supabase/` ou `test/` foi tocado; o modelo financeiro permanece premissa.
+
+---
+
+## Inception — Requirements Analysis (correção da direção visual)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Acho que ainda está muito flutter web, essa cor bege no fundo do web, os widgets muito flutter default, o flutter pode ter algo melhor produzido. Design system sem graça, o app está sem alma"
+**AI Response**: "A avaliação está certa e o erro foi meu: a primeira versão de `03-design-system.md` mandava preservar a paleta de `core/theme.dart`, e com isso preservou o problema. O `#F5F3EC` não é cor de marca, é o surface tint do Material 3 em temperatura quente; junto com `cardTheme` de raio 22 e `ColorScheme.fromSeed` ele define a aparência antes de qualquer tela ser desenhada. Nova direção 'Fólio': o fundo passa a ser a superfície e o que separa é pauta, não card; a ação primária vira tinta em vez de tonal na cor da semente; o raio máximo cai de 22 para 10; três vozes numéricas — serifa no valor de manchete, tabular na coluna atrás de uma pauta vertical, mono no metadado; latão no lugar do verde institucional, usado só em pauta e foco; emoji de categoria substituído por marca tipográfica com barra de 3px na cor da categoria. O achado D2 subiu de severidade B para A e ganhou o registro de que a recomendação anterior estava errada. Nada disso exige sair do Flutter: `fontFeatures: [tabularFigures]`, `CustomPaint`, `Shortcuts/Actions` e `ThemeExtension` já existem no framework e o app não usa. O que precisa sair são `Card`, `NavigationBar` e `NavigationRail` — os três widgets que carregam a aparência Material inteira. Protótipo e docs 02 e 03 atualizados."
+**Context**: Inception / Requirements Analysis — correção de direção após avaliação do dono. Nenhum código de aplicação alterado.
+
+---
+
+## Operations — Migrations aplicadas em produção
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Pode aplicar a migration em prod" / "pode focar nas migrations"
+**AI Response**: "Antes de aplicar, conferi o que estava pendente e encontrei um defeito grave na minha própria migration: a `202608200002` reescrevia `import_finora_invoice` com o corpo da `202608170004`, mas a `202608170005` havia renomeado esse corpo para `import_finora_invoice_v1` e transformado `import_finora_invoice` num invólucro que faz a revisão item a item. Aplicar teria revertido essa revisão em silêncio. Pior: a suíte local passava, porque nada nela cobria o que o invólucro acrescenta. Corrigi o alvo, acrescentei três asserções que prendem a estrutura (a `_v1` existe, o invólucro delega para ela, e ainda faz a revisão), e o CI verificou com 35 testes. Só então apliquei. Produção verificada depois: coluna criada, balde privado com quatro políticas, invólucro intacto, procedência corrigida, e 897 lançamentos / 11 faturas / 9 cartões inalterados."
+**Context**: Operations — primeira aplicação em produção nesta sessão. Projeto ddmilzlinvpxfvzyigok (Finora), sa-east-1.
+
+---

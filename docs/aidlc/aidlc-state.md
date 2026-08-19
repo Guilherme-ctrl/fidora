@@ -448,3 +448,44 @@ caching and offline state are out of scope; connectivity may be assumed.
   not built. `editRule` already accepts a `suggestedPattern` for it.
 - Password recovery and the real-device Shortcut test remain open gates from
   `04-validation.md`.
+
+## Inception — unidade `ui-remake`
+
+| Stage | Status | Notas |
+|---|---|---|
+| Requirements analysis | Completo | Sete documentos em `docs/design/`; 16 achados de auditoria priorizados |
+| User stories | Pulado | Produto de um dono; critérios de aceite ficam no roadmap |
+| Workflow planning | Completo | Cinco ondas em `docs/design/06-roadmap.md` |
+| Application design | Pendente de aprovação | Direção visual no protótipo; nenhuma linha de Dart escrita |
+
+### Artefatos
+
+```text
+docs/design/README.md                 índice e método
+docs/design/00-market-and-bench.md    mercado, benchmark internacional e Brasil
+docs/design/01-growth.md              funil, vazamentos, loops e métricas
+docs/design/02-ux-audit.md            16 achados com arquivo e linha
+docs/design/03-design-system.md       design system "Ledger": tokens e componentes
+docs/design/04-ia-flows.md            quatro espaços, telas e estados
+docs/design/05-naming.md              diagnóstico de "Finora" e alternativas
+docs/design/06-roadmap.md             cinco ondas com critério de pronto
+docs/design/prototipo/index.html      protótipo navegável (web + mobile)
+```
+
+### Decisões de design tomadas nesta unidade
+
+**Saída deixa de ser vermelha.** Em 95% das linhas de um app de finanças pessoais
+o lançamento é uma saída. Vermelho em todas destrói a hierarquia e vira ruído.
+Vermelho passa a significar problema — saldo negativo, orçamento estourado, falha
+de importação — e a saída comum é tinta com sinal `−`.
+
+**A paleta atual é preservada, não substituída.** `FinoraPalette` já resolveu o
+contraste do texto secundário com valores sólidos acima de 4.5:1. O trabalho é
+organizar aqueles valores em rampas e acrescentar semântica de dinheiro, não
+recomeçar.
+
+**Web e mobile compartilham tokens e domínio, não layout.** É a raiz do problema
+descrito pelo dono: hoje compartilham o shell.
+
+**O nome fica para depois da direção visual.** Nome deve caber no visual, não o
+contrário.

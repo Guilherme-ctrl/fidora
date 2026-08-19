@@ -524,9 +524,20 @@ push: fifteen unformatted files and one brace lint.
   simulator slices, so on Apple Silicon the recognizer cannot run in the
   Simulator at all. Needs a real iPhone.
 - **No invoice reminder has been delivered.** Same reason: needs a device.
-- **The two new migrations have not been applied to production** —
-  `202608200001_receipts` and `202608200002_import_source`. Both pass against
-  a local Postgres and replay from scratch.
+- ~~The two new migrations have not been applied to production.~~
+  **Applied on 2026-08-19 and verified afterwards**: the column exists, the
+  bucket is private with its four policies, `import_finora_invoice` is still
+  the wrapper that performs item-level review, and `import_finora_invoice_v1`
+  carries the provenance fix. 897 transactions, 11 invoices and 9 cards
+  untouched.
+
+  Applying them nearly caused a regression. `202608200002` restated
+  `import_finora_invoice` with the body from `202608170004` — but
+  `202608170005` had renamed that body to `_v1` and made
+  `import_finora_invoice` a wrapper adding item-level review. The local suite
+  passed anyway, because nothing in it covered what the wrapper adds.
+  Three assertions now pin the structure, and CI verified them before the
+  migration was applied anywhere.
 - **Dynamic Type is covered only on the dashboard.**
 - **The app has not been driven by hand against the production Supabase.** The
   browser pane here does not deliver clicks into the Flutter canvas; the
