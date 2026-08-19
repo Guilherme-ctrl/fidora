@@ -258,11 +258,17 @@ Two defects were found by these tests before shipping:
 - No notification has ever been scheduled or delivered. `zonedSchedule` has
   never been called with a live channel.
 - The `AppDelegate` change (setting the `UNUserNotificationCenter` delegate so
-  a reminder arriving with Finora open is not silent) has never compiled into
-  a running app. `flutter build ios` failed on this machine for an unrelated
-  reason: the disk is full — 194 MiB free of 228 GiB — and `rsync` could not
-  copy the framework. Swift compilation was not reached, so the change is
-  unproven, not merely untested.
+  a reminder arriving with Finora open is not silent) **does compile and link**.
+  `flutter build ios --no-codesign --debug` first failed here for an unrelated
+  reason — the disk was full, 194 MiB free of 228 GiB, and `rsync` could not
+  copy the framework. After clearing space the build succeeds, and
+  `Runner.debug.dylib` carries `FlutterLocalNotifications`,
+  `UNUserNotificationCenter` and a link against
+  `UserNotifications.framework`. Note the binary to inspect: the top-level
+  `Runner` is a 71 KB stub and contains none of this; in a debug device build
+  the native code lives in `Runner.debug.dylib`.
+- What compiling does **not** prove: that a notification is ever delivered.
+  The permission prompt, the scheduling and the delivery still need a device.
 - `America/Sao_Paulo` is hardcoded as the scheduling zone. Correct for the
   ledger today; wrong the moment the app is used from another timezone.
 

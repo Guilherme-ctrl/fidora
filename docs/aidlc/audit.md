@@ -137,3 +137,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — encerra a fase 3 do plano. Commit 00c07ab na branch feat/fase-3-financas.
 
 ---
+
+## Build verification (iOS)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode apagar os dois e o docker"
+**AI Response**: "Apaguei iOS DeviceSupport (13 G), DerivedData (2,5 G) e o Docker.raw (21 G) — o Docker estava parado, verifiquei antes. Espaço livre foi de 194 MiB para 36 GiB. Com isso o `flutter build ios --no-codesign --debug` passou, o que fecha uma lacuna: o `AppDelegate` compila e o `Runner.debug.dylib` carrega o plugin de notificação, o `UNUserNotificationCenter` e o link com o `UserNotifications.framework`. Uma primeira leitura minha deu 'não linkado' porque eu tinha inspecionado o `Runner` — que num build de debug para device é só um stub de 71 KB. Um teste de controle com `share_plus` mostrou o mesmo resultado falso e revelou o erro. A entrega da notificação em aparelho segue não verificada."
+**Context**: Construction / Build and Test — limpeza de disco autorizada pelo usuário após aviso explícito de que apagar o Docker.raw destrói imagens, containers e volumes.
+
+---
