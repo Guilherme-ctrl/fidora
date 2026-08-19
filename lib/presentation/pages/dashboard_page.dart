@@ -6,6 +6,7 @@ import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/widgets/insights_card.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -727,72 +728,55 @@ class _TransactionDetails extends StatelessWidget {
     if (transactions.isEmpty) {
       return const Text('Nenhum lançamento encontrado.');
     }
+    // The ledger line, not a ListTile: the amount sits in its own column behind
+    // a vertical rule, and the row is zebra-striped. An ordinary spend renders
+    // in ink — every row here used to be red, which said "problem" about the
+    // most ordinary thing the product records.
     return Column(
-      children: transactions
-          .map(
-            (item) => Semantics(
-              label: 'Ver os dados de ${item.merchant}',
-              child: ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: CircleAvatar(
-                  backgroundColor: item.isIncome
-                      ? context.palette.brandSoft
-                      : context.palette.danger.withValues(alpha: .12),
-                  child: Icon(
-                    item.isIncome
-                        ? Icons.south_west_rounded
-                        : Icons.receipt_rounded,
-                    color: item.isIncome
-                        ? context.palette.brand
-                        : context.palette.danger,
-                  ),
-                ),
-                title: Text(
-                  item.merchant,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
-                ),
-                subtitle: Text(
-                  isCardTransaction(item) && item.competence != null
-                      ? 'Compra ${shortDate.format(item.date)} • fatura ${monthName.format(item.competence!)} • ${item.category}'
-                      : '${shortDate.format(item.date)} • ${item.category}',
-                ),
-                trailing: Text(
-                  currency.format(item.amount),
-                  style: const TextStyle(fontWeight: FontWeight.w900),
-                ),
-                onTap: () => showDetailSheet(
-                  context,
-                  title: item.merchant,
-                  description: 'Detalhes do lançamento selecionado.',
-                  child: Column(
-                    children: [
+      children: [
+        for (final (index, item) in transactions.indexed)
+          Semantics(
+            label: 'Ver os dados de ${item.merchant}',
+            child: LedgerRow(
+              title: item.merchant,
+              meta: isCardTransaction(item) && item.competence != null
+                  ? '${shortDate.format(item.date)} · fatura ${monthName.format(item.competence!)} · ${item.category}'
+                  : '${shortDate.format(item.date)} · ${item.category}',
+              amount: item.amount,
+              tone: item.isIncome ? Money.income : Money.expense,
+              markColor: categoryColourFor(context, item.category),
+              zebra: index.isOdd,
+              first: index == 0,
+              onTap: () => showDetailSheet(
+                context,
+                title: item.merchant,
+                description: 'Detalhes do lançamento selecionado.',
+                child: Column(
+                  children: [
+                    DetailValue(
+                      label: 'Data',
+                      value: DateFormat('dd/MM/yyyy').format(item.date),
+                    ),
+                    if (isCardTransaction(item) && item.competence != null)
                       DetailValue(
-                        label: 'Data',
-                        value: DateFormat('dd/MM/yyyy').format(item.date),
+                        label: 'Fatura',
+                        value: monthYear.format(item.competence!),
                       ),
-                      if (isCardTransaction(item) && item.competence != null)
-                        DetailValue(
-                          label: 'Fatura',
-                          value: monthYear.format(item.competence!),
-                        ),
-                      DetailValue(label: 'Categoria', value: item.category),
-                      DetailValue(
-                        label: 'Valor',
-                        value: currency.format(item.amount),
-                      ),
-                      DetailValue(
-                        label: 'Cartão',
-                        value: 'final ${item.cardLastFour}',
-                      ),
-                    ],
-                  ),
+                    DetailValue(label: 'Categoria', value: item.category),
+                    DetailValue(
+                      label: 'Valor',
+                      value: currency.format(item.amount),
+                    ),
+                    DetailValue(
+                      label: 'Cartão',
+                      value: 'final ${item.cardLastFour}',
+                    ),
+                  ],
                 ),
               ),
             ),
-          )
-          .toList(),
+          ),
+      ],
     );
   }
 }

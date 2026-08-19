@@ -4,6 +4,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
@@ -52,18 +53,15 @@ class ProjectionPage extends StatelessWidget {
         const SizedBox(height: 18),
         PeriodFilterBar(period: period, onChanged: onPeriodChanged),
         const SizedBox(height: 20),
-        GridView.count(
-          crossAxisCount: width >= 1100
+        // A fixed `childAspectRatio` cannot grow with the text, which is what
+        // overflowed this page at 1.3x. Rows of intrinsic height can.
+        LedgerTileRow(
+          columns: width >= 1100
               ? 3
               : width >= 650
               ? 2
               : 1,
-          crossAxisSpacing: 14,
-          mainAxisSpacing: 14,
-          childAspectRatio: width < 650 ? 2.2 : 1.65,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
+          tiles: [
             MetricCard(
               label: 'Média mensal projetada',
               value: currency.format(average),

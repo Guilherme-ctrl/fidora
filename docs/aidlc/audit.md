@@ -241,3 +241,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 1. Branch `feat/ui-remake-pr1`.
 
 ---
+
+## Construction — Code Generation (PR 2: camada de componentes)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Segue" / "Tentar novamente"
+**AI Response**: "PR 2 na branch `feat/ui-remake-pr2`. `ledger.dart` traz AmountText, RuledSection, LedgerTile, LedgerTileRow, LedgerRow, CategoryMark, MonoTag, InkButton, RuleBar e SectionLabel. A aposta do plano se confirmou: transformar `SectionCard` e `MetricCard` em cascas sobre os componentes novos mudou a aparência de 21 chamadas sem tocar em página nenhuma, e `DetailValue` levou o mesmo tratamento a 49 lugares. Quatro defeitos no caminho, e **dois foram meus**: `MonoTag` estourava 21px a 2.0x porque a tag não podia quebrar linha, e o `PeriodFilterBar` segmentado estourava 50px num telefone de 375pt porque o grupo não encolhia; mais um assert de `Container` no `LedgerRow` por passar `color` e `decoration` juntos. O quarto era pré-existente: a face do cartão de crédito estourava 13px a 1.3x com o nome do banco em capitulares espaçadas. Também corrigi um erro de registro meu: a nota do PR 0 atribuía esse estouro ao `MetricCard`, e era a face do cartão — o comentário no teste foi corrigido em vez de apagado. Sobrou um único caso adiado por Dynamic Type, a grade de categorias, que o PR 3 substitui. 530 testes passam, 2 adiados. Depreciações foram de 197 para 204 porque `SectionCard` e `MetricCard` entraram na lista, enquanto `brand` caiu de 69 para 66 e `danger` de 73 para 68 — os componentes começaram a absorver as chamadas em vez de migrá-las, que era a tática."
+**Context**: Construction / Code Generation — PR 2. Branch `feat/ui-remake-pr2`.
+
+---

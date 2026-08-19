@@ -671,3 +671,44 @@ alinhamento de coluna já vale.
 | `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings, 197 infos de depreciação |
 | `flutter test --exclude-tags golden` | **526 passam, 6 adiados** |
 | `flutter test --tags golden` | 24 passam; todas as 24 imagens mudaram, como esperado |
+
+## PR 2 — camada de componentes (2026-08-19)
+
+O PR de maior alavancagem: `SectionCard` e `MetricCard` viraram cascas sobre
+`RuledSection` e `LedgerTile`, então **21 chamadas mudaram de aparência sem que
+nenhuma página fosse tocada**, e `DetailValue` levou o mesmo tratamento a 49
+lugares.
+
+### Defeitos encontrados e corrigidos
+
+| Onde | Estouro | Origem |
+|---|---|---|
+| Face do cartão, `cards_page` | 13px a 1.3x | pré-existente — nome do banco em capitulares espaçadas ao lado de um ícone rígido |
+| `MonoTag` | 21px a 2.0x | **introduzido neste PR** — a tag não podia quebrar linha |
+| `PeriodFilterBar` | 50px a 375pt | **introduzido neste PR** — o grupo segmentado não encolhia |
+| `LedgerRow` | assert de `Container` | **introduzido neste PR** — `color` e `decoration` juntos |
+
+Dois dos quatro foram defeitos meus, pegos pela rede do PR 0 antes de sair da
+máquina. É o argumento a favor de ter construído a rede primeiro.
+
+### Correção de registro
+
+A nota do PR 0 atribuía o estouro da página de faturas ao `MetricCard`. Estava
+errada: era a face do cartão de crédito. O comentário em
+`page_overflow_test.dart` foi corrigido em vez de apagado.
+
+Sobrou **um** caso adiado por Dynamic Type — a grade de categorias, que fixa a
+proporção da célula e é substituída no PR 3.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings, 204 infos |
+| `flutter test --exclude-tags golden` | **530 passam, 2 adiados** |
+| `flutter test --tags golden` | 24 passam; as 24 imagens mudaram |
+
+Depreciações 197 → 204: `SectionCard` (12) e `MetricCard` (7) entraram, enquanto
+`brand` caiu de 69 para 66 e `danger` de 73 para 68 — os componentes começaram a
+absorver chamadas em vez de migrá-las.

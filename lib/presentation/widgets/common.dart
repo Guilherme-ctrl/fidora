@@ -1,6 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/tokens.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -69,42 +72,49 @@ class PageHeading extends StatelessWidget {
   final Widget? action;
 
   @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1,
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: Space.xs),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: context.type.titleLg),
+              const SizedBox(height: Space.xxs),
+              // The subtitles in this product are sentences, not eyebrows.
+              // Setting one in spaced small caps — as the prototype does with
+              // a short date — made a line three times wider and said the
+              // wrong thing about it.
+              Text(
+                subtitle,
+                style: context.type.bodySm.copyWith(
+                  color: context.palette.inkMuted,
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: context.palette.inkMuted),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
-      ?action,
-    ],
+        ?action,
+      ],
+    ),
   );
 }
 
+/// Kept so the eight call sites keep compiling while they move to
+/// [LedgerTile]. The icon and its tint are dropped on purpose: a tinted glyph
+/// in a rounded square was the Material signature, and the label already says
+/// what the number is.
+@Deprecated('Use LedgerTile. PR 4.')
 class MetricCard extends StatelessWidget {
+  @Deprecated('Use LedgerTile. PR 4.')
   const MetricCard({
     super.key,
     required this.label,
     required this.value,
-    required this.icon,
-    required this.color,
+    this.icon,
+    this.color,
     this.detail,
     this.onTap,
     this.tooltip,
@@ -113,131 +123,31 @@ class MetricCard extends StatelessWidget {
   });
   final String label;
   final String value;
-  final IconData icon;
-  final Color color;
+  final IconData? icon;
+  final Color? color;
   final String? detail;
   final VoidCallback? onTap;
   final String? tooltip;
-
-  /// Optional movement against a baseline, e.g. “12% acima de julho”.
   final String? trendLabel;
-
-  /// Whether the movement is good news. Null keeps the label neutral, which is
-  /// the honest rendering when there is no baseline to judge against.
   final bool? trendGood;
 
   @override
-  Widget build(BuildContext context) {
-    final trend = trendLabel;
-    final card = Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(9),
-                    decoration: BoxDecoration(
-                      color: color.withValues(alpha: .14),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(icon, color: color, size: 20),
-                  ),
-                  const Spacer(),
-                  if (detail != null)
-                    // Flexible, not rigid: at a large Dynamic Type setting this
-                    // caption stops fitting beside the icon, and a fixed Text
-                    // pushed the row past the card instead of giving way.
-                    Flexible(
-                      child: Text(
-                        detail!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                          color: color,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              // A flexible gap rather than a fixed 22: the grid hands this card
-              // a fixed height, and a rigid gap made the content taller than
-              // the cell the moment a trend line appeared. The slack now lives
-              // where it can be given back.
-              const Spacer(),
-              Text(
-                value,
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              // Capped so a long label in a narrow column cannot grow the card
-              // past the height the grid gave it.
-              Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(color: context.palette.inkMuted),
-              ),
-              if (trend != null) ...[
-                const SizedBox(height: 9),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      switch (trendGood) {
-                        null => Icons.remove_rounded,
-                        true => Icons.trending_down_rounded,
-                        false => Icons.trending_up_rounded,
-                      },
-                      size: 15,
-                      color: switch (trendGood) {
-                        null => context.palette.inkSubtle,
-                        true => context.palette.brand,
-                        false => context.palette.danger,
-                      },
-                    ),
-                    const SizedBox(width: 5),
-                    Flexible(
-                      child: Text(
-                        trend,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: switch (trendGood) {
-                            null => context.palette.inkSubtle,
-                            true => context.palette.brand,
-                            false => context.palette.danger,
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-    return tooltip == null
-        ? card
-        : Semantics(button: onTap != null, label: tooltip, child: card);
-  }
+  Widget build(BuildContext context) => LedgerTile(
+    label: label,
+    value: value,
+    detail: detail,
+    trendLabel: trendLabel,
+    trendGood: trendGood,
+    onTap: onTap,
+    tooltip: tooltip,
+  );
 }
 
+/// Kept so the thirteen call sites keep compiling while they move to
+/// [RuledSection].
+@Deprecated('Use RuledSection. PR 4.')
 class SectionCard extends StatelessWidget {
+  @Deprecated('Use RuledSection. PR 4.')
   const SectionCard({
     super.key,
     required this.title,
@@ -253,40 +163,13 @@ class SectionCard extends StatelessWidget {
   final String? tooltip;
 
   @override
-  Widget build(BuildContext context) {
-    final card = Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  ?trailing,
-                ],
-              ),
-              const SizedBox(height: 18),
-              child,
-            ],
-          ),
-        ),
-      ),
-    );
-    return tooltip == null
-        ? card
-        : Semantics(button: onTap != null, label: tooltip, child: card);
-  }
+  Widget build(BuildContext context) => RuledSection(
+    title: title,
+    trailing: trailing,
+    onTap: onTap,
+    tooltip: tooltip,
+    child: child,
+  );
 }
 
 class PeriodFilterBar extends StatelessWidget {
@@ -318,51 +201,99 @@ class PeriodFilterBar extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    crossAxisAlignment: WrapCrossAlignment.center,
-    children: [
-      IconButton.filledTonal(
-        tooltip: 'Voltar um mês',
-        onPressed: () => onChanged(period.shiftMonth(-1)),
-        icon: const Icon(Icons.chevron_left_rounded),
-      ),
-      Tooltip(
-        message: 'Período usado por todos os indicadores desta tela',
-        child: ActionChip(
-          avatar: const Icon(Icons.calendar_month_rounded, size: 18),
-          label: Text(
-            period.label,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    // One outlined group instead of six loose Material pieces — two filled
+    // tonal icon buttons, an action chip, a text button, an outlined button and
+    // a plain chip, each with its own shape.
+    Widget segment(Widget child, {VoidCallback? onTap, String? tooltip}) {
+      final button = InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.sm,
+            vertical: Space.xxs + 2,
           ),
-          onPressed: () => _pickRange(context),
+          child: child,
         ),
-      ),
-      IconButton.filledTonal(
-        tooltip: 'Avançar um mês',
-        onPressed: () => onChanged(period.shiftMonth(1)),
-        icon: const Icon(Icons.chevron_right_rounded),
-      ),
-      TextButton(
-        onPressed: () => onChanged(FinancePeriod.month(clock.now())),
-        child: const Text('Este mês'),
-      ),
-      OutlinedButton.icon(
-        onPressed: () => _pickRange(context),
-        icon: const Icon(Icons.date_range_rounded),
-        label: const Text('Período'),
-      ),
-      const Tooltip(
-        message:
-            'Compras no cartão entram pela competência da fatura. Conta, Pix e débito entram pela data da movimentação.',
-        child: Chip(
-          avatar: Icon(Icons.credit_card_rounded, size: 17),
-          label: Text('Cartão por fatura'),
+      );
+      return tooltip == null
+          ? button
+          : Tooltip(message: tooltip, child: button);
+    }
+
+    final divider = Container(
+      width: Strokes.hairline,
+      height: 26,
+      color: palette.ruleStrong,
+    );
+
+    return Wrap(
+      spacing: Space.xs,
+      runSpacing: Space.xs,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        // Bounded so the group can shrink rather than push past the page.
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: IntrinsicHeight(
+            child: Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: palette.ruleStrong),
+                borderRadius: BorderRadius.circular(Radii.sm),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  segment(
+                    const Icon(Icons.chevron_left_rounded, size: 18),
+                    onTap: () => onChanged(period.shiftMonth(-1)),
+                    tooltip: 'Voltar um mês',
+                  ),
+                  divider,
+                  // The label is the only segment that can give: on a 375pt
+                  // phone the four fixed segments together are wider than the
+                  // screen.
+                  Flexible(
+                    child: segment(
+                      Text(
+                        period.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: context.type.bodySm.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      onTap: () => _pickRange(context),
+                      tooltip:
+                          'Período usado por todos os indicadores desta tela',
+                    ),
+                  ),
+                  divider,
+                  segment(
+                    const Icon(Icons.chevron_right_rounded, size: 18),
+                    onTap: () => onChanged(period.shiftMonth(1)),
+                    tooltip: 'Avançar um mês',
+                  ),
+                  divider,
+                  segment(
+                    Text('Este mês', style: context.type.bodySm),
+                    onTap: () => onChanged(FinancePeriod.month(clock.now())),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
-      ),
-    ],
-  );
+        const Tooltip(
+          message:
+              'Compras no cartão entram pela competência da fatura. Conta, Pix e débito entram pela data da movimentação.',
+          child: MonoTag('cartão por fatura', icon: Icons.credit_card_rounded),
+        ),
+      ],
+    );
+  }
 }
 
 Future<void> showDetailSheet(
@@ -404,6 +335,9 @@ Future<void> showDetailSheet(
   ),
 );
 
+/// A labelled value inside a detail sheet. 49 call sites, the widest reach of
+/// anything in this file: the label went to mono small caps and the value to
+/// the tabular figure, so a sheet full of amounts now lines up.
 class DetailValue extends StatelessWidget {
   const DetailValue({super.key, required this.label, required this.value});
   final String label;
@@ -411,14 +345,20 @@ class DetailValue extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.only(bottom: Space.xs),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
       children: [
-        Expanded(
-          child: Text(label, style: TextStyle(color: context.palette.inkMuted)),
+        Expanded(child: SectionLabel(label)),
+        const SizedBox(width: Space.md),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: context.type.amount,
+          ),
         ),
-        const SizedBox(width: 16),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.w900)),
       ],
     ),
   );

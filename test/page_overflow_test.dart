@@ -91,17 +91,18 @@ void main() {
     }
   }
 
-  // Pages whose cells have a fixed aspect ratio cannot grow with the text, so
-  // Dynamic Type overflows them. It is the same defect the dashboard already
-  // fixed once — fixed-ratio grid replaced by rows of intrinsic height — and
-  // the two widgets that still carry it are the two the design system
-  // replaces: `MetricCard` (common.dart:138) in PR 2 and the categories grid
-  // (categories_page.dart:82) in PR 3. Fixing them here would be fixing them
-  // twice, so they are named rather than silently dropped.
+  // One page still overflows under Dynamic Type: the categories grid fixes its
+  // cell aspect ratio, so the cell cannot grow with the text. It is the same
+  // defect the dashboard fixed once by replacing a fixed-ratio grid with rows
+  // of intrinsic height, and PR 3 replaces this grid outright.
+  //
+  // PR 2 cleared the other two. The attribution in the first version of this
+  // comment was wrong: they were not both `MetricCard`. Fixing that widget
+  // fixed the projection page; the invoices page was overflowing on the credit
+  // card face, where a long bank name in spaced capitals pushed the
+  // contactless glyph off the card at 1.3x.
   const fixedRatioGrid = {
     'categorias': 'categories_page.dart:82, grade de proporção fixa, PR 3',
-    'faturas': 'common.dart:138, MetricCard tem altura fixa, PR 2',
-    'projeção': 'common.dart:138, MetricCard tem altura fixa, PR 2',
   };
 
   for (final scale in [1.3, 2.0]) {

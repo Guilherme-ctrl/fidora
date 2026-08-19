@@ -165,14 +165,20 @@ class _CreditCardView extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    card.bank.toUpperCase(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 1.5,
+                  // Spaced capitals grow fast: at 1.3x a long bank name pushed
+                  // the contactless glyph 13px past the card face.
+                  Expanded(
+                    child: Text(
+                      card.bank.toUpperCase(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                   ),
-                  const Spacer(),
+                  const SizedBox(width: 8),
                   const Icon(Icons.contactless_rounded, color: Colors.white70),
                 ],
               ),

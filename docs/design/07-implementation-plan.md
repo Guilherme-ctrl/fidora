@@ -132,23 +132,46 @@ Ficou de fora, e por quê:
       `categories.color` no banco — então mexer nelas é migração, não tema. Fica
       para o PR 5.
 
-### PR 2 — Camada de componentes · ~2 dias
+### PR 2 — Camada de componentes · **entregue** (2026-08-19)
 
-O PR de maior alavancagem. Reescreve `common.dart` e cria os componentes que
-substituem os widgets Material.
+`lib/presentation/widgets/ledger.dart`, novo:
 
-- [ ] `AmountText` — sinal, tabular, cor semântica, largura de coluna fixa,
-      centavos reduzidos só no display. **Único caminho para renderizar dinheiro.**
-- [ ] `RuledSection`, `LedgerTile`, `LedgerRow`, `MonoTag`, `InkButton`, `RuleBar`
-- [ ] `PageHeading`, `DetailValue`, `PeriodFilterBar` reestilizados
-- [ ] `CycleTimeline` em `CustomPaint` — a competência da fatura desenhada
-- [ ] `CompetenceHint` extraído de `transaction_form_sheet.dart` para virar
-      reutilizável (hoje a regra do produto só existe dentro do formulário)
+- [x] `AmountText` — o único caminho para pôr dinheiro na tela. Sinal U+2212
+      (largura de dígito, para a coluna não desalinhar), figura tabular, cor
+      semântica e rótulo de acessibilidade por extenso
+- [x] `RuledSection` · `LedgerTile` · `LedgerTileRow` · `LedgerRow` ·
+      `CategoryMark` · `MonoTag` · `InkButton` · `RuleBar` · `SectionLabel`
+- [x] `categoryColourFor` — a cor que a categoria mantém em todas as telas
 
-Ao final, trocar `SectionCard`/`MetricCard` pelos novos nomes com um
-`@Deprecated typedef`, para as 21 chamadas migrarem sem PR travado.
+Nos pontos de estrangulamento:
 
-**Pronto quando:** os goldens do PR 0 mudaram — e a mudança é a esperada.
+- [x] `SectionCard` e `MetricCard` viraram cascas `@Deprecated` sobre
+      `RuledSection` e `LedgerTile` — **21 chamadas mudaram de aparência sem
+      que nenhuma página fosse tocada**
+- [x] `DetailValue` (49 chamadas) — rótulo em versalete mono, valor tabular
+- [x] `PageHeading` e `PeriodFilterBar` refeitos
+- [x] `LedgerRow` adotado na lista de lançamentos do painel
+
+**A grade de proporção fixa da projeção virou `LedgerTileRow`**, e com isso
+sobrou **um** único caso adiado por Dynamic Type (a grade de categorias, PR 3).
+
+Três defeitos apareceram e foram corrigidos no caminho — dois deles introduzidos
+pelos componentes novos, o que é exatamente o que a rede do PR 0 existe para
+pegar:
+
+| Onde | Estouro |
+|---|---|
+| Face do cartão em `cards_page` (pré-existente) | 13px a 1.3x — nome do banco em capitulares espaçadas |
+| `MonoTag` (novo) | 21px a 2.0x — a tag não podia quebrar linha |
+| `PeriodFilterBar` (novo) | 50px a 375pt — o grupo segmentado não encolhia |
+
+**Correção de registro:** a nota do PR 0 atribuía o estouro de `faturas` ao
+`MetricCard`. Estava errada — era a face do cartão. O comentário no teste foi
+corrigido.
+
+Depreciações: 197 → **204**, porque `SectionCard` (12) e `MetricCard` (7)
+entraram na lista. `brand` caiu de 69 para 66 e `danger` de 73 para 68 — os
+componentes começaram a absorver as chamadas, como o plano previa.
 
 ### PR 3 — Shell, navegação e IA · ~1,5 dia
 
