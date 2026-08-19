@@ -6,6 +6,7 @@ import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/data/supabase_finance_repository.dart';
 import 'package:financeiro_ai/presentation/router.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:go_router/go_router.dart';
@@ -58,6 +59,18 @@ class _FinanceiroAppState extends ConsumerState<FinanceiroApp> {
   Widget build(BuildContext context) => MaterialApp.router(
     title: 'Finora',
     debugShowCheckedModeBanner: false,
+    // O produto é pt-BR desde a fundação e nunca declarou localização, então
+    // todo widget do Material caía no inglês padrão — e os seletores de data,
+    // que pedem `pt_BR` explicitamente, não encontravam tradução nenhuma e
+    // lançavam ao abrir. Era o caso em Projeção, em Metas e no formulário de
+    // lançamento, ou seja, em todos.
+    locale: const Locale('pt', 'BR'),
+    supportedLocales: const [Locale('pt', 'BR'), Locale('en')],
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
     theme: buildAppTheme(),
     darkTheme: buildAppTheme(brightness: Brightness.dark),
     themeMode: ref.watch(appearanceProvider),

@@ -1292,3 +1292,35 @@ digitado é a única pergunta que importa.
 `sheet_exit_test.dart` abre e fecha nas três larguras, porque foi justamente a
 largura em que eu testei — o telefone, com alça — que escondeu o problema das
 outras duas.
+
+### Os três seletores de data quebravam ao abrir (2026-08-19)
+
+O dono, tentando trocar o mês em Projeção: exceção, `No MaterialLocalizations
+found`.
+
+O produto é pt-BR desde a fundação e **nunca declarou localização**. Todo widget
+do Material caía no inglês embutido, e os seletores de data pedem `pt_BR`
+explicitamente — `showDateRangePicker(locale: Locale('pt','BR'))` — não achavam
+delegate que servisse aquele locale e lançavam ao abrir.
+
+Não era um seletor: eram **os três**. O de período, em Projeção e em toda tela
+com barra de período; o de data da meta; e o de data do lançamento. Ou seja,
+todos os que existem.
+
+`initializeDateFormatting('pt_BR')`, que o app já chamava, não ajuda: é o intl,
+para formatar data em texto. `MaterialLocalizations` é outra coisa, e nada a
+fornecia.
+
+Corrigido em `main.dart`, com `flutter_localizations` e os três delegates. De
+quebra, todo widget do Material passou a falar português — os diálogos, os
+tooltips e os rótulos que até agora estavam em inglês sem ninguém notar.
+
+O teste negativo — remover os delegates e esperar a exceção — **passava sem
+provar nada**, porque o `MaterialApp` tem fallbacks que a execução real não
+tinha. Trocado por uma verificação direta: `MaterialLocalizations.of(context)
+.cancelButtonLabel` tem de ser `Cancelar`. Esse falha no instante em que os
+delegates saírem.
+
+**Por que nenhum teste pegou:** 615 testes e nenhum abria um seletor de data. Os
+widget tests montam `MaterialApp` próprio, não o do `main.dart`, então a
+configuração que faltava não estava sob teste em lugar nenhum.
