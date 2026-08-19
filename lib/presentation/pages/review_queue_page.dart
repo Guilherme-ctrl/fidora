@@ -3,7 +3,6 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
-import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/tokens.dart';
@@ -13,13 +12,53 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+/// Items that ask the same question about the same place.
+///
+/// Nine captures from MERCADO EXTRA are not nine decisions, they are one. This
+/// is where most of the weight of a 24-item queue actually goes: not motivation,
+/// volume.
+class _Group {
+  _Group({required this.label, required this.items, this.transaction});
+
+  final String label;
+  final List<ReviewItem> items;
+  final FinanceTransaction? transaction;
+
+  int get size => items.length;
+  ReviewItem get first => items.first;
+
+  static List<_Group> from(List<ReviewItem> items, FinanceSnapshot? snapshot) {
+    final byKey = <String, List<ReviewItem>>{};
+    final sample = <String, FinanceTransaction?>{};
+    for (final item in items) {
+      final transaction = snapshot?.transactions
+          .where((row) => row.id == item.transactionId)
+          .firstOrNull;
+      final key = transaction?.merchant ?? item.reason;
+      byKey.putIfAbsent(key, () => []).add(item);
+      sample.putIfAbsent(key, () => transaction);
+    }
+    return [
+      for (final entry in byKey.entries)
+        _Group(
+          label: entry.key,
+          items: entry.value,
+          transaction: sample[entry.key],
+        ),
+    ]..sort((a, b) => b.size.compareTo(a.size));
+  }
+}
+
 /// The daily ritual.
 ///
-/// Every item here asks one question and teaches one rule. On a desktop it is
-/// driven from the keyboard, because clearing a queue with a mouse is ten
-/// round-trips to the same three buttons; on a phone it is driven by swiping,
-/// because that is the gesture a queue asks for. Neither existed: there was no
-/// `Shortcuts` widget anywhere in the product, and not one `Dismissible`.
+/// The first version of this screen was a scrolling list of every pending item.
+/// The owner's reaction to twenty-four of them was that it made him not want to
+/// start — which is the right reaction to a wall.
+///
+/// Three things carry the weight, and none of them is a reward. Items are
+/// grouped, so twenty-four become six real decisions. One group is on screen at
+/// a time, so the next decision is all that is visible. And progress is shown
+/// and moves, so clearing has a direction and an end.
 class ReviewQueuePage extends ConsumerStatefulWidget {
   const ReviewQueuePage({super.key});
 
@@ -29,24 +68,30 @@ class ReviewQueuePage extends ConsumerStatefulWidget {
 
 class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
   int _cursor = 0;
-  final _scroll = ScrollController();
 
-  @override
-  void dispose() {
-    _scroll.dispose();
-    super.dispose();
-  }
+  /// How many items this sitting has settled, and how many decisions it took.
+  /// The gap between the two is what grouping bought, and it is worth showing.
+  int _settled = 0;
+  int _decisions = 0;
+  int _startedWith = 0;
 
-  void _move(int delta, int length) {
-    if (length == 0) return;
-    setState(() => _cursor = (_cursor + delta).clamp(0, length - 1));
-  }
+  /// Which way the card leaves: right for kept, left for dismissed.
+  int _exit = 1;
+  bool _finished = false;
 
-  Future<void> _settle(ReviewItem item, String status) async {
+  Future<void> _settleGroup(_Group group, String status) async {
+    setState(() => _exit = status == 'resolved' ? 1 : -1);
+    final repository = ref.read(financeRepositoryProvider);
     try {
-      await ref
-          .read(financeRepositoryProvider)
-          .settleReview(item.id, status: status);
+      for (final item in group.items) {
+        await repository.settleReview(item.id, status: status);
+      }
+      if (!mounted) return;
+      setState(() {
+        _settled += group.size;
+        _decisions += 1;
+        _cursor = 0;
+      });
       await refreshReviewQueue(ref);
       ref.invalidate(financeSnapshotProvider);
     } on FinanceWriteException catch (error) {
@@ -58,109 +103,404 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
     }
   }
 
+  void _move(int delta, int length) {
+    if (length == 0) return;
+    setState(() => _cursor = (_cursor + delta).clamp(0, length - 1));
+  }
+
   @override
   Widget build(BuildContext context) {
     final queue = ref.watch(reviewQueueProvider);
+    final snapshot = ref.watch(financeSnapshotProvider).value;
     final items = queue.value ?? const <ReviewItem>[];
-    if (_cursor >= items.length && items.isNotEmpty) _cursor = items.length - 1;
+    final groups = _Group.from(items, snapshot);
+    if (_startedWith == 0 && items.isNotEmpty) _startedWith = items.length;
+    if (_cursor >= groups.length && groups.isNotEmpty) {
+      _cursor = groups.length - 1;
+    }
+    if (groups.isEmpty && _settled > 0 && !_finished) _finished = true;
 
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyJ): () =>
-            _move(1, items.length),
-        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
-            _move(1, items.length),
+            _move(1, groups.length),
+        const SingleActivator(LogicalKeyboardKey.arrowRight): () =>
+            _move(1, groups.length),
         const SingleActivator(LogicalKeyboardKey.keyK): () =>
-            _move(-1, items.length),
-        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
-            _move(-1, items.length),
+            _move(-1, groups.length),
+        const SingleActivator(LogicalKeyboardKey.arrowLeft): () =>
+            _move(-1, groups.length),
         const SingleActivator(LogicalKeyboardKey.enter): () {
-          if (items.isNotEmpty) _settle(items[_cursor], 'resolved');
+          if (groups.isNotEmpty) _settleGroup(groups[_cursor], 'resolved');
         },
         const SingleActivator(LogicalKeyboardKey.keyD): () {
-          if (items.isNotEmpty) _settle(items[_cursor], 'dismissed');
+          if (groups.isNotEmpty) _settleGroup(groups[_cursor], 'dismissed');
         },
       },
       child: Focus(
         autofocus: true,
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Revisões pendentes'),
-            actions: [
-              if (Breakpoint.of(context).hasRail)
-                Padding(
-                  padding: const EdgeInsets.only(right: Space.md),
-                  child: Row(
-                    children: const [
-                      MonoTag('J K navegar'),
-                      SizedBox(width: Space.xxs),
-                      MonoTag('⏎ está certo'),
-                      SizedBox(width: Space.xxs),
-                      MonoTag('D descartar'),
+          appBar: AppBar(title: const Text('Revisões')),
+          body: queue.when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, _) =>
+                _QueueError(onRetry: () => ref.invalidate(reviewQueueProvider)),
+            // Grouping needs the ledger: without it the key falls back to the
+            // reason, and the card visibly changes identity a beat after the
+            // screen opens — "Classificação com baixa confiança (4)" becoming
+            // "UNIFIQUE TELECOM (3)". Waiting is the honest render.
+            data: (_) => snapshot == null
+                ? const Center(child: CircularProgressIndicator())
+                : Column(
+                    children: [
+                      _Progress(
+                        settled: _settled,
+                        remaining: items.length,
+                        total: _startedWith == 0 ? items.length : _startedWith,
+                        groups: groups.length,
+                      ),
+                      Expanded(
+                        child: groups.isEmpty
+                            ? _QueueDone(
+                                settled: _settled,
+                                decisions: _decisions,
+                                celebrate: _finished,
+                              )
+                            : _Deck(
+                                groups: groups,
+                                cursor: _cursor,
+                                exit: _exit,
+                                snapshot: snapshot,
+                                onKeep: (g) => _settleGroup(g, 'resolved'),
+                                onDismiss: (g) => _settleGroup(g, 'dismissed'),
+                              ),
+                      ),
+                      if (Breakpoint.of(context).hasRail && groups.isNotEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: Space.lg),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              MonoTag('J K navegar'),
+                              SizedBox(width: Space.xxs),
+                              MonoTag('⏎ está certo'),
+                              SizedBox(width: Space.xxs),
+                              MonoTag('D descartar'),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
-                ),
-            ],
-          ),
-          body: RefreshIndicator(
-            onRefresh: () => refreshReviewQueue(ref),
-            child: queue.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => _QueueError(
-                onRetry: () => ref.invalidate(reviewQueueProvider),
-              ),
-              data: (items) => items.isEmpty
-                  ? const _QueueEmpty()
-                  : ListView.builder(
-                      controller: _scroll,
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
-                      itemCount: items.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index == 0) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 18),
-                            child: Text(
-                              '${items.length} ${items.length == 1 ? 'item aguarda' : 'itens aguardam'} sua decisão.',
-                              style: TextStyle(color: context.palette.inkMuted),
-                            ),
-                          );
-                        }
-                        final item = items[index - 1];
-                        final card = _ReviewCard(
-                          item: item,
-                          focused: index - 1 == _cursor,
-                        );
-                        // Swipe is the gesture a queue asks for, and the
-                        // product had no `Dismissible` at all.
-                        return Dismissible(
-                          key: ValueKey(item.id),
-                          background: _SwipeHint(
-                            label: 'Está certo',
-                            icon: Icons.check_rounded,
-                            color: context.palette.income,
-                            alignment: Alignment.centerLeft,
-                          ),
-                          secondaryBackground: _SwipeHint(
-                            label: 'Descartar',
-                            icon: Icons.close_rounded,
-                            color: context.palette.inkSubtle,
-                            alignment: Alignment.centerRight,
-                          ),
-                          onDismissed: (direction) => _settle(
-                            item,
-                            direction == DismissDirection.startToEnd
-                                ? 'resolved'
-                                : 'dismissed',
-                          ),
-                          child: card,
-                        );
-                      },
-                    ),
-            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// How far along, and moving.
+///
+/// A number that jumps is information; a number that travels is progress.
+class _Progress extends StatelessWidget {
+  const _Progress({
+    required this.settled,
+    required this.remaining,
+    required this.total,
+    required this.groups,
+  });
+
+  final int settled;
+  final int remaining;
+  final int total;
+
+  /// How many decisions are left, which is the number that actually predicts
+  /// how long this will take.
+  final int groups;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final ratio = total == 0 ? 1.0 : settled / total;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        Space.lg,
+        Space.xs,
+        Space.lg,
+        Space.lg,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: settled.toDouble()),
+                duration: Motion.count,
+                curve: Curves.easeOutCubic,
+                builder: (context, value, _) =>
+                    Text('${value.round()}', style: context.type.displayMetric),
+              ),
+              Text(
+                ' de $total',
+                style: context.type.bodySm.copyWith(color: palette.inkMuted),
+              ),
+              const Spacer(),
+              Text(
+                remaining == 0
+                    ? 'fila limpa'
+                    : groups == remaining
+                    ? '$remaining ${remaining == 1 ? 'restante' : 'restantes'}'
+                    // Six left, but four decisions: that gap is the point of
+                    // grouping and it belongs where someone decides whether to
+                    // start.
+                    : '$remaining em $groups ${groups == 1 ? 'decisão' : 'decisões'}',
+                style: context.type.meta.copyWith(color: palette.inkSubtle),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.xs),
+          TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: ratio.clamp(0.0, 1.0)),
+            duration: Motion.panel,
+            curve: Curves.easeOutCubic,
+            builder: (context, value, _) => RuleBar(value: value, height: 3),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// One group on screen, the rest stacked behind it.
+class _Deck extends StatelessWidget {
+  const _Deck({
+    required this.groups,
+    required this.cursor,
+    required this.exit,
+    required this.snapshot,
+    required this.onKeep,
+    required this.onDismiss,
+  });
+
+  final List<_Group> groups;
+  final int cursor;
+  final int exit;
+  final FinanceSnapshot? snapshot;
+  final ValueChanged<_Group> onKeep;
+  final ValueChanged<_Group> onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final group = groups[cursor];
+    final behind = (groups.length - cursor - 1).clamp(0, 2);
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              // The stack behind is the only place the size of the queue is
+              // still visible, and it shrinks as the deck does.
+              //
+              // `Positioned.fill` rather than a fixed height: the Stack takes
+              // its size from the card, so the ghosts match it and their edges
+              // show below. Given a height of their own they were shorter than
+              // the card and vanished behind it entirely.
+              for (var depth = behind; depth >= 1; depth--)
+                Positioned.fill(
+                  child: Transform.translate(
+                    offset: Offset(0, depth * 9),
+                    child: Transform.scale(
+                      scale: 1 - depth * 0.035,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: palette.surface,
+                          border: Border.all(color: palette.rule),
+                          borderRadius: BorderRadius.circular(Radii.md),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              AnimatedSwitcher(
+                duration: Motion.panel,
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final leaving = child.key != ValueKey(group.label);
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween(
+                        begin: leaving
+                            ? Offset(exit.toDouble(), 0)
+                            : const Offset(0, .12),
+                        end: Offset.zero,
+                      ).animate(animation),
+                      child: child,
+                    ),
+                  );
+                },
+                child: _GroupCard(
+                  key: ValueKey(group.label),
+                  group: group,
+                  snapshot: snapshot,
+                  onKeep: () => onKeep(group),
+                  onDismiss: () => onDismiss(group),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The one decision on screen.
+class _GroupCard extends ConsumerWidget {
+  const _GroupCard({
+    super.key,
+    required this.group,
+    required this.snapshot,
+    required this.onKeep,
+    required this.onDismiss,
+  });
+
+  final _Group group;
+  final FinanceSnapshot? snapshot;
+  final VoidCallback onKeep;
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final transaction = group.transaction;
+    final many = group.size > 1;
+
+    return Dismissible(
+      key: ValueKey('swipe-${group.label}'),
+      background: _SwipeHint(
+        label: 'Está certo',
+        icon: Icons.check_rounded,
+        color: palette.income,
+        alignment: Alignment.centerLeft,
+      ),
+      secondaryBackground: _SwipeHint(
+        label: 'Descartar',
+        icon: Icons.close_rounded,
+        color: palette.inkSubtle,
+        alignment: Alignment.centerRight,
+      ),
+      onDismissed: (direction) =>
+          direction == DismissDirection.startToEnd ? onKeep() : onDismiss(),
+      child: Container(
+        decoration: BoxDecoration(
+          color: palette.surface,
+          border: Border.all(color: palette.rule),
+          borderRadius: BorderRadius.circular(Radii.md),
+        ),
+        padding: const EdgeInsets.all(Space.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(child: SectionLabel(group.first.reason)),
+                if (many)
+                  MonoTag('${group.size} lançamentos', color: palette.accent),
+              ],
+            ),
+            const SizedBox(height: Space.xs),
+            Text(group.label, style: context.type.titleLg),
+            if (transaction != null) ...[
+              const SizedBox(height: Space.xxs),
+              Text(
+                '${transaction.category} · final ${transaction.cardLastFour}',
+                style: context.type.meta.copyWith(color: palette.inkSubtle),
+              ),
+            ],
+            if (group.first.suggestedAction != null) ...[
+              const SizedBox(height: Space.sm),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(Space.sm),
+                decoration: BoxDecoration(
+                  color: palette.accentSoft,
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                ),
+                child: Text(
+                  group.first.suggestedAction!,
+                  style: context.type.bodySm.copyWith(color: palette.accent),
+                ),
+              ),
+            ],
+            const SizedBox(height: Space.lg),
+            Row(
+              children: [
+                Expanded(
+                  child: InkButton(
+                    label: many ? 'Está certo (${group.size})' : 'Está certo',
+                    icon: Icons.check_rounded,
+                    onPressed: onKeep,
+                  ),
+                ),
+                const SizedBox(width: Space.xs),
+                if (transaction != null && snapshot != null)
+                  InkButton(
+                    label: 'Corrigir',
+                    secondary: true,
+                    onPressed: () => _correctOne(
+                      context,
+                      ref,
+                      snapshot!,
+                      transaction,
+                      group.first,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: Space.xs),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                onPressed: onDismiss,
+                child: Text(many ? 'Descartar os ${group.size}' : 'Descartar'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Correcting settles the entry that asked, because a saved edit answers it.
+  Future<void> _correctOne(
+    BuildContext context,
+    WidgetRef ref,
+    FinanceSnapshot snapshot,
+    FinanceTransaction transaction,
+    ReviewItem item,
+  ) async {
+    await showTransactionFormSheet(
+      context,
+      snapshot: snapshot,
+      existing: transaction,
+      onSave: (draft) async {
+        await ref.read(financeRepositoryProvider).saveTransaction(draft);
+        await ref
+            .read(financeRepositoryProvider)
+            .settleReview(item.id, status: 'resolved');
+        await refreshLedger(ref);
+        await refreshReviewQueue(ref);
+      },
     );
   }
 }
@@ -180,7 +520,6 @@ class _SwipeHint extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.symmetric(horizontal: Space.lg),
     alignment: alignment,
     decoration: BoxDecoration(
@@ -204,217 +543,65 @@ class _SwipeHint extends StatelessWidget {
   );
 }
 
-class _ReviewCard extends ConsumerWidget {
-  const _ReviewCard({required this.item, this.focused = false});
-  final ReviewItem item;
+/// The end of the queue, which used to be an empty screen.
+///
+/// [celebrate] separates "you cleared it just now" from "there was nothing to
+/// do". Only the first is worth a moment.
+class _QueueDone extends StatelessWidget {
+  const _QueueDone({
+    required this.settled,
+    required this.decisions,
+    required this.celebrate,
+  });
 
-  /// The item the keyboard is on.
-  final bool focused;
+  final int settled;
+  final int decisions;
+  final bool celebrate;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final snapshot = ref.watch(financeSnapshotProvider).value;
-    final transaction = snapshot?.transactions
-        .where((row) => row.id == item.transactionId)
-        .firstOrNull;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 14),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(Radii.md),
-        side: BorderSide(
-          color: focused ? context.palette.accent : context.palette.rule,
-          width: focused ? Strokes.heavy : Strokes.hairline,
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: context.palette.pending.withValues(alpha: .16),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: const Icon(
-                    Icons.rule_folder_rounded,
-                    color: Color(0xFF8D6414),
-                    size: 19,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text(
-                    item.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 16,
-                    ),
-                  ),
-                ),
-                if (transaction != null)
-                  Text(
-                    currency.format(transaction.amount),
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              item.reason,
-              style: TextStyle(color: context.palette.inkMuted),
-            ),
-            if (item.suggestedAction != null) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline_rounded,
-                    size: 15,
-                    color: context.palette.accent,
-                  ),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Text(
-                      item.suggestedAction!,
-                      style: TextStyle(
-                        color: context.palette.accent,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13.5,
-                      ),
-                    ),
-                  ),
-                ],
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Center(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: celebrate ? 0.9 : 1, end: 1),
+        duration: Motion.sheet,
+        curve: Curves.easeOutBack,
+        builder: (context, scale, child) =>
+            Transform.scale(scale: scale, child: child),
+        child: Padding(
+          padding: const EdgeInsets.all(Space.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                celebrate
+                    ? Icons.check_circle_outline_rounded
+                    : Icons.inbox_rounded,
+                size: 44,
+                color: celebrate ? palette.income : palette.inkSubtle,
               ),
-            ],
-            if (transaction != null) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: Space.md),
               Text(
-                '${longDate.format(transaction.date)} • ${transaction.category} • final ${transaction.cardLastFour}',
-                style: TextStyle(color: context.palette.inkMuted, fontSize: 13),
+                celebrate ? 'Fila zerada.' : 'Nada para revisar',
+                style: context.type.titleLg,
               ),
-            ],
-            if (item.transactionId != null && transaction == null) ...[
-              const SizedBox(height: 10),
+              const SizedBox(height: Space.xs),
               Text(
-                'A transação ligada a este item não está no período carregado.',
-                style: TextStyle(color: context.palette.inkMuted, fontSize: 13),
+                celebrate
+                    // The gap between the two numbers is what grouping bought.
+                    ? '$settled ${settled == 1 ? 'lançamento revisado' : 'lançamentos revisados'} em '
+                          '$decisions ${decisions == 1 ? 'decisão' : 'decisões'}.'
+                    : 'Quando uma importação ou uma captura do Atalho ficar em '
+                          'dúvida sobre a categoria, o item aparece aqui.',
+                textAlign: TextAlign.center,
+                style: context.type.bodySm.copyWith(color: palette.inkMuted),
               ),
             ],
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                if (transaction != null && snapshot != null)
-                  FilledButton.icon(
-                    onPressed: () =>
-                        _correct(context, ref, snapshot, transaction),
-                    icon: const Icon(Icons.edit_outlined, size: 18),
-                    label: const Text('Corrigir'),
-                  ),
-                OutlinedButton.icon(
-                  onPressed: () => _settle(context, ref, 'resolved'),
-                  icon: const Icon(Icons.check_rounded, size: 18),
-                  label: const Text('Está certo'),
-                ),
-                TextButton(
-                  onPressed: () => _settle(context, ref, 'dismissed'),
-                  child: const Text('Descartar'),
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  /// Correcting and resolving are one gesture: if the edit is saved, the entry
-  /// that asked for it has been answered.
-  Future<void> _correct(
-    BuildContext context,
-    WidgetRef ref,
-    FinanceSnapshot snapshot,
-    FinanceTransaction transaction,
-  ) async {
-    final saved = await showTransactionFormSheet(
-      context,
-      snapshot: snapshot,
-      existing: transaction,
-      onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveTransaction(draft);
-        await ref
-            .read(financeRepositoryProvider)
-            .settleReview(item.id, status: 'resolved');
-        await refreshLedger(ref);
-        await refreshReviewQueue(ref);
-      },
-    );
-    if (saved == true && context.mounted) {
-      _toast(context, 'Corrigido e revisão concluída.');
-    }
-  }
-
-  Future<void> _settle(
-    BuildContext context,
-    WidgetRef ref,
-    String status,
-  ) async {
-    try {
-      await ref
-          .read(financeRepositoryProvider)
-          .settleReview(item.id, status: status);
-      await refreshReviewQueue(ref);
-      ref.invalidate(financeSnapshotProvider);
-      if (context.mounted) {
-        _toast(
-          context,
-          status == 'resolved' ? 'Revisão concluída.' : 'Revisão descartada.',
-        );
-      }
-    } on FinanceWriteException catch (error) {
-      if (context.mounted) _toast(context, error.message, error: true);
-    }
-  }
-
-  void _toast(BuildContext context, String message, {bool error = false}) =>
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: error
-              ? context.palette.negative
-              : context.palette.income,
-        ),
-      );
-}
-
-class _QueueEmpty extends StatelessWidget {
-  const _QueueEmpty();
-  @override
-  Widget build(BuildContext context) => ListView(
-    physics: const AlwaysScrollableScrollPhysics(),
-    padding: const EdgeInsets.fromLTRB(24, 80, 24, 24),
-    children: [
-      Icon(Icons.task_alt_rounded, size: 52, color: context.palette.accent),
-      const SizedBox(height: 18),
-      const Text(
-        'Nada para revisar',
-        textAlign: TextAlign.center,
-        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 19),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Quando uma importação ou uma captura do Atalho ficar em dúvida sobre a categoria, o item aparece aqui.',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: context.palette.inkMuted),
-      ),
-    ],
-  );
 }
 
 class _QueueError extends StatelessWidget {

@@ -114,38 +114,67 @@ void main() {
   });
 
   group('DemoFinanceRepository — review queue', () {
+    // Sizes are read, not written down. These tests are about behaviour, and
+    // pinning the fixture's length meant that adding a group to the demo — so
+    // the queue could show what grouping is for — broke three of them for no
+    // reason.
     test('lists only pending entries', () async {
       final repository = DemoFinanceRepository();
       final queue = await repository.loadReviewQueue();
-      expect(queue, hasLength(3));
+      expect(queue, isNotEmpty);
       expect(queue.every((item) => item.isPending), isTrue);
     });
 
     test('resolving removes the entry from the queue', () async {
       final repository = DemoFinanceRepository();
+      final before = (await repository.loadReviewQueue()).length;
       await repository.settleReview('r1', status: 'resolved');
       final queue = await repository.loadReviewQueue();
       expect(queue.any((item) => item.id == 'r1'), isFalse);
-      expect(queue, hasLength(2));
+      expect(queue, hasLength(before - 1));
     });
 
     test('dismissing also clears it', () async {
       final repository = DemoFinanceRepository();
+      final before = (await repository.loadReviewQueue()).length;
       await repository.settleReview('r3', status: 'dismissed');
-      expect(await repository.loadReviewQueue(), hasLength(2));
+      expect(await repository.loadReviewQueue(), hasLength(before - 1));
     });
 
     test('the snapshot count follows the queue', () async {
       final repository = DemoFinanceRepository();
-      expect((await repository.loadSnapshot()).pendingReviews, 3);
+      final before = (await repository.loadSnapshot()).pendingReviews;
+      expect(before, greaterThan(0));
       await repository.settleReview('r1', status: 'resolved');
-      expect((await repository.loadSnapshot()).pendingReviews, 2);
+      expect((await repository.loadSnapshot()).pendingReviews, before - 1);
     });
 
     test('settling an unknown id is a no-op', () async {
       final repository = DemoFinanceRepository();
+      final before = (await repository.loadReviewQueue()).length;
       await repository.settleReview('nope', status: 'resolved');
-      expect(await repository.loadReviewQueue(), hasLength(3));
+      expect(await repository.loadReviewQueue(), hasLength(before));
+    });
+
+    test('the demo carries a group, so the queue can show grouping', () async {
+      final repository = DemoFinanceRepository();
+      final queue = await repository.loadReviewQueue();
+      final snapshot = await repository.loadSnapshot();
+      final byMerchant = <String, int>{};
+      for (final item in queue) {
+        final merchant = snapshot.transactions
+            .where((row) => row.id == item.transactionId)
+            .firstOrNull
+            ?.merchant;
+        if (merchant != null) {
+          byMerchant[merchant] = (byMerchant[merchant] ?? 0) + 1;
+        }
+      }
+      expect(
+        byMerchant.values.any((count) => count > 1),
+        isTrue,
+        reason: 'sem repetição a fila nunca mostra o agrupamento',
+      );
     });
   });
 

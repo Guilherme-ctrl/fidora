@@ -12,6 +12,7 @@ import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
+import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
 import 'package:financeiro_ai/presentation/app_shell.dart';
@@ -127,6 +128,23 @@ void main() {
     });
   }
 
+  // The review queue is a screen in its own right and had no reference image
+  // at all — the surface the owner reacted to was the one nobody could see.
+  for (final entry in {
+    '390': const Size(390, 844),
+    '1280': const Size(1280, 900),
+  }.entries) {
+    testWidgets('revisao at ${entry.key}', (tester) async {
+      await withGoldenClock(() async {
+        await _pumpQueue(tester, entry.value);
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/revisao-${entry.key}.png'),
+        );
+      });
+    });
+  }
+
   for (final entry in {
     '390': const Size(390, 900),
     '768': const Size(768, 1024),
@@ -172,6 +190,34 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
   );
   for (var i = 0; i < 8; i++) {
     await tester.pump(const Duration(milliseconds: 50));
+  }
+}
+
+Future<void> _pumpQueue(WidgetTester tester, Size size) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: [
+        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(),
+        home: MediaQuery(
+          data: MediaQueryData(size: size, disableAnimations: true),
+          child: const ReviewQueuePage(),
+        ),
+      ),
+    ),
+  );
+  // Long enough for the queue, the ledger and any transition between them to
+  // finish: a reference image caught mid-animation is a reference image that
+  // fails at random.
+  for (var i = 0; i < 20; i++) {
+    await tester.pump(const Duration(milliseconds: 60));
   }
 }
 

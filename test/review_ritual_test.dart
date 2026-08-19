@@ -10,21 +10,26 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'support/golden.dart';
 
-/// The loop that teaches the product.
+/// The queue was a scrolling list of every pending item, and the owner's
+/// reaction to twenty-four of them was that it made him not want to start.
 ///
-/// It was three taps deep inside "Mais", cleared with a mouse, one round-trip
-/// per item. There was no keyboard anywhere in the product and not a single
-/// `Dismissible`.
-Future<void> _pump(WidgetTester tester, Size size) async {
+/// Three things carry the weight now, and none is a reward: items are grouped,
+/// one group is on screen, and progress moves.
+Future<ProviderContainer> _pump(WidgetTester tester, Size size) async {
   tester.view.devicePixelRatio = 1;
   tester.view.physicalSize = size;
   addTearDown(tester.view.reset);
 
+  final container = ProviderContainer(
+    overrides: [
+      financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+    ],
+  );
+  addTearDown(container.dispose);
+
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
-      ],
+    UncontrolledProviderScope(
+      container: container,
       child: MaterialApp(
         theme: buildAppTheme(),
         home: MediaQuery(
@@ -35,61 +40,98 @@ Future<void> _pump(WidgetTester tester, Size size) async {
     ),
   );
   for (var i = 0; i < 8; i++) {
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 60));
   }
+  return container;
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUpAll(() => initializeDateFormatting('pt_BR'));
 
-  testWidgets('the queue names its keyboard on a wide screen', (tester) async {
+  testWidgets('one decision on screen, not the whole pile', (tester) async {
     await withGoldenClock(() async {
-      await _pump(tester, const Size(1280, 900));
-      // A shortcut nobody can discover is a shortcut nobody uses.
-      expect(find.text('J K NAVEGAR'), findsOneWidget);
-      expect(find.text('⏎ ESTÁ CERTO'), findsOneWidget);
-      expect(find.text('D DESCARTAR'), findsOneWidget);
+      final container = await _pump(tester, const Size(390, 844));
+      final pending = await container.read(reviewQueueProvider.future);
+      expect(pending.length, greaterThan(3), reason: 'a demo precisa de fila');
+
+      // The card that is showing is one; the pile is only suggested behind it.
+      expect(find.byType(Dismissible), findsOneWidget);
     });
   });
 
-  testWidgets('a phone gets swipe instead of the shortcut legend', (
+  testWidgets('items from one place arrive as one decision', (tester) async {
+    await withGoldenClock(() async {
+      final container = await _pump(tester, const Size(390, 844));
+      final pending = await container.read(reviewQueueProvider.future);
+      final repeated = pending
+          .where((item) => item.description == 'UNIFIQUE TELECOM')
+          .length;
+      expect(repeated, greaterThan(1), reason: 'a demo precisa de um grupo');
+
+      // The count is on the card, and the action says how many it covers —
+      // three captures from one place are not three decisions. The tag is a
+      // `MonoTag`, which sets its text in small caps.
+      expect(find.textContaining('LANÇAMENTOS'), findsWidgets);
+      expect(find.textContaining('Está certo ('), findsOneWidget);
+    });
+  });
+
+  testWidgets('progress is shown before anything is done', (tester) async {
+    await withGoldenClock(() async {
+      final container = await _pump(tester, const Size(390, 844));
+      final pending = await container.read(reviewQueueProvider.future);
+      expect(find.text('0'), findsOneWidget);
+      expect(find.text(' de ${pending.length}'), findsOneWidget);
+      // Six left in four decisions: the header says both, because the second
+      // number is the one that predicts how long this takes.
+      expect(
+        find.textContaining('decis'),
+        findsOneWidget,
+        reason: 'a fila precisa dizer quantas decisões faltam',
+      );
+    });
+  });
+
+  testWidgets('settling a group advances the count by its size', (
     tester,
   ) async {
     await withGoldenClock(() async {
-      await _pump(tester, const Size(390, 844));
-      expect(find.text('J K NAVEGAR'), findsNothing);
-      expect(find.byType(Dismissible), findsWidgets);
+      final container = await _pump(tester, const Size(390, 844));
+      final before = (await container.read(reviewQueueProvider.future)).length;
+
+      await tester.tap(find.textContaining('Está certo'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+
+      final after = (await container.read(reviewQueueProvider.future)).length;
+      expect(after, lessThan(before), reason: 'a fila não andou');
+      // More than one item left in a single action: that is the grouping.
+      expect(before - after, greaterThan(1));
     });
   });
 
-  testWidgets('every item can be swiped either way', (tester) async {
-    await withGoldenClock(() async {
-      await _pump(tester, const Size(390, 844));
-      final dismissible = tester.widget<Dismissible>(
-        find.byType(Dismissible).first,
-      );
-      expect(dismissible.background, isNotNull, reason: 'aprovar');
-      expect(dismissible.secondaryBackground, isNotNull, reason: 'descartar');
-    });
-  });
-
-  testWidgets('J and K move the focused item', (tester) async {
+  testWidgets('a wide screen names the keyboard', (tester) async {
     await withGoldenClock(() async {
       await _pump(tester, const Size(1280, 900));
-      final before = tester.widgetList<Card>(find.byType(Card)).toList();
-      if (before.length < 2) return;
+      expect(find.text('J K NAVEGAR'), findsOneWidget);
+      expect(find.text('⏎ ESTÁ CERTO'), findsOneWidget);
+    });
+  });
 
-      BorderSide sideOf(Card card) =>
-          ((card.shape! as RoundedRectangleBorder).side);
-      final focusedBefore = before.indexWhere((c) => sideOf(c).width > 1);
+  testWidgets('Enter settles the group the keyboard is on', (tester) async {
+    await withGoldenClock(() async {
+      final container = await _pump(tester, const Size(1280, 900));
+      final before = (await container.read(reviewQueueProvider.future)).length;
 
-      await tester.sendKeyEvent(LogicalKeyboardKey.keyJ);
-      await tester.pump(const Duration(milliseconds: 50));
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+      }
 
-      final after = tester.widgetList<Card>(find.byType(Card)).toList();
-      final focusedAfter = after.indexWhere((c) => sideOf(c).width > 1);
-      expect(focusedAfter, focusedBefore + 1);
+      final after = (await container.read(reviewQueueProvider.future)).length;
+      expect(after, lessThan(before));
     });
   });
 }

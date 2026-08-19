@@ -117,6 +117,36 @@ class DemoFinanceRepository implements FinanceRepository {
       suggestedAction: 'Conferir número de parcelas',
       createdAt: _now.subtract(const Duration(days: 4)),
     ),
+    // Three captures from one place, so the demo shows what grouping is for:
+    // in the queue they arrive as a single decision, not three. The description
+    // has to match the linked transaction or the card contradicts itself.
+    ReviewItem(
+      id: 'r4',
+      transactionId: '3',
+      reason: 'Classificação com baixa confiança',
+      status: 'pending',
+      itemType: 'transaction',
+      description: 'UNIFIQUE TELECOM',
+      suggestedAction: 'Confirmar categoria Moradia',
+    ),
+    ReviewItem(
+      id: 'r5',
+      transactionId: '3',
+      reason: 'Classificação com baixa confiança',
+      status: 'pending',
+      itemType: 'transaction',
+      description: 'UNIFIQUE TELECOM',
+      suggestedAction: 'Confirmar categoria Moradia',
+    ),
+    ReviewItem(
+      id: 'r6',
+      transactionId: '3',
+      reason: 'Classificação com baixa confiança',
+      status: 'pending',
+      itemType: 'transaction',
+      description: 'UNIFIQUE TELECOM',
+      suggestedAction: 'Confirmar categoria Moradia',
+    ),
     ReviewItem(
       id: 'r3',
       reason: 'Lançamento da planilha sem transação correspondente',

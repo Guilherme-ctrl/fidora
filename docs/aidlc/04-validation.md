@@ -1104,3 +1104,57 @@ o produto é usado.
 | `flutter test --exclude-tags golden` | **581 passam, 0 adiados** |
 | `flutter test --tags golden` | 31 passam |
 | Navegador a 375pt | barra no rodapé, conteúdo na tela |
+
+## A fila deixou de ser uma parede (2026-08-19)
+
+O dono, com 24 pendências reais: *"a UX da fila é meio pesada, não me dá vontade
+de resolver"*. É a reação certa a uma lista rolável de 24 decisões, e o peso não
+é falta de recompensa — é volume sem fim visível.
+
+Perguntei até onde levar a gamificação e a resposta foi **progresso e
+fechamento**, sem pontos nem conquistas. Foi a escolha certa: das três coisas
+que carregam o peso, só uma é motivação.
+
+### Agrupar — a que remove trabalho
+
+Itens do mesmo estabelecimento chegam como **uma** decisão. Três capturas do
+mesmo lugar não são três decisões. A ação diz quantas cobre — "Está certo (3)" —
+e o cabeçalho diz as duas coisas: **"6 em 4 decisões"**. O segundo número é o
+que prevê quanto tempo aquilo vai levar.
+
+### Um por vez, e progresso que anda
+
+Um grupo na tela, o resto sugerido como baralho atrás. O contador viaja em vez
+de saltar, a pauta preenche, e o card sai na direção da decisão — direita para
+mantido, esquerda para descartado. Tudo nos tokens de `Motion` e desligado
+quando a plataforma pede movimento reduzido.
+
+Ao zerar, a tela diz o que a sessão custou: *"12 lançamentos revisados em 4
+decisões"*. A distância entre os dois números é o que o agrupamento comprou.
+
+### Dois defeitos que a imagem de referência expôs
+
+A fila era uma tela grande **sem nenhuma imagem de referência** — a superfície a
+que o dono reagiu era a que ninguém conseguia ver. Ao criar as duas primeiras:
+
+- **O card trocava de identidade ao abrir.** Sem o razão carregado, o
+  agrupamento cai para o motivo; quando o razão chega, reagrupa por
+  estabelecimento. Via-se "Classificação com baixa confiança (4)" virar
+  "UNIFIQUE TELECOM (3)". Agora espera o razão, que é a renderização honesta.
+- **Os cards do baralho eram invisíveis.** Tinham altura fixa menor que o card
+  da frente e sumiam atrás dele. `Positioned.fill` faz acompanharem o card.
+
+### Correções de fixture
+
+A demo não tinha repetição de estabelecimento, então a fila nunca mostrava o
+agrupamento — e a descrição do item contradizia a transação ligada.
+`review_and_rules_test` fixava o tamanho da fila em três, e três testes de
+comportamento quebraram só porque a demo cresceu; eles leem o tamanho agora.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **588 passam, 0 adiados** |
+| `flutter test --tags golden` | 33 passam, com a fila entre elas |
