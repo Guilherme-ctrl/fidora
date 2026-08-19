@@ -274,3 +274,35 @@ Two defects were found by these tests before shipping:
 
 Reminder preferences live in `shared_preferences`, deliberately: whether this
 phone buzzes is a property of the phone, not of the account.
+
+## Invoice closing forecast (fase 4)
+
+Covered by tests: 18 on the derivation, 12 on the widget. The ones that
+carry real weight:
+
+- **Instalments are never counted twice.** They feed `scheduled` and are
+  excluded from the daily rate; an instalment already captured for the target
+  month lands in `committed` and drops out of `scheduled`.
+- **A month absent from the data is not a frugal month.** Without the
+  `_hasCycle` guard, every cycle predating the first import would contribute
+  thirty days of zero spend and halve the rate. A cycle that *was* observed
+  and holds only instalments still counts, with zero rhythm — that one is
+  genuine evidence.
+- **The forecast uses `amount`, not `personalShare`.** The issuer bills the
+  whole purchase regardless of who it is attributed to.
+- **Cycles, not calendar months.** A card closing on the 20th collects the
+  tail of one month and the head of the next; a calendar average would
+  misplace roughly a third of the spend.
+- **No baseline means no projection.** The card says so in words rather than
+  presenting `committed` as if it were a forecast.
+
+The bar's proportions are asserted on flex values, so the check does not
+depend on the width the test runs at.
+
+**Not verified:** the screen has not been driven by hand. The browser pane in
+this environment does not deliver clicks into the Flutter canvas — the app
+boots and renders, but the Faturas tab could not be reached by clicking.
+A golden render was used to inspect layout and was discarded afterwards:
+widget tests load no font, so every glyph renders as a box and line wrapping
+in that image says nothing about the real app. Layout facts were recovered
+from the render tree instead, which is font-independent.

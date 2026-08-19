@@ -145,3 +145,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Build and Test — limpeza de disco autorizada pelo usuário após aviso explícito de que apagar o Docker.raw destrói imagens, containers e volumes.
 
 ---
+
+## Construction — Code Generation (Fase 4: previsão de fechamento)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode seguir para a fase 4"
+**AI Response**: "Comecei pela previsão de fechamento de fatura. `lib/domain/invoice_forecast.dart` separa o valor em três partes por grau de confiança — já lançado (fato), parcelas contratadas (compromisso) e estimativa (palpite do ritmo do próprio cartão) — e o widget na aba Faturas mostra as três separadas, nunca uma soma única. 30 testes novos, 305 no total, analyze limpo. A tela não foi dirigida à mão: o pane do browser não entrega cliques no canvas do Flutter neste ambiente. Usei um golden para inspecionar layout e descartei — teste de widget não carrega fonte, então quebra de linha ali não diz nada sobre o app real; os fatos de layout vieram da árvore de renderização."
+**Context**: Construction / Code Generation — primeiro item da fase 4. Branch feat/fase-4-previsao.
+
+---

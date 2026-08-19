@@ -4,6 +4,7 @@ import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/card_form_sheet.dart';
+import 'package:financeiro_ai/presentation/widgets/invoice_forecast_card.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -40,6 +41,11 @@ class CardsPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: 22),
+        // Above the cards on purpose: "quanto vai dar" is the question this
+        // page is opened to answer, and it is the only one here about the
+        // future. It removes itself when there is nothing to forecast.
+        InvoiceForecastCard(snapshot: snapshot),
+        const SizedBox(height: 14),
         LayoutBuilder(
           builder: (context, constraints) {
             final split = constraints.maxWidth >= 850;
