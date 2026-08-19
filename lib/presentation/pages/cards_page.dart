@@ -143,16 +143,24 @@ class _CreditCardView extends StatelessWidget {
         ),
       ),
       child: Container(
-        // Grows with Dynamic Type; the inner Spacers need a bounded height.
-        height: 225 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6),
-        padding: const EdgeInsets.all(24),
+        // A minimum, not a height. The old value scaled with Dynamic Type but
+        // capped at 1.6x, and once real fonts were bundled the content ran 141px
+        // past it at 2x — the test font's boxes had been narrower than the
+        // letters they stood in for. The card now takes the height its content
+        // needs and the `Spacer`s became fixed gaps, which is what allowed the
+        // bound to go away.
+        constraints: BoxConstraints(
+          minHeight:
+              225 * MediaQuery.textScalerOf(context).scale(1).clamp(1.0, 1.6),
+        ),
+        padding: const EdgeInsets.all(Space.xl),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF193C30), Color(0xFF285F49)],
+          gradient: LinearGradient(
+            colors: context.palette.cardGradient,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(Radii.md),
           boxShadow: [
             BoxShadow(
               color: context.palette.accent.withValues(alpha: .18),
@@ -185,7 +193,7 @@ class _CreditCardView extends StatelessWidget {
                   const Icon(Icons.contactless_rounded, color: Colors.white70),
                 ],
               ),
-              const Spacer(),
+              const SizedBox(height: Space.lg),
               Text(
                 card.name,
                 style: const TextStyle(
@@ -198,7 +206,7 @@ class _CreditCardView extends StatelessWidget {
                 '••••  ••••  ••••  ${card.lastFour}',
                 style: const TextStyle(fontSize: 17, letterSpacing: 1.5),
               ),
-              const Spacer(),
+              const SizedBox(height: Space.lg),
               if (usage.hasLimit) ...[
                 RuleBar(
                   value: usage.ratio,

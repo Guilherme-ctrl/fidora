@@ -289,3 +289,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 7, último do remake. Branch `feat/ui-remake-pr7`.
 
 ---
+
+## Construction — Code Generation (fontes empacotadas)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "pode baixar as fontes"
+**AI Response**: "Baixadas de `github.com/google/fonts`, OFL, com as licenças ao lado: Inter, Source Serif 4 e JetBrains Mono, as três variáveis — um arquivo por família, e o eixo `wght` selecionado por `fontVariations` em vez de empacotar um arquivo por peso. **Minha estimativa no plano estava otimista**: eu disse 250–350 KB em subconjunto latino, e os arquivos completos somam 2,2 MB. Subsetei para latim, latim estendido-A, pontuação, moedas e os poucos símbolos que o produto usa, e ficaram 582 KB — melhor que 2,2 MB, pior que a estimativa, e o número real está registrado. Conferi o que sobreviveu ao corte: o eixo de peso está nas três e o `tnum` está no Inter, que é onde as colunas vivem; a serifa não tem e não precisa, porque nunca é usada em coluna. Isso destravou o item que ficou pendente desde o PR 0: `flutter_test_config.dart` carrega as fontes antes dos testes, então as imagens de referência passaram a registrar as letras. E a primeira coisa que as letras de verdade fizeram foi reprovar um layout — a página de faturas estourou 141px por baixo a 2,0x, porque a face do cartão tinha altura fixa e os retângulos da fonte de teste eram mais estreitos que as letras que representavam. Virou altura mínima, e os dois `Spacer` viraram espaços fixos. Também apontei `ThemeData.fontFamily` para Inter: cerca de 200 `TextStyle` literais ainda não pedem estilo ao `LedgerText`, e sem essa linha o produto empacotaria três famílias escolhidas e continuaria não sendo composto nelas. 578 testes passam."
+**Context**: Construction / Code Generation — fecha o último item conhecido do PR 1.
+
+---

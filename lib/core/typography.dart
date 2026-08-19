@@ -46,10 +46,10 @@ class LedgerText extends ThemeExtension<LedgerText> {
   /// Section label.
   final TextStyle labelCaps;
 
-  /// Source Serif 4 is bundled later; until then the platform serif carries
-  /// the display voice, which on iOS and macOS is New York.
-  static const _serif = <String>[
-    'Source Serif 4',
+  /// The three families are bundled. The fallbacks stay for the case where an
+  /// asset fails to load, so the product degrades to a platform face rather
+  /// than to blank boxes.
+  static const _serifFallback = <String>[
     'New York',
     'Iowan Old Style',
     'Charter',
@@ -57,19 +57,34 @@ class LedgerText extends ThemeExtension<LedgerText> {
     'serif',
   ];
 
-  static const _mono = <String>[
-    'JetBrains Mono',
+  static const _monoFallback = <String>[
     'SF Mono',
     'Menlo',
     'Consolas',
     'monospace',
   ];
 
+  static const _sansFallback = <String>[
+    '.SF UI Text',
+    'Segoe UI',
+    'Roboto',
+    'sans-serif',
+  ];
+
   static const _tabular = <FontFeature>[FontFeature.tabularFigures()];
+
+  /// Variable fonts: one file carries every weight, and the axis is selected
+  /// with `fontVariations` rather than by bundling a file per weight.
+  ///
+  /// `opsz` is the optical size axis. A face drawn for 14pt and set at 44pt
+  /// looks loose; asking the serif for its display cut is the difference
+  /// between a big number and a headline.
 
   static const standard = LedgerText(
     displayHero: TextStyle(
-      fontFamilyFallback: _serif,
+      fontFamily: 'Source Serif 4',
+      fontFamilyFallback: _serifFallback,
+      fontVariations: [FontVariation('wght', 500), FontVariation('opsz', 44)],
       fontSize: 44,
       height: 1.05,
       fontWeight: FontWeight.w500,
@@ -77,7 +92,9 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontFeatures: _tabular,
     ),
     displayMetric: TextStyle(
-      fontFamilyFallback: _serif,
+      fontFamily: 'Source Serif 4',
+      fontFamilyFallback: _serifFallback,
+      fontVariations: [FontVariation('wght', 500), FontVariation('opsz', 28)],
       fontSize: 27,
       height: 1.15,
       fontWeight: FontWeight.w500,
@@ -85,29 +102,57 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontFeatures: _tabular,
     ),
     titleLg: TextStyle(
+      fontFamily: 'Inter',
+      fontFamilyFallback: _sansFallback,
+      fontVariations: [FontVariation('wght', 600)],
       fontSize: 19,
       height: 1.3,
       fontWeight: FontWeight.w600,
       letterSpacing: -0.1,
     ),
-    titleMd: TextStyle(fontSize: 13, height: 1.35, fontWeight: FontWeight.w600),
-    bodyMd: TextStyle(fontSize: 14, height: 1.45),
-    bodySm: TextStyle(fontSize: 13, height: 1.4),
+    titleMd: TextStyle(
+      fontFamily: 'Inter',
+      fontFamilyFallback: _sansFallback,
+      fontVariations: [FontVariation('wght', 600)],
+      fontSize: 13,
+      height: 1.35,
+      fontWeight: FontWeight.w600,
+    ),
+    bodyMd: TextStyle(
+      fontFamily: 'Inter',
+      fontFamilyFallback: _sansFallback,
+      fontSize: 14,
+      height: 1.45,
+    ),
+    bodySm: TextStyle(
+      fontFamily: 'Inter',
+      fontFamilyFallback: _sansFallback,
+      fontSize: 13,
+      height: 1.4,
+    ),
     amount: TextStyle(
+      // Inter is the only one of the three that kept a `tnum` feature through
+      // subsetting, and it is the one that matters: the column lives here.
+      fontFamily: 'Inter',
+      fontFamilyFallback: _sansFallback,
+      fontVariations: [FontVariation('wght', 500)],
       fontSize: 14,
       height: 1.4,
       fontWeight: FontWeight.w500,
       fontFeatures: _tabular,
     ),
     meta: TextStyle(
-      fontFamilyFallback: _mono,
+      fontFamily: 'JetBrains Mono',
+      fontFamilyFallback: _monoFallback,
       fontSize: 11,
       height: 1.35,
       letterSpacing: 0.2,
       fontFeatures: _tabular,
     ),
     labelCaps: TextStyle(
-      fontFamilyFallback: _mono,
+      fontFamily: 'JetBrains Mono',
+      fontFamilyFallback: _monoFallback,
+      fontVariations: [FontVariation('wght', 600)],
       fontSize: 10,
       height: 1.35,
       fontWeight: FontWeight.w600,

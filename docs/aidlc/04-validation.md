@@ -990,3 +990,62 @@ frente.
 | `showModalBottomSheet` soltos | 11 | **0** |
 | Números mágicos de largura | 23 | 14 |
 | Overflows de produção conhecidos | 8 | **0** |
+
+## As fontes, enfim (2026-08-19)
+
+O último item conhecido do PR 1, que dependia de autorização para baixar
+binário.
+
+### O que entrou
+
+Três famílias variáveis, OFL, de `github.com/google/fonts`, com as licenças ao
+lado: **Inter**, **Source Serif 4** e **JetBrains Mono**. Um arquivo por
+família — o eixo `wght` cobre todos os pesos, selecionado por `fontVariations`
+em vez de empacotar um arquivo por peso.
+
+### O tamanho, e onde minha estimativa errou
+
+O plano dizia "≈ 250–350 KB em subconjunto latino". Os arquivos completos somam
+**2,2 MB** — sete vezes isso. Subsetados para latim, latim estendido-A,
+pontuação, moedas e os poucos símbolos que o produto usa de fato:
+
+| | completo | subsetado |
+|---|---|---|
+| Inter | 856 KB | **176 KB** |
+| Source Serif 4 | 1181 KB | **305 KB** |
+| JetBrains Mono | 183 KB | **101 KB** |
+| total | 2220 KB | **582 KB** |
+
+582 KB, não 250–350. A estimativa estava otimista; o número real está
+registrado.
+
+Verifiquei o que sobreviveu ao corte: o eixo `wght` está nas três, e o recurso
+`tnum` está no **Inter** — que é exatamente onde as colunas vivem. A serifa não
+tem `tnum` e não precisa: ela nunca é usada em coluna.
+
+### O que isso destravou
+
+`test/flutter_test_config.dart` carrega as fontes antes de qualquer teste, então
+**as imagens de referência passaram a registrar as letras**. O limite anunciado
+no PR 0 — "texto renderiza como retângulo, e isso muda quando as fontes
+entrarem" — deixou de existir.
+
+E a primeira coisa que as letras de verdade fizeram foi reprovar um layout:
+`faturas` a 2,0x estourou 141px por baixo. A face do cartão tinha **altura
+fixa**, escalada com Dynamic Type mas limitada a 1,6x; os retângulos da fonte de
+teste eram mais estreitos que as letras que representavam. A altura virou mínimo,
+e os dois `Spacer` — que exigiam altura limitada — viraram espaços fixos.
+
+`ThemeData.fontFamily` passou a apontar para Inter, porque cerca de 200
+`TextStyle` literais ainda não pedem estilo ao `LedgerText`: sem essa linha o
+produto empacotaria três famílias escolhidas e continuaria não sendo composto
+nelas.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **578 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam, agora com tipografia |

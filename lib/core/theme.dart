@@ -298,6 +298,13 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
   return ThemeData(
     useMaterial3: true,
     brightness: brightness,
+    // The default for everything that still builds its own `TextStyle` without
+    // asking `LedgerText` for one. There are around 200 of those left, and
+    // without this line each of them would fall back to the platform's default
+    // face — the product would ship three considered families and still not be
+    // set in them.
+    fontFamily: 'Inter',
+    fontFamilyFallback: const ['.SF UI Text', 'Segoe UI', 'Roboto'],
     colorScheme: scheme,
     scaffoldBackgroundColor: palette.canvas,
     extensions: [palette, LedgerText.standard],

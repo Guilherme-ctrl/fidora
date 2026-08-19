@@ -121,12 +121,12 @@ worklist dos PRs 2 e 5, e bate com as ~145 decisões semânticas previstas.
 
 Ficou de fora, e por quê:
 
-- [ ] **Empacotar Source Serif 4, Inter e JetBrains Mono.** Baixar binário de
-      fonte precisa da sua autorização. Até lá `LedgerText` usa
-      `fontFamilyFallback` para a serifa do sistema (New York no iOS/macOS,
-      Georgia no resto), e `FontFeature.tabularFigures()` já funciona com a
-      fonte padrão — o alinhamento de coluna, que era o ganho principal, já
-      está valendo.
+- [x] **Source Serif 4, Inter e JetBrains Mono empacotadas** (19 ago 2026, após
+      autorização). Variáveis, OFL, subsetadas de 2,2 MB para **582 KB** — a
+      estimativa deste plano dizia 250–350 KB e estava otimista. Com elas
+      carregadas em `flutter_test_config.dart`, as imagens de referência passaram
+      a registrar as letras, e a primeira coisa que fizeram foi reprovar a face
+      do cartão a 2,0x.
 - [ ] `categoryColors` em `category_visuals.dart` ainda tem o ocre `#8D6414` e
       as 12 cores do seletor não passaram por medição. São **dado gravado** —
       `categories.color` no banco — então mexer nelas é migração, não tema. Fica
