@@ -892,3 +892,48 @@ recategorizar em lote passaram por `showResponsiveSurface`:
 | `flutter analyze --fatal-infos` | **sem problemas** |
 | `flutter test --exclude-tags golden` | **567 passam, 0 adiados** |
 | `flutter test --tags golden` | 31 passam |
+
+## PR 6 — densidade do desktop (2026-08-19)
+
+### Três colunas que o app lia e jogava fora
+
+`source_file`, `confidence` e `dedup_key` existem em `transactions` desde a
+primeira migration, e o repositório já as buscava com `select('*')`. Elas nunca
+foram mapeadas no modelo — o app segurava a procedência inteira e não conseguia
+mostrá-la. São três campos em `FinanceTransaction.fromJson`.
+
+O painel de detalhe agora responde de onde veio o número: entrou pelo Atalho,
+por importação ou digitado; de qual arquivo; com que confiança; e sob qual chave
+de dedupe. **Um total que ninguém consegue rastrear é um total com que ninguém
+consegue discutir.**
+
+### A tabela
+
+Acima de 905pt o histórico vira colunas — data, comerciante, categoria, cartão,
+estado, valor — com cabeçalho de pauta pesada, zebra e a coluna de valor atrás
+de uma pauta vertical. Abaixo continua a lista empilhada. Mesmos dados, mesma
+seleção, mesmas ações.
+
+### Um defeito latente que a tabela expôs
+
+`CategoryMark` desenhava a barra da categoria como um **lado da borda**, e
+`BoxDecoration` dispara assert quando um raio encontra uma borda de lados
+diferentes em cor ou espessura. O componente é do PR 2 e nunca tinha estourado,
+porque nenhuma tela punha a marca em todas as linhas de uma vez. A tabela pôs, e
+apareceram doze exceções de uma vez. A barra virou filho dentro de um
+`ClipRRect`, com a borda uniforme.
+
+### Correção de documentação
+
+`03-specification.md` listava "bulk recategorization" como adiada. O código a
+tem — seleção múltipla, aplicação em lote e a oferta de virar regra logo após a
+correção. A especificação estava desatualizada, não o código.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **574 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam |

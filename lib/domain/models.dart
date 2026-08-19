@@ -22,6 +22,9 @@ class FinanceTransaction {
     this.personalAmount,
     this.accountId,
     this.receiptPath,
+    this.sourceFile,
+    this.confidence,
+    this.dedupKey,
   });
   final String id;
   final DateTime date;
@@ -53,7 +56,27 @@ class FinanceTransaction {
   /// snapshot load, and the ledger is read in full on each one.
   final String? receiptPath;
 
+  /// Where this row came from, kept so a number can always be traced back.
+  ///
+  /// All three columns have existed since the first migration and the query
+  /// already asks for them with `select('*')` — they were simply never mapped,
+  /// so the app held the lineage and could not show it.
+
+  /// The statement or invoice file an import read this from.
+  final String? sourceFile;
+
+  /// How sure the classifier was: `high`, `medium` or `low`.
+  final String? confidence;
+
+  /// What makes a repeated capture the same purchase. A Shortcut capture and a
+  /// statement row that share one are the same charge, not two.
+  final String? dedupKey;
+
   bool get hasReceipt => receiptPath != null;
+
+  /// Whether anything is known about where this came from beyond [source].
+  bool get hasLineage =>
+      sourceFile != null || confidence != null || dedupKey != null;
 
   /// What counts as yours. The full [amount] stays the audited figure.
   double get personalShare => personalAmount ?? amount;
@@ -95,6 +118,9 @@ class FinanceTransaction {
         personalAmount: (json['personal_amount'] as num?)?.toDouble(),
         accountId: json['account_id'] as String?,
         receiptPath: json['receipt_path'] as String?,
+        sourceFile: json['source_file'] as String?,
+        confidence: json['confidence'] as String?,
+        dedupKey: json['dedup_key'] as String?,
         status: switch (json['status']) {
           'pending' => TransactionStatus.pending,
           'ignored' => TransactionStatus.ignored,

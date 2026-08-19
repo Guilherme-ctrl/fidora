@@ -419,28 +419,37 @@ class CategoryMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(Radii.xs),
-        border: Border(
-          top: BorderSide(color: palette.rule),
-          right: BorderSide(color: palette.rule),
-          bottom: BorderSide(color: palette.rule),
-          left: BorderSide(
-            color: color ?? palette.categorical.first,
-            width: Strokes.mark,
-          ),
+    // The category bar is a child, not a border side. `BoxDecoration` asserts
+    // when a radius meets a border whose sides differ in colour or width, and
+    // this mark is exactly that shape — the assert was latent until the table
+    // put a mark on every row of a wide screen.
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(Radii.xs),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          border: Border.all(color: palette.rule, width: Strokes.hairline),
         ),
-      ),
-      child: Text(
-        text,
-        style: context.type.meta.copyWith(
-          fontSize: size * .38,
-          fontWeight: FontWeight.w600,
-          color: palette.inkMuted,
+        child: Row(
+          children: [
+            Container(
+              width: Strokes.mark,
+              color: color ?? palette.categorical.first,
+            ),
+            Expanded(
+              child: Center(
+                child: Text(
+                  text,
+                  style: context.type.meta.copyWith(
+                    fontSize: size * .38,
+                    fontWeight: FontWeight.w600,
+                    color: palette.inkMuted,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

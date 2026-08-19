@@ -277,15 +277,41 @@ Fica para o PR 6, com motivo:
       PR 7, onde a recuperação já estava. O que eu disse no PR 4 ("vai no PR 5")
       estava desalinhado com o plano.
 
-### PR 6 — Densidade do desktop · ~2 dias
+### PR 6 — Densidade do desktop · **entregue** (2026-08-19)
 
-- [ ] Histórico como tabela acima de 1024px (`TwoDimensionalScrollView`)
-- [ ] Seleção múltipla e barra de ação em lote
-- [ ] **Recategorização em lote** — destrava o item diferido em
-      `docs/aidlc/03-specification.md`
-- [ ] `Shortcuts`/`Actions`/`Intent` e `CommandPalette` (⌘K)
-- [ ] Painel lateral de detalhe com linhagem: origem, arquivo, confiança,
-      chave de dedupe — dados que o modelo guarda e a interface nunca mostrou
+- [x] **Histórico em tabela acima de 905pt** — cabeçalho de colunas com pauta
+      pesada, zebra, marca de categoria e a coluna de valor atrás de uma pauta
+      vertical. Abaixo disso continua a lista empilhada, com os mesmos dados,
+      a mesma seleção e as mesmas ações
+- [x] **Procedência no painel de detalhe** — origem, arquivo, confiança e chave
+      de dedupe
+- [x] `CommandPalette` (⌘K) com busca por nome **e por espaço**, navegação por
+      seta, `Enter` para executar, `Esc` para sair
+- [x] Atalhos globais: `⌘K`, `N` para novo lançamento, `1`–`4` para os espaços
+- [x] `keyboard_test.dart` — 7 casos
+
+**Três colunas do banco estavam sendo lidas e jogadas fora.** `source_file`,
+`confidence` e `dedup_key` existem desde a primeira migration e o
+`select('*')` já as trazia — só não eram mapeadas no modelo. O app segurava a
+procedência inteira e não conseguia mostrá-la. São três campos.
+
+**Recategorização em lote já existia.** O `03-specification.md` a listava como
+adiada; o código a tem, com seleção múltipla e a oferta de virar regra logo
+depois da correção. A especificação foi corrigida, não o código.
+
+Um defeito latente veio à tona: `CategoryMark` desenhava a barra da categoria
+como um lado da borda, e `BoxDecoration` dispara assert quando um raio encontra
+uma borda de lados diferentes. Nunca tinha aparecido porque nenhuma tela punha a
+marca em todas as linhas de uma vez — a tabela pôs. A barra virou filho, não
+borda.
+
+Fica para o PR 7, com motivo:
+
+- [ ] 28 `Card(`, 22 `Chip(`, 40 `FilledButton`, 7 `LinearProgressIndicator`.
+      Adiei de novo, e desta vez a razão é honesta: são trocas por chamada em
+      muitos arquivos, e eu preferi não fazê-las às pressas no fim de um PR
+      grande. Os componentes existem e o trabalho é mecânico.
+- [ ] `TextStyle` e `EdgeInsets` literais.
 
 ### PR 7 — Ritual e primeira sessão · ~2 dias
 

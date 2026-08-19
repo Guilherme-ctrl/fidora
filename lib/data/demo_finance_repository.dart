@@ -685,6 +685,8 @@ class DemoFinanceRepository implements FinanceRepository {
       category: 'Alimentação',
       cardLastFour: '6902',
       source: 'apple_pay',
+      confidence: 'high',
+      dedupKey: 'sha256:9f2c1a…',
     ),
     FinanceTransaction(
       id: '2',
@@ -694,6 +696,10 @@ class DemoFinanceRepository implements FinanceRepository {
       category: 'Transporte',
       cardLastFour: '6902',
       source: 'apple_pay',
+      // Low confidence is what puts a capture in the review queue, so the demo
+      // has to carry one or the lineage panel never shows the interesting case.
+      confidence: 'low',
+      dedupKey: 'sha256:4b70e2…',
     ),
     FinanceTransaction(
       id: '3',
@@ -702,6 +708,10 @@ class DemoFinanceRepository implements FinanceRepository {
       amount: 197.50,
       category: 'Moradia',
       cardLastFour: '2780',
+      source: 'statement_import',
+      sourceFile: 'nubank-2026-08.csv',
+      confidence: 'medium',
+      dedupKey: 'sha256:e11a05…',
     ),
     FinanceTransaction(
       id: '4',

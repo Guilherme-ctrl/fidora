@@ -97,8 +97,9 @@
 - Real PDF/XLSX statement parser.
 - CRUD forms for **card, category, goal and holder**. The transaction form is
   delivered; these four still open a placeholder.
-- Bulk recategorization, so a mis-categorized import can be corrected in one
-  pass rather than row by row.
+- ~~Bulk recategorization~~ — **entregue**. A seleção múltipla e a
+  recategorização em lote existem no histórico; a lista as manteve como
+  adiadas por engano até 19 ago 2026.
 - Spreadsheet migration command.
 - Receipt OCR and attachment upload.
 - Applying `merchant_rules` at capture time: the rules are managed but the Edge

@@ -22,6 +22,9 @@ import 'package:financeiro_ai/presentation/routes.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/navigation.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
+import 'package:financeiro_ai/presentation/widgets/command_palette.dart';
+import 'package:flutter/services.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,6 +95,40 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     );
   }
+
+  List<Command> _commands(FinanceSnapshot? snapshot) => [
+    for (var i = 0; i < destinations.length; i++)
+      Command(
+        label: 'Ir para ${destinations[i].label}',
+        group: destinations[i].space.label,
+        icon: destinations[i].icon,
+        hint: i < 4 ? '${i + 1}' : null,
+        run: () => _goTo(i),
+      ),
+    if (snapshot != null)
+      Command(
+        label: 'Novo lançamento',
+        group: 'Ação',
+        icon: Icons.add_rounded,
+        hint: 'N',
+        run: () => createTransaction(context, ref, snapshot),
+      ),
+    Command(
+      label: 'Recarregar os dados',
+      group: 'Ação',
+      icon: Icons.refresh_rounded,
+      run: () => refreshFinanceSnapshot(ref),
+    ),
+    Command(
+      label: 'Alternar o tema',
+      group: 'Ajustes',
+      icon: Icons.brightness_6_rounded,
+      run: () {
+        final mode = ref.read(appearanceProvider);
+        ref.read(appearanceProvider.notifier).set(mode.next);
+      },
+    ),
+  ];
 
   List<Destination> _withBadge(int pending) => [
     for (final item in destinations)
@@ -204,46 +241,81 @@ class _AppShellState extends ConsumerState<AppShell> {
       ),
     };
 
-    return Scaffold(
-      body: Row(
-        children: [
-          if (layout.hasRail)
-            LedgerSidebar(
-              items: items,
-              selected: index,
-              compact: !layout.hasSidebar,
-              onSelected: _goTo,
-              // Not `_Brand`: that one is the phone's top bar, with a status
-              // pill and a sign-out button, and it overflowed a 68pt rail by
-              // 200px.
-              header: _SidebarBrand(compact: !layout.hasSidebar),
-              footer: _ShellFooter(
-                compact: !layout.hasSidebar,
-                onSignOut: widget.onSignOut,
-              ),
-            ),
-          Expanded(
-            child: SafeArea(
-              // A ledger row loses the eye between merchant and amount long
-              // before a 1920px monitor ends. Content is capped and centred.
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: maxContentWidth),
-                  child: content(),
+    // The keyboard is the desktop's interface for a product built around
+    // entering and reviewing the same kinds of row. There was not a single
+    // `Shortcuts` widget in the codebase before this.
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+            showCommandPalette(context, commands: _commands(snapshot)),
+        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+            showCommandPalette(context, commands: _commands(snapshot)),
+        if (snapshot != null)
+          const SingleActivator(LogicalKeyboardKey.keyN): () =>
+              createTransaction(context, ref, snapshot),
+        for (var i = 0; i < 4; i++)
+          SingleActivator(
+            [
+              LogicalKeyboardKey.digit1,
+              LogicalKeyboardKey.digit2,
+              LogicalKeyboardKey.digit3,
+              LogicalKeyboardKey.digit4,
+            ][i],
+          ): () =>
+              _goTo(i),
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          body: Row(
+            children: [
+              if (layout.hasRail)
+                LedgerSidebar(
+                  items: items,
+                  selected: index,
+                  compact: !layout.hasSidebar,
+                  onSelected: _goTo,
+                  // Not `_Brand`: that one is the phone's top bar, with a status
+                  // pill and a sign-out button, and it overflowed a 68pt rail by
+                  // 200px.
+                  header: _SidebarBrand(
+                    compact: !layout.hasSidebar,
+                    onSearch: () => showCommandPalette(
+                      context,
+                      commands: _commands(snapshot),
+                    ),
+                  ),
+                  footer: _ShellFooter(
+                    compact: !layout.hasSidebar,
+                    onSignOut: widget.onSignOut,
+                  ),
+                ),
+              Expanded(
+                child: SafeArea(
+                  // A ledger row loses the eye between merchant and amount long
+                  // before a 1920px monitor ends. Content is capped and centred.
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: maxContentWidth,
+                      ),
+                      child: content(),
+                    ),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+          bottomNavigationBar: layout.hasRail || snapshot == null
+              ? null
+              : LedgerTabBar(
+                  items: [for (final slot in _phone) items[slot]],
+                  selected: _phone.indexOf(index),
+                  onSelected: (value) => _goTo(_phone[value]),
+                  onCreate: () => createTransaction(context, ref, snapshot),
+                ),
+        ),
       ),
-      bottomNavigationBar: layout.hasRail || snapshot == null
-          ? null
-          : LedgerTabBar(
-              items: [for (final slot in _phone) items[slot]],
-              selected: _phone.indexOf(index),
-              onSelected: (value) => _goTo(_phone[value]),
-              onCreate: () => createTransaction(context, ref, snapshot),
-            ),
     );
   }
 }
@@ -344,8 +416,9 @@ class _SelectedPage extends StatelessWidget {
 
 /// The mark alone on a narrow rail, the mark and the name on a full sidebar.
 class _SidebarBrand extends StatelessWidget {
-  const _SidebarBrand({required this.compact});
+  const _SidebarBrand({required this.compact, this.onSearch});
   final bool compact;
+  final VoidCallback? onSearch;
 
   @override
   Widget build(BuildContext context) {
@@ -363,19 +436,70 @@ class _SidebarBrand extends StatelessWidget {
         style: context.type.titleMd.copyWith(color: palette.onAction),
       ),
     );
-    if (compact) return Center(child: mark);
-    return Row(
+    if (compact) {
+      return Column(
+        children: [
+          mark,
+          if (onSearch != null) ...[
+            const SizedBox(height: Space.xs),
+            IconButton(
+              tooltip: 'Buscar ou comandar  ⌘K',
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              onPressed: onSearch,
+              icon: const Icon(Icons.search_rounded),
+            ),
+          ],
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        mark,
-        const SizedBox(width: Space.xs),
-        Expanded(
-          child: Text(
-            'Finora',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.type.titleMd,
-          ),
+        Row(
+          children: [
+            mark,
+            const SizedBox(width: Space.xs),
+            Expanded(
+              child: Text(
+                'Finora',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: context.type.titleMd,
+              ),
+            ),
+          ],
         ),
+        if (onSearch != null) ...[
+          const SizedBox(height: Space.sm),
+          InkWell(
+            onTap: onSearch,
+            borderRadius: BorderRadius.circular(Radii.sm),
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: Space.xs,
+                vertical: 5,
+              ),
+              decoration: BoxDecoration(
+                border: Border.all(color: palette.ruleStrong),
+                borderRadius: BorderRadius.circular(Radii.sm),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Buscar ou comandar',
+                      style: context.type.bodySm.copyWith(
+                        color: palette.inkSubtle,
+                      ),
+                    ),
+                  ),
+                  const MonoTag('⌘K'),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }

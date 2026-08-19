@@ -1,6 +1,8 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/typography.dart';
+import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -81,6 +83,9 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
+    // Columns above `expanded`, stacked rows below. Same data, same selection,
+    // same actions — only the presentation changes.
+    final table = Breakpoint.of(context).hasTable;
     final filtered = filterTransactions(
       widget.snapshot,
       widget.period,
@@ -212,27 +217,40 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
               ),
             ),
           )
-        else
+        else ...[
+          if (table)
+            SliverPadding(
+              padding: padding.copyWith(bottom: 0),
+              sliver: const SliverToBoxAdapter(child: _TableHeader()),
+            ),
           SliverPadding(
-            padding: padding,
+            padding: padding.copyWith(top: table ? 0 : null),
             sliver: SliverList.builder(
               itemCount: filtered.length,
               itemBuilder: (context, index) {
                 final item = filtered[index];
+                // In table mode the row draws its own rules and ground, and a
+                // rounded card behind it both looks wrong and asserts: a
+                // borderRadius cannot sit on a border whose sides differ in
+                // colour, which the selected row's left mark does.
                 return Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).cardTheme.color,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(index == 0 ? 22 : 0),
-                      bottom: Radius.circular(
-                        index == filtered.length - 1 ? 22 : 0,
-                      ),
-                    ),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: table
+                      ? null
+                      : BoxDecoration(
+                          color: Theme.of(context).cardTheme.color,
+                          borderRadius: BorderRadius.vertical(
+                            top: Radius.circular(index == 0 ? Radii.md : 0),
+                            bottom: Radius.circular(
+                              index == filtered.length - 1 ? Radii.md : 0,
+                            ),
+                          ),
+                        ),
+                  padding: EdgeInsets.symmetric(horizontal: table ? 0 : 8),
                   child: _TransactionRow(
                     item: item,
                     accounts: widget.snapshot.accounts,
+                    table: table,
+                    zebra: index.isOdd,
                     selected: _selected.contains(item.id),
                     selecting: _selected.isNotEmpty,
                     onToggleSelect: () => setState(
@@ -252,6 +270,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
               },
             ),
           ),
+        ],
         const SliverToBoxAdapter(child: SizedBox(height: 36)),
       ],
     );
@@ -399,6 +418,50 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   }
 }
 
+/// The column widths, shared by the header and every row so they line up.
+///
+/// A ledger read on a wide screen needs columns: the eye loses the row between
+/// the merchant and the number, which is exactly what a ruled column stops.
+const _cols = (date: 1, merchant: 4, category: 2, card: 2, state: 2, amount: 2);
+
+class _TableHeader extends StatelessWidget {
+  const _TableHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    Widget cell(String label, int flex, {bool end = false}) => Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+        child: Align(
+          alignment: end ? Alignment.centerRight : Alignment.centerLeft,
+          child: SectionLabel(label),
+        ),
+      ),
+    );
+
+    return Container(
+      padding: const EdgeInsets.only(bottom: Space.xs, left: 34),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: palette.ruleHeavy, width: Strokes.heavy),
+        ),
+      ),
+      child: Row(
+        children: [
+          cell('data', _cols.date),
+          cell('comerciante', _cols.merchant),
+          cell('categoria', _cols.category),
+          cell('cartão / conta', _cols.card),
+          cell('estado', _cols.state),
+          cell('valor', _cols.amount, end: true),
+        ],
+      ),
+    );
+  }
+}
+
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({
     required this.item,
@@ -408,6 +471,8 @@ class _TransactionRow extends StatelessWidget {
     required this.onToggleSelect,
     required this.onEdit,
     required this.onDelete,
+    this.table = false,
+    this.zebra = false,
   });
   final FinanceTransaction item;
   final List<Account> accounts;
@@ -417,8 +482,144 @@ class _TransactionRow extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
+  /// Columns instead of a stacked card, above the `expanded` breakpoint.
+  final bool table;
+  final bool zebra;
+
   @override
-  Widget build(BuildContext context) => InkWell(
+  Widget build(BuildContext context) =>
+      table ? _buildTable(context) : _buildCard(context);
+
+  Widget _buildTable(BuildContext context) {
+    final palette = context.palette;
+    final type = context.type;
+
+    Widget cell(Widget child, int flex, {bool end = false}) => Expanded(
+      flex: flex,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: Space.xs),
+        child: Align(
+          alignment: end ? Alignment.centerRight : Alignment.centerLeft,
+          child: child,
+        ),
+      ),
+    );
+
+    return InkWell(
+      onTap: selecting ? onToggleSelect : () => _openDetails(context),
+      onLongPress: onToggleSelect,
+      child: Container(
+        decoration: BoxDecoration(
+          color: selected
+              ? palette.accentSoft
+              : zebra
+              ? palette.sunken
+              : null,
+          border: Border(
+            top: BorderSide(color: palette.rule, width: Strokes.hairline),
+            left: BorderSide(
+              color: selected ? palette.accent : Colors.transparent,
+              width: 2,
+            ),
+          ),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: Space.xs),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 32,
+              child: Checkbox(
+                value: selected,
+                visualDensity: VisualDensity.compact,
+                onChanged: (_) => onToggleSelect(),
+              ),
+            ),
+            cell(
+              Text(
+                shortDate.format(item.date),
+                style: type.meta.copyWith(color: palette.inkSubtle),
+              ),
+              _cols.date,
+            ),
+            cell(
+              Row(
+                children: [
+                  CategoryMark(
+                    text: CategoryMark.initials(item.merchant),
+                    color: categoryColourFor(context, item.category),
+                    size: 22,
+                  ),
+                  const SizedBox(width: Space.xs),
+                  Expanded(
+                    child: Text(
+                      item.merchant,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: type.bodySm,
+                    ),
+                  ),
+                ],
+              ),
+              _cols.merchant,
+            ),
+            cell(
+              Text(
+                item.category,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: type.bodySm.copyWith(color: palette.inkMuted),
+              ),
+              _cols.category,
+            ),
+            cell(
+              Text(
+                item.isCard ? '·${item.cardLastFour}' : _origin,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: type.meta.copyWith(color: palette.inkMuted),
+              ),
+              _cols.card,
+            ),
+            cell(switch (item.status) {
+              TransactionStatus.pending => MonoTag(
+                'revisar',
+                color: palette.pending,
+              ),
+              TransactionStatus.ignored => MonoTag(
+                'ignorado',
+                color: palette.ignored,
+              ),
+              TransactionStatus.confirmed => const MonoTag('confirmado'),
+            }, _cols.state),
+            Expanded(
+              flex: _cols.amount,
+              child: Container(
+                padding: const EdgeInsets.only(left: Space.sm),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: palette.rule,
+                      width: Strokes.hairline,
+                    ),
+                  ),
+                ),
+                child: AmountText(
+                  item.amount,
+                  tone: item.status == TransactionStatus.ignored
+                      ? MoneyTone.ignored
+                      : item.isIncome
+                      ? MoneyTone.income
+                      : MoneyTone.expense,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context) => InkWell(
     borderRadius: BorderRadius.circular(16),
     // Long press starts a selection; once one row is picked, tapping toggles
     // instead of opening, which is how a list like this usually behaves.
@@ -566,7 +767,14 @@ class _TransactionRow extends StatelessWidget {
               ? '${item.installmentCurrent}/${item.installmentTotal} parcelas'
               : (item.rawModality ?? 'À vista'),
         ),
-        const SizedBox(height: 10),
+        // Where the number came from. Every one of these columns has existed
+        // since the first migration and the query already asked for them; they
+        // were never mapped into the model, so the app held the lineage and
+        // could not show it. A total nobody can trace is a total nobody can
+        // argue with.
+        const SizedBox(height: Space.sm),
+        _Lineage(item: item),
+        const SizedBox(height: Space.sm),
         Row(
           children: [
             Expanded(
@@ -598,4 +806,71 @@ class _TransactionRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+/// Where a row came from.
+class _Lineage extends StatelessWidget {
+  const _Lineage({required this.item});
+  final FinanceTransaction item;
+
+  static String _origin(String source) => switch (source) {
+    'shortcut' => 'Atalho do iOS, no momento da compra',
+    'manual' => 'Digitado no app',
+    'invoice_import' => 'Importação de fatura',
+    'statement_import' => 'Importação de extrato',
+    _ => source,
+  };
+
+  static (String, Color) _confidence(BuildContext context, String value) =>
+      switch (value) {
+        'high' => ('alta', context.palette.income),
+        'medium' => ('média', context.palette.pending),
+        'low' => ('baixa', context.palette.negative),
+        _ => (value, context.palette.inkSubtle),
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final confidence = item.confidence;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.only(top: Space.sm),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: palette.rule, width: Strokes.hairline),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SectionLabel('procedência'),
+          const SizedBox(height: Space.xs),
+          DetailValue(label: 'Entrou por', value: _origin(item.source)),
+          if (item.sourceFile != null)
+            DetailValue(label: 'Arquivo', value: item.sourceFile!),
+          if (confidence != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.xs),
+              child: Row(
+                children: [
+                  const Expanded(child: SectionLabel('Classificação')),
+                  MonoTag(
+                    'confiança ${_confidence(context, confidence).$1}',
+                    color: _confidence(context, confidence).$2,
+                  ),
+                ],
+              ),
+            ),
+          if (item.dedupKey != null)
+            DetailValue(label: 'Chave de dedupe', value: item.dedupKey!),
+          if (!item.hasLineage)
+            Text(
+              'Sem procedência registrada além da origem.',
+              style: context.type.meta.copyWith(color: palette.inkSubtle),
+            ),
+        ],
+      ),
+    );
+  }
 }

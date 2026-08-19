@@ -273,3 +273,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 5. Branch `feat/ui-remake-pr5`.
 
 ---
+
+## Construction — Code Generation (PR 6: densidade do desktop)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Segue pro PR 6"
+**AI Response**: "PR 6 na branch `feat/ui-remake-pr6`. Duas descobertas valem mais que o código. A primeira: `source_file`, `confidence` e `dedup_key` existem em `transactions` desde a primeira migration e o repositório já as buscava com `select('*')` — só nunca foram mapeadas no modelo. O app segurava a procedência inteira e não conseguia mostrá-la; foram três campos em `fromJson` para o painel de detalhe passar a responder de onde veio cada número. A segunda: recategorização em lote **já existia** no código, e a especificação a listava como adiada — corrigi o documento, não o código. Entreguei o histórico em tabela acima de 905pt, com cabeçalho de pauta pesada, zebra e a coluna de valor atrás de uma pauta vertical, mantendo lista empilhada abaixo disso; e a paleta de comandos ⌘K com busca por nome e por espaço, setas, Enter e Esc, mais atalhos globais de N e 1–4. Não havia um único `Shortcuts` no código antes. Um defeito latente do PR 2 apareceu: `CategoryMark` desenhava a barra da categoria como lado da borda, e `BoxDecoration` dispara assert quando raio encontra borda de lados diferentes — nunca tinha estourado porque nenhuma tela punha a marca em todas as linhas de uma vez, e a tabela pôs; doze exceções de uma vez. A barra virou filho dentro de `ClipRRect`. Adiei de novo as trocas de `Card`, `Chip`, `FilledButton` e `LinearProgressIndicator`, e desta vez a razão é honesta: são trocas por chamada em muitos arquivos e preferi não fazê-las às pressas no fim de um PR grande. 574 testes passam."
+**Context**: Construction / Code Generation — PR 6. Branch `feat/ui-remake-pr6`.
+
+---
