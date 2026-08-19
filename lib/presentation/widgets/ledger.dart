@@ -672,11 +672,18 @@ class RuleBar extends StatelessWidget {
     required this.value,
     this.over = false,
     this.height = 4,
+    this.color,
+    this.trackColor,
   });
 
   final double value;
   final bool over;
   final double height;
+
+  /// Overrides the fill — a category keeps its own colour, and the bar on the
+  /// credit card face is drawn on a dark ground.
+  final Color? color;
+  final Color? trackColor;
 
   @override
   Widget build(BuildContext context) {
@@ -686,10 +693,10 @@ class RuleBar extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) => Stack(
           children: [
-            Container(color: palette.rule),
+            Container(color: trackColor ?? palette.rule),
             Container(
               width: constraints.maxWidth * value.clamp(0.0, 1.0),
-              color: over ? palette.negative : palette.ink,
+              color: over ? palette.negative : (color ?? palette.ink),
             ),
           ],
         ),

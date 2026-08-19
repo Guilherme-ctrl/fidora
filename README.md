@@ -90,7 +90,9 @@ docs/
 
 ## Próximos gates
 
-Antes de produção ainda faltam recuperação de senha, parsers diretos de
-PDF/XLSX, persistência dos demais formulários de criação/edição, reivindicação
-do payload legado pela conta, teste do Atalho em dispositivo real e distribuição.
+Antes de produção ainda faltam parsers diretos de PDF, reivindicação do payload
+legado pela conta, teste do Atalho em dispositivo real e distribuição.
+
+Recuperação de senha e recategorização em lote constavam desta lista e já
+estavam implementadas — a lista é que estava desatualizada.
 # fidora

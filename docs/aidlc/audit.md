@@ -281,3 +281,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 6. Branch `feat/ui-remake-pr6`.
 
 ---
+
+## Construction — Code Generation (PR 7: ritual de revisão e fecho do remake)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Segue pro PR 7"
+**AI Response**: "PR 7 na branch `feat/ui-remake-pr7`, fechando os sete. A fila de revisão virou ritual: `J`/`K` navegam, `⏎` resolve, `D` descarta, com a legenda dos atalhos visível na barra — atalho que ninguém descobre é atalho que ninguém usa —, e swipe no telefone com o que a direção vai fazer escrito atrás do card; o produto não tinha um único `Dismissible`. Sobre as trocas que eu vinha adiando há dois PRs: resolvi no tema em vez de chamada a chamada. São 40 `FilledButton` em quatro formas, 22 `Chip`, mais `OutlinedButton` e `TextButton` — estilar em `buildAppTheme` alcança todos, inclusive os que uma mudança futura acrescentar, e não deixa nenhum para trás, que é o que trocar um a um inevitavelmente faria. É melhor do que o plano pedia, não um atalho. Já os 28 `Card` eu decidi **manter**, e isso é a regra sendo aplicada e não ignorada: reler o que eles são mostrou linha de assinatura, célula de categoria, painel de conta, item de revisão — objetos, e o sistema reserva superfície e raio para isso; as seções que não eram objeto já tinham virado `RuledSection` no PR 2. Também troquei todas as barras de proporção por `RuleBar` e dei estado vazio a Categorias, a única das seis listas sem um. Encontrei a terceira divergência de documentação: recuperação de senha estava listada como adiada na especificação e no README, e está implementada. Com a recategorização em lote do PR 6, são três casos em que a documentação estava atrás do código, nunca à frente. Não entraram o onboarding 'dados antes de configuração' nem a verificação real do Atalho: não são trabalho de interface — o primeiro decide o que acontece com a conta na primeira sessão e o segundo precisa de um sinal do servidor que hoje não existe como consulta. São produto e merecem ciclo próprio. 578 testes passam, nenhum adiado."
+**Context**: Construction / Code Generation — PR 7, último do remake. Branch `feat/ui-remake-pr7`.
+
+---

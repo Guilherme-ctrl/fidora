@@ -200,16 +200,11 @@ class _CreditCardView extends StatelessWidget {
               ),
               const Spacer(),
               if (usage.hasLimit) ...[
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: LinearProgressIndicator(
-                    value: usage.ratio,
-                    minHeight: 6,
-                    backgroundColor: Colors.white24,
-                    color: usage.isTight
-                        ? context.palette.pending
-                        : Colors.white,
-                  ),
+                RuleBar(
+                  value: usage.ratio,
+                  height: 4,
+                  trackColor: Colors.white24,
+                  color: usage.isTight ? context.palette.pending : Colors.white,
                 ),
                 const SizedBox(height: 12),
               ],

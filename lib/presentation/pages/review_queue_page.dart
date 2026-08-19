@@ -5,51 +5,211 @@ import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
+import 'package:financeiro_ai/core/breakpoints.dart';
+import 'package:financeiro_ai/core/tokens.dart';
+import 'package:financeiro_ai/core/typography.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ReviewQueuePage extends ConsumerWidget {
+/// The daily ritual.
+///
+/// Every item here asks one question and teaches one rule. On a desktop it is
+/// driven from the keyboard, because clearing a queue with a mouse is ten
+/// round-trips to the same three buttons; on a phone it is driven by swiping,
+/// because that is the gesture a queue asks for. Neither existed: there was no
+/// `Shortcuts` widget anywhere in the product, and not one `Dismissible`.
+class ReviewQueuePage extends ConsumerStatefulWidget {
   const ReviewQueuePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ReviewQueuePage> createState() => _ReviewQueuePageState();
+}
+
+class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
+  int _cursor = 0;
+  final _scroll = ScrollController();
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  void _move(int delta, int length) {
+    if (length == 0) return;
+    setState(() => _cursor = (_cursor + delta).clamp(0, length - 1));
+  }
+
+  Future<void> _settle(ReviewItem item, String status) async {
+    try {
+      await ref
+          .read(financeRepositoryProvider)
+          .settleReview(item.id, status: status);
+      await refreshReviewQueue(ref);
+      ref.invalidate(financeSnapshotProvider);
+    } on FinanceWriteException catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error.message)));
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final queue = ref.watch(reviewQueueProvider);
-    return Scaffold(
-      appBar: AppBar(title: const Text('Revisões pendentes')),
-      body: RefreshIndicator(
-        onRefresh: () => refreshReviewQueue(ref),
-        child: queue.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) =>
-              _QueueError(onRetry: () => ref.invalidate(reviewQueueProvider)),
-          data: (items) => items.isEmpty
-              ? const _QueueEmpty()
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
-                  itemCount: items.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 18),
-                        child: Text(
-                          '${items.length} ${items.length == 1 ? 'item aguarda' : 'itens aguardam'} sua decisão.',
-                          style: TextStyle(color: context.palette.inkMuted),
-                        ),
-                      );
-                    }
-                    return _ReviewCard(item: items[index - 1]);
-                  },
+    final items = queue.value ?? const <ReviewItem>[];
+    if (_cursor >= items.length && items.isNotEmpty) _cursor = items.length - 1;
+
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyJ): () =>
+            _move(1, items.length),
+        const SingleActivator(LogicalKeyboardKey.arrowDown): () =>
+            _move(1, items.length),
+        const SingleActivator(LogicalKeyboardKey.keyK): () =>
+            _move(-1, items.length),
+        const SingleActivator(LogicalKeyboardKey.arrowUp): () =>
+            _move(-1, items.length),
+        const SingleActivator(LogicalKeyboardKey.enter): () {
+          if (items.isNotEmpty) _settle(items[_cursor], 'resolved');
+        },
+        const SingleActivator(LogicalKeyboardKey.keyD): () {
+          if (items.isNotEmpty) _settle(items[_cursor], 'dismissed');
+        },
+      },
+      child: Focus(
+        autofocus: true,
+        child: Scaffold(
+          appBar: AppBar(
+            title: const Text('Revisões pendentes'),
+            actions: [
+              if (Breakpoint.of(context).hasRail)
+                Padding(
+                  padding: const EdgeInsets.only(right: Space.md),
+                  child: Row(
+                    children: const [
+                      MonoTag('J K navegar'),
+                      SizedBox(width: Space.xxs),
+                      MonoTag('⏎ está certo'),
+                      SizedBox(width: Space.xxs),
+                      MonoTag('D descartar'),
+                    ],
+                  ),
                 ),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: () => refreshReviewQueue(ref),
+            child: queue.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, _) => _QueueError(
+                onRetry: () => ref.invalidate(reviewQueueProvider),
+              ),
+              data: (items) => items.isEmpty
+                  ? const _QueueEmpty()
+                  : ListView.builder(
+                      controller: _scroll,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
+                      itemCount: items.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index == 0) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 18),
+                            child: Text(
+                              '${items.length} ${items.length == 1 ? 'item aguarda' : 'itens aguardam'} sua decisão.',
+                              style: TextStyle(color: context.palette.inkMuted),
+                            ),
+                          );
+                        }
+                        final item = items[index - 1];
+                        final card = _ReviewCard(
+                          item: item,
+                          focused: index - 1 == _cursor,
+                        );
+                        // Swipe is the gesture a queue asks for, and the
+                        // product had no `Dismissible` at all.
+                        return Dismissible(
+                          key: ValueKey(item.id),
+                          background: _SwipeHint(
+                            label: 'Está certo',
+                            icon: Icons.check_rounded,
+                            color: context.palette.income,
+                            alignment: Alignment.centerLeft,
+                          ),
+                          secondaryBackground: _SwipeHint(
+                            label: 'Descartar',
+                            icon: Icons.close_rounded,
+                            color: context.palette.inkSubtle,
+                            alignment: Alignment.centerRight,
+                          ),
+                          onDismissed: (direction) => _settle(
+                            item,
+                            direction == DismissDirection.startToEnd
+                                ? 'resolved'
+                                : 'dismissed',
+                          ),
+                          child: card,
+                        );
+                      },
+                    ),
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
+/// What a swipe is about to do.
+class _SwipeHint extends StatelessWidget {
+  const _SwipeHint({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.alignment,
+  });
+  final String label;
+  final IconData icon;
+  final Color color;
+  final Alignment alignment;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 14),
+    padding: const EdgeInsets.symmetric(horizontal: Space.lg),
+    alignment: alignment,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(Radii.md),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: context.palette.canvas),
+        const SizedBox(width: Space.xs),
+        Text(
+          label,
+          style: context.type.bodySm.copyWith(
+            color: context.palette.canvas,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 class _ReviewCard extends ConsumerWidget {
-  const _ReviewCard({required this.item});
+  const _ReviewCard({required this.item, this.focused = false});
   final ReviewItem item;
+
+  /// The item the keyboard is on.
+  final bool focused;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -60,6 +220,13 @@ class _ReviewCard extends ConsumerWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: 14),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.md),
+        side: BorderSide(
+          color: focused ? context.palette.accent : context.palette.rule,
+          width: focused ? Strokes.heavy : Strokes.hairline,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(

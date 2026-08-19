@@ -527,3 +527,40 @@ linhagem de importação foi alterada.
 e a grade de categorias são exatamente os widgets que os PRs 2 e 3 substituem.
 Corrigi-los agora seria escrever o mesmo layout duas vezes, e a segunda escrita
 jogaria a primeira fora.
+
+## Construction — unidade `ui-remake` (PRs 1 a 7)
+
+| Stage | Status | Notas |
+|---|---|---|
+| Functional design | Completo | `docs/design/03` e `04` |
+| NFR requirements | Parcial | Contraste e Dynamic Type tratados como requisito e testados; desempenho não foi tocado |
+| NFR design | Completo | Arnês de contraste e simulação de daltonismo rodam a cada build |
+| Infrastructure design | Pulado | Sem migration. Uma exigência nova de hospedagem: `index.html` para caminho não encontrado |
+| Code generation | Completo | Sete branches encadeadas, `feat/ui-remake-pr0` a `pr7` |
+
+### Onde o remake chegou
+
+| | Antes | Depois |
+|---|---|---|
+| Testes | 378 | **578** |
+| Casos adiados por Dynamic Type | 6 | **0** |
+| Endereços web | 0 | 7 + deep link |
+| Atalhos de teclado | 0 | ⌘K, N, 1–4, J/K/⏎/D |
+| `showModalBottomSheet` soltos | 11 | **0** |
+| Overflows de produção conhecidos | 8 | **0** |
+
+### O que ficou fora, e é produto e não interface
+
+- Onboarding "dados antes de configuração"
+- Verificação real da primeira captura do Atalho — precisa de um sinal do
+  servidor que não existe como consulta hoje
+- Fontes empacotadas (Source Serif 4, Inter, JetBrains Mono): depende de
+  autorização para baixar binário
+- Parsers diretos de PDF
+
+### Três divergências de documentação encontradas pelo caminho
+
+Recategorização em lote, recuperação de senha e o estado da grade de categorias
+constavam como adiadas e estavam implementadas. **Em nenhum caso a documentação
+estava à frente do código; sempre atrás.** Vale como sinal de processo: a lista
+de pendências não estava sendo revisada quando o trabalho era concluído.

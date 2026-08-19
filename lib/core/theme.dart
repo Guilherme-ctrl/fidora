@@ -337,6 +337,84 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
       errorBorder: border(palette.negative, Strokes.hairline),
       focusedErrorBorder: border(palette.negative, Strokes.heavy),
     ),
+    // The buttons are themed rather than replaced one by one. There are 40
+    // `FilledButton` call sites in four shapes — plain, `.icon`, `.tonal` and
+    // styled — and rewriting each of them would be volume with no reader:
+    // styling them here reaches every one, including the ones a future change
+    // adds. `InkButton` stays for new code that wants the component directly.
+    filledButtonTheme: FilledButtonThemeData(
+      style: ButtonStyle(
+        backgroundColor: WidgetStatePropertyAll(palette.action),
+        foregroundColor: WidgetStatePropertyAll(palette.onAction),
+        elevation: const WidgetStatePropertyAll(0),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.xs + 2),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          LedgerText.standard.bodySm.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStatePropertyAll(palette.ink),
+        side: WidgetStatePropertyAll(BorderSide(color: palette.ruleStrong)),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+        ),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: Space.md, vertical: Space.xs + 2),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          LedgerText.standard.bodySm.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    ),
+    textButtonTheme: TextButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStatePropertyAll(palette.accent),
+        shape: WidgetStatePropertyAll(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+        ),
+        textStyle: WidgetStatePropertyAll(
+          LedgerText.standard.bodySm.copyWith(fontWeight: FontWeight.w600),
+        ),
+      ),
+    ),
+    // A filled pill is unmistakably Material. A chip in this product is a
+    // ledger annotation: outlined, square-ish, in the metadata voice.
+    chipTheme: ChipThemeData(
+      backgroundColor: Colors.transparent,
+      selectedColor: palette.accentSoft,
+      side: BorderSide(color: palette.ruleStrong),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.xs),
+      ),
+      labelStyle: LedgerText.standard.bodySm.copyWith(color: palette.inkMuted),
+      padding: const EdgeInsets.symmetric(horizontal: Space.xxs),
+      showCheckmark: false,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: palette.ink,
+      contentTextStyle: LedgerText.standard.bodySm.copyWith(
+        color: palette.canvas,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.sm),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: palette.canvas,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.md),
+        side: BorderSide(color: palette.rule, width: Strokes.hairline),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: palette.canvas,
       indicatorColor: palette.accentSoft,

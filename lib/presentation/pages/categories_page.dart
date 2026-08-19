@@ -1,10 +1,12 @@
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/category_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -55,87 +57,85 @@ class CategoriesPage extends ConsumerWidget {
               : null,
         ),
         const SizedBox(height: 18),
-        // A fixed `childAspectRatio` cannot grow with the text: this was the
-        // last page still overflowing under Dynamic Type. Rows take their
-        // height from their tallest cell instead.
-        _CategoryGrid(
-          columns: columns,
-          count: snapshot.categories.length,
-          builder: (context, index) {
-            final category = snapshot.categories[index];
-            final spend = analytics.byCategory[category.name] ?? 0;
-            final ratio =
-                category.monthlyBudget == null || category.monthlyBudget == 0
-                ? 0.0
-                : (spend / category.monthlyBudget!).clamp(0, 1).toDouble();
-            return Semantics(
-              label: 'Ver gastos, orçamento e saldo de ${category.name}',
-              child: Card(
-                clipBehavior: Clip.antiAlias,
-                child: InkWell(
-                  onTap: () =>
-                      _showCategory(context, ref, category, spend, analytics),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: category.color.withValues(alpha: .15),
-                                borderRadius: BorderRadius.circular(13),
+        if (snapshot.categories.isEmpty)
+          // The only list on the six tabs that had nothing to say when it was
+          // empty. A blank screen reads as a failure; this says what will
+          // appear here and offers the one action that fills it.
+          _EmptyCategories(onCreate: () => editCategory(context, ref))
+        else
+          _CategoryGrid(
+            columns: columns,
+            count: snapshot.categories.length,
+            builder: (context, index) {
+              final category = snapshot.categories[index];
+              final spend = analytics.byCategory[category.name] ?? 0;
+              final ratio =
+                  category.monthlyBudget == null || category.monthlyBudget == 0
+                  ? 0.0
+                  : (spend / category.monthlyBudget!).clamp(0, 1).toDouble();
+              return Semantics(
+                label: 'Ver gastos, orçamento e saldo de ${category.name}',
+                child: Card(
+                  clipBehavior: Clip.antiAlias,
+                  child: InkWell(
+                    onTap: () =>
+                        _showCategory(context, ref, category, spend, analytics),
+                    child: Padding(
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: category.color.withValues(alpha: .15),
+                                  borderRadius: BorderRadius.circular(13),
+                                ),
+                                child: Icon(
+                                  category.icon,
+                                  color: category.color,
+                                ),
                               ),
-                              child: Icon(category.icon, color: category.color),
-                            ),
-                            const Spacer(),
-                            Semantics(
-                              label: 'Abrir detalhes da categoria',
-                              child: Icon(
-                                Icons.more_horiz,
-                                color: Colors.black26,
+                              const Spacer(),
+                              Semantics(
+                                label: 'Abrir detalhes da categoria',
+                                child: Icon(
+                                  Icons.more_horiz,
+                                  color: Colors.black26,
+                                ),
                               ),
+                            ],
+                          ),
+                          const Spacer(),
+                          Text(
+                            category.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              fontSize: 16,
                             ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 16,
                           ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          category.monthlyBudget == null
-                              ? '${currency.format(spend)} no período'
-                              : '${currency.format(spend)} de ${currency.format(category.monthlyBudget)}',
-                          style: TextStyle(
-                            color: context.palette.inkMuted,
-                            fontSize: 12,
+                          const SizedBox(height: 5),
+                          Text(
+                            category.monthlyBudget == null
+                                ? '${currency.format(spend)} no período'
+                                : '${currency.format(spend)} de ${currency.format(category.monthlyBudget)}',
+                            style: TextStyle(
+                              color: context.palette.inkMuted,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 10),
-                        LinearProgressIndicator(
-                          value: ratio,
-                          minHeight: 7,
-                          color: category.color,
-                          backgroundColor: category.color.withValues(
-                            alpha: .10,
-                          ),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ],
+                          const SizedBox(height: 10),
+                          RuleBar(value: ratio, color: category.color),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          },
-        ),
+              );
+            },
+          ),
       ],
     );
   }
@@ -246,4 +246,39 @@ class _CategoryGrid extends StatelessWidget {
       ],
     );
   }
+}
+
+/// What the categories screen says before there are any.
+class _EmptyCategories extends StatelessWidget {
+  const _EmptyCategories({required this.onCreate});
+  final VoidCallback onCreate;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: Space.huge),
+    child: Column(
+      children: [
+        const SectionLabel('nada por aqui ainda'),
+        const SizedBox(height: Space.sm),
+        Text(
+          'As categorias organizam para onde o dinheiro vai.',
+          textAlign: TextAlign.center,
+          style: context.type.bodyMd,
+        ),
+        const SizedBox(height: Space.xxs),
+        Text(
+          'Cada uma pode ter um orçamento mensal, e é ele que alimenta os '
+          'avisos de meta em Hoje.',
+          textAlign: TextAlign.center,
+          style: context.type.bodySm.copyWith(color: context.palette.inkMuted),
+        ),
+        const SizedBox(height: Space.lg),
+        InkButton(
+          label: 'Criar a primeira categoria',
+          icon: Icons.add_rounded,
+          onPressed: onCreate,
+        ),
+      ],
+    ),
+  );
 }

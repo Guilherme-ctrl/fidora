@@ -346,14 +346,10 @@ class _GoalsOutlook extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                LinearProgressIndicator(
+                RuleBar(
                   value: ratio,
-                  minHeight: 9,
-                  color: over
-                      ? context.palette.negative
-                      : context.palette.income,
-                  backgroundColor: context.palette.accentSoft,
-                  borderRadius: BorderRadius.circular(9),
+                  over: over,
+                  color: context.palette.income,
                 ),
               ],
             ),

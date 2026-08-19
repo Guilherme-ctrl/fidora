@@ -93,7 +93,10 @@
 
 ## Deferred from first vertical slice
 
-- Account recovery.
+- ~~Account recovery~~ — **entregue**. "Esqueci minha senha" chama
+  `resetPasswordForEmail`, o link de recuperação cai em `NewPasswordPage` e o
+  `AuthGate` trata `AuthChangeEvent.passwordRecovery`. A lista a manteve como
+  adiada por engano até 19 ago 2026.
 - Real PDF/XLSX statement parser.
 - CRUD forms for **card, category, goal and holder**. The transaction form is
   delivered; these four still open a placeholder.

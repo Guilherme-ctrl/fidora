@@ -937,3 +937,56 @@ correção. A especificação estava desatualizada, não o código.
 | `flutter analyze --fatal-infos` | sem problemas |
 | `flutter test --exclude-tags golden` | **574 passam, 0 adiados** |
 | `flutter test --tags golden` | 31 passam |
+
+## PR 7 — ritual de revisão e o fecho do remake (2026-08-19)
+
+### A fila virou ritual
+
+Teclado no desktop — `J`/`K` navegam, `⏎` resolve, `D` descarta — com a legenda
+dos atalhos visível na barra, porque atalho que ninguém descobre é atalho que
+ninguém usa. Swipe no telefone, com o que a direção vai fazer escrito atrás do
+card. O produto não tinha um único `Dismissible`.
+
+### Botões e chips: tema, não chamada a chamada
+
+40 `FilledButton` em quatro formas, 22 `Chip`, mais `OutlinedButton` e
+`TextButton`. Resolvidos em `buildAppTheme`. Alcança todos, inclusive os que uma
+mudança futura acrescentar, e não deixa nenhum para trás — o que trocar um a um
+inevitavelmente deixaria.
+
+### Os 28 `Card` ficam, e isso é a regra sendo aplicada, não ignorada
+
+Reler o que eles são mudou a conclusão: linha de assinatura, célula de
+categoria, painel de conta, item de revisão. São **objetos**, e o sistema
+reserva superfície e raio exatamente para isso. As seções que não eram objeto já
+tinham virado `RuledSection` no PR 2.
+
+### Terceira divergência de documentação
+
+Recuperação de senha constava como adiada em `03-specification.md` e no
+`README.md`, e está implementada. Com a recategorização em lote (PR 6) e esta,
+são três casos em que a documentação estava **atrás** do código — nunca à
+frente.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --fatal-infos` | sem problemas |
+| `flutter test --exclude-tags golden` | **578 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam |
+
+### O remake, de ponta a ponta
+
+| | PR 0 | PR 7 |
+|---|---|---|
+| Testes | 378 | **578** |
+| Casos adiados por Dynamic Type | 6 | **0** |
+| Depreciações de paleta | — | **0** |
+| Porta do analisador | `--fatal-infos` | `--fatal-infos` |
+| Endereços web | 0 | 7 + deep link |
+| Atalhos de teclado | 0 | ⌘K, N, 1–4, J/K/⏎/D |
+| `showModalBottomSheet` soltos | 11 | **0** |
+| Números mágicos de largura | 23 | 14 |
+| Overflows de produção conhecidos | 8 | **0** |

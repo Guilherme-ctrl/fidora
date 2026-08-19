@@ -313,17 +313,65 @@ Fica para o PR 7, com motivo:
       grande. Os componentes existem e o trabalho é mecânico.
 - [ ] `TextStyle` e `EdgeInsets` literais.
 
-### PR 7 — Ritual e primeira sessão · ~2 dias
+### PR 7 — Ritual, e as trocas que eu vinha adiando · **entregue** (2026-08-19)
 
-- [ ] `ReviewCard` com aprovar / corrigir / sempre assim; gesto no celular,
-      teclado no desktop
-- [ ] Onboarding "dados antes de configuração", quatro passos
-- [ ] Fluxo do Atalho dentro do app, com verificação real da primeira captura
-- [ ] Estados vazios desenhados nas seis listas
-- [ ] Skeleton por card no lugar do spinner de tela cheia
+- [x] **Fila de revisão com teclado**: `J`/`K` navegam, `⏎` resolve, `D`
+      descarta, e a legenda dos atalhos fica visível na barra — atalho que
+      ninguém descobre é atalho que ninguém usa
+- [x] **Swipe na fila**, com o que a direção vai fazer escrito atrás do card.
+      Não havia um único `Dismissible` no produto
+- [x] `LinearProgressIndicator` → `RuleBar` em todas as barras de proporção; o
+      que sobrou é o indeterminado de carregamento, que é outra coisa
+- [x] Estado vazio em Categorias, a única das seis listas que não tinha
+- [x] `review_ritual_test.dart` — 4 casos
 
-**Total: ~12 dias de trabalho focado.** PRs 0–2 (~3,5 dias) já entregam a maior
-parte da mudança visual.
+**Os botões e os chips foram resolvidos no tema, não chamada a chamada.** São 40
+`FilledButton` em quatro formas, 22 `Chip` e mais `OutlinedButton` e
+`TextButton`. Estilar em `buildAppTheme` alcança todos, inclusive os que uma
+mudança futura acrescentar, e não deixa nenhum para trás — o que trocar um a um
+inevitavelmente deixaria. Também entraram `snackBarTheme` e `dialogTheme`.
+`InkButton` continua para código novo que queira o componente direto.
+
+**Os 28 `Card` ficam.** Reler o que eles são mudou a conclusão: são linha de
+assinatura, célula de categoria, painel de conta, item de revisão — **objetos**,
+e o sistema reserva superfície e raio exatamente para isso. As seções que *não*
+eram objeto já tinham virado `RuledSection` no PR 2. Trocar as que sobraram
+seria aplicar a regra ao contrário.
+
+### Terceira divergência de documentação encontrada no caminho
+
+Recuperação de senha estava listada como adiada em `03-specification.md` e no
+`README.md`, e **está implementada** — "Esqueci minha senha" chama
+`resetPasswordForEmail`, o link cai em `NewPasswordPage` e o `AuthGate` trata
+`AuthChangeEvent.passwordRecovery`. Somando às anteriores: recategorização em
+lote (PR 6) e esta. Em três casos a documentação estava atrás do código, nunca
+à frente.
+
+### O que **não** entrou, e por quê
+
+- **Onboarding "dados antes de configuração"** e **fluxo do Atalho com
+  verificação real**. Não são trabalho de interface: o primeiro decide o que
+  acontece com a conta na primeira sessão, e o segundo precisa de um sinal do
+  servidor dizendo que a Edge Function recebeu a primeira captura — que hoje não
+  existe como consulta. São produto, e merecem um ciclo próprio em vez de um
+  fim de remake.
+- **`TextStyle` e `EdgeInsets` literais.** Caíram bastante ao longo dos sete
+  PRs, mas não a zero.
+
+**Os sete PRs foram entregues.** O que o plano previa em ~12 dias saiu em sete
+commits encadeados, cada um compilando, com CI verde e imagens de referência
+regeneradas.
+
+| PR | O que entregou |
+|---|---|
+| 0 | Rede de segurança; 5 overflows de produção corrigidos |
+| 1 | Tokens; 3 valores reprovados na medição antes de entrar |
+| 2 | Camada de componentes; o card virou pauta |
+| 3 | Sidebar própria, quatro espaços, tela Hoje |
+| 4 | Endereços de verdade, com Voltar e F5 |
+| 5 | 203 pontes drenadas; `--fatal-infos` de volta |
+| 6 | Tabela, procedência, ⌘K |
+| 7 | Ritual de revisão, trocas de componente no tema |
 
 ---
 

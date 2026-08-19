@@ -93,13 +93,7 @@ class MorePage extends ConsumerWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 8),
-                                LinearProgressIndicator(
-                                  value: goal.progress,
-                                  minHeight: 9,
-                                  color: context.palette.accent,
-                                  backgroundColor: context.palette.accentSoft,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
+                                RuleBar(value: goal.progress),
                                 const SizedBox(height: 6),
                                 // A Spacer between two rigid amounts has no
                                 // give: at 1.3x text the pair overflowed by

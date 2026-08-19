@@ -496,12 +496,9 @@ class _CategoryCard extends StatelessWidget {
                             style: const TextStyle(fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 3),
-                          LinearProgressIndicator(
+                          RuleBar(
                             value: ratio,
-                            minHeight: 5,
-                            borderRadius: BorderRadius.circular(8),
                             color: category?.color ?? context.palette.accent,
-                            backgroundColor: context.palette.rule,
                           ),
                         ],
                       ),
@@ -612,16 +609,10 @@ class _BudgetComparison extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 9),
-                            LinearProgressIndicator(
+                            RuleBar(
                               value: ratio.clamp(0.0, 1.0),
-                              minHeight: 8,
-                              color: over
-                                  ? context.palette.negative
-                                  : category.color,
-                              backgroundColor: category.color.withValues(
-                                alpha: .10,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
+                              over: over,
+                              color: category.color,
                             ),
                           ],
                         ),
