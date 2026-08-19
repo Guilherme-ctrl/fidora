@@ -9,6 +9,7 @@ import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/load_failure.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/pages/cards_page.dart';
 import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
@@ -16,32 +17,56 @@ import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
+import 'package:financeiro_ai/presentation/router.dart';
+import 'package:financeiro_ai/presentation/routes.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/navigation.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+/// The shell, driven by the address bar.
+///
+/// It used to own `int index` and a `FinancePeriod` in its own state, which is
+/// why F5 returned to tab zero and threw the selected month away. Both now come
+/// from the route, and every navigation writes them back into it.
 class AppShell extends ConsumerStatefulWidget {
-  const AppShell({this.onSignOut, super.key});
+  const AppShell({
+    this.index = 0,
+    this.period,
+    this.filter = const TransactionFilter(),
+    this.openTransactionId,
+    this.onSignOut,
+    super.key,
+  });
+
+  final int index;
+
+  /// Null means the address carried no period, so the current month is used.
+  final FinancePeriod? period;
+
+  final TransactionFilter filter;
+
+  /// A transaction addressed directly, at `/transacoes/:id`.
+  final String? openTransactionId;
 
   final Future<void> Function()? onSignOut;
+
   @override
   ConsumerState<AppShell> createState() => _AppShellState();
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  int index = 0;
-  FinancePeriod period = FinancePeriod.month(clock.now());
+  String? _opened;
+
+  FinancePeriod get period => widget.period ?? FinancePeriod.month(clock.now());
 
   /// The destinations a phone shows, as indices into [destinations]. Categorias
   /// and Projeção live behind "Mais" there and are first-class on the desktop —
   /// the previous shell handed both surfaces the same five, which is why "Mais"
   /// survived onto a monitor.
   static const _phone = [0, 1, 2, 6];
-
-  /// The tabs whose contents depend on the selected period.
-  static const _periodAware = {1, 2, 3, 4, 5};
 
   /// Rescheduling on every fresh snapshot is what keeps a paid or re-dated
   /// invoice from still buzzing: the reminders screen only runs when someone
@@ -54,10 +79,63 @@ class _AppShellState extends ConsumerState<AppShell> {
     await service.sync(snapshot, settings, money: currency.format);
   }
 
+  void _goTo(int index, {FinancePeriod? period, TransactionFilter? filter}) {
+    final path = Routes.inOrder[index];
+    final active = filter ?? widget.filter;
+    context.go(
+      locationFor(
+        path,
+        period: period ?? this.period,
+        extra: path == Routes.transactions
+            ? FilterCodec.encode(active)
+            : const {},
+      ),
+    );
+  }
+
   List<Destination> _withBadge(int pending) => [
     for (final item in destinations)
       item.space == NavSpace.today ? item.withBadge(pending) : item,
   ];
+
+  /// Opens the transaction the address named, once, and puts the address back
+  /// when the sheet closes.
+  void _maybeOpenAddressed(FinanceSnapshot snapshot) {
+    final id = widget.openTransactionId;
+    if (id == null || id == _opened) return;
+    _opened = id;
+    final match = snapshot.transactions
+        .where((item) => item.id == id)
+        .firstOrNull;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      if (match == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Esse lançamento não existe mais.')),
+        );
+      } else {
+        await showDetailSheet(
+          context,
+          title: match.merchant,
+          description: 'Lançamento aberto pelo endereço.',
+          child: Column(
+            children: [
+              DetailValue(label: 'Data', value: longDate.format(match.date)),
+              DetailValue(label: 'Categoria', value: match.category),
+              DetailValue(label: 'Valor', value: currency.format(match.amount)),
+              DetailValue(
+                label: 'Cartão',
+                value: 'final ${match.cardLastFour}',
+              ),
+            ],
+          ),
+        );
+      }
+      if (!mounted) return;
+      _opened = null;
+      _goTo(2);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +148,12 @@ class _AppShellState extends ConsumerState<AppShell> {
     // Keeping the last snapshot on screen while a reload runs is what stops the
     // whole app blanking to a spinner after every write.
     final snapshot = state.value;
-    if (snapshot != null) configureCurrency(snapshot.currencyCode);
+    if (snapshot != null) {
+      configureCurrency(snapshot.currencyCode);
+      _maybeOpenAddressed(snapshot);
+    }
 
+    final index = widget.index;
     final items = _withBadge(snapshot?.pendingReviews ?? 0);
 
     Widget content() => switch ((snapshot, state.hasError)) {
@@ -90,12 +172,12 @@ class _AppShellState extends ConsumerState<AppShell> {
           // One period control for the whole app. It used to be repeated
           // inside four pages and missing from a fifth, which quietly
           // ignored the selection.
-          if (_periodAware.contains(index))
+          if (Routes.isPeriodAware(Routes.inOrder[index]))
             Padding(
               padding: EdgeInsets.fromLTRB(layout.gutter, 8, layout.gutter, 2),
               child: PeriodFilterBar(
                 period: period,
-                onChanged: (value) => setState(() => period = value),
+                onChanged: (value) => _goTo(index, period: value),
               ),
             ),
           if (state.isLoading)
@@ -111,8 +193,10 @@ class _AppShellState extends ConsumerState<AppShell> {
                 index: index,
                 snapshot: data,
                 period: period,
-                onPeriodChanged: (value) => setState(() => period = value),
-                onOpenInvoices: () => setState(() => index = 4),
+                filter: widget.filter,
+                onFilterChanged: (value) => _goTo(2, filter: value),
+                onPeriodChanged: (value) => _goTo(index, period: value),
+                onOpenInvoices: () => _goTo(4),
               ),
             ),
           ),
@@ -128,7 +212,7 @@ class _AppShellState extends ConsumerState<AppShell> {
               items: items,
               selected: index,
               compact: !layout.hasSidebar,
-              onSelected: (value) => setState(() => index = value),
+              onSelected: _goTo,
               // Not `_Brand`: that one is the phone's top bar, with a status
               // pill and a sign-out button, and it overflowed a 68pt rail by
               // 200px.
@@ -156,8 +240,8 @@ class _AppShellState extends ConsumerState<AppShell> {
           ? null
           : LedgerTabBar(
               items: [for (final slot in _phone) items[slot]],
-              selected: _phone.indexOf(index) < 0 ? -1 : _phone.indexOf(index),
-              onSelected: (value) => setState(() => index = _phone[value]),
+              selected: _phone.indexOf(index),
+              onSelected: (value) => _goTo(_phone[value]),
               onCreate: () => createTransaction(context, ref, snapshot),
             ),
     );
@@ -210,12 +294,16 @@ class _SelectedPage extends StatelessWidget {
     required this.period,
     required this.onPeriodChanged,
     required this.onOpenInvoices,
+    required this.filter,
+    required this.onFilterChanged,
   });
   final int index;
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
   final ValueChanged<FinancePeriod> onPeriodChanged;
   final VoidCallback onOpenInvoices;
+  final TransactionFilter filter;
+  final ValueChanged<TransactionFilter> onFilterChanged;
 
   @override
   Widget build(BuildContext context) => IndexedStack(
@@ -235,6 +323,8 @@ class _SelectedPage extends StatelessWidget {
         snapshot: snapshot,
         period: period,
         onPeriodChanged: onPeriodChanged,
+        filter: filter,
+        onFilterChanged: onFilterChanged,
       ),
       CategoriesPage(
         snapshot: snapshot,

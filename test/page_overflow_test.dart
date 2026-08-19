@@ -1,6 +1,7 @@
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/pages/cards_page.dart';
 import 'package:financeiro_ai/presentation/pages/categories_page.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
@@ -52,6 +53,8 @@ void main() {
       snapshot: snapshot,
       period: goldenPeriod,
       onPeriodChanged: _ignore,
+      filter: const TransactionFilter(),
+      onFilterChanged: _ignoreFilter,
     ),
     'categorias' => CategoriesPage(
       snapshot: snapshot,
@@ -135,3 +138,5 @@ void main() {
 void _ignore(FinancePeriod _) {}
 
 void _nothing() {}
+
+void _ignoreFilter(TransactionFilter _) {}

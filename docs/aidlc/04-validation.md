@@ -754,3 +754,89 @@ Números mágicos de largura na apresentação: **23 → 14**.
 | `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings, 203 infos |
 | `flutter test --exclude-tags golden` | **548 passam, 0 adiados** |
 | `flutter test --tags golden` | 31 passam (7 páginas + 3 do shell) |
+
+## PR 4 — roteamento (2026-08-19)
+
+O primeiro achado da auditoria, fechado. `MaterialApp(home:)` significava que a
+barra de endereço nunca mudava, Voltar saía do aplicativo, F5 devolvia à aba
+zero jogando fora o período e os filtros, e nada — nem um mês, nem uma busca,
+nem uma fatura — podia ser linkado ou aberto em outra aba.
+
+### Os endereços
+
+```text
+/hoje
+/visao-geral?mes=2026-08
+/transacoes?mes=2026-08&q=uber&categoria=Transporte&cartao=1847
+/categorias?mes=2026-08
+/faturas?mes=2026-08
+/projecao?mes=2026-08
+/mais
+/transacoes/:id          abre o lançamento e devolve o endereço ao fechar
+```
+
+Mês inteiro vira `?mes=2026-08` e intervalo mantém as duas pontas — o formato
+curto é o que se cola numa mensagem.
+
+### O que precisou sair do estado do widget
+
+`TransactionsPage` guardava o `TransactionFilter` internamente. Agora ele vem do
+endereço, então um recorte do histórico é um link e F5 o preserva.
+
+### Uma decisão de arquitetura, e seu efeito colateral
+
+Os sete destinos são rotas irmãs sob **uma única chave de página**. Com isso o
+elemento é reaproveitado entre rotas, o `IndexedStack` mantém a posição de
+rolagem de cada tela e não há transição entre abas — que é como uma sidebar deve
+se comportar.
+
+O efeito colateral é que o `Navigator` tem uma página só, então `popRoute` não
+tem o que desempilhar. Isso **não** é o Voltar do navegador: na web o histórico
+pertence ao navegador, e o Voltar chega ao app pelo `setNewRoutePath`. Escrevi
+primeiro um teste sobre `popRoute`, ele falhou, e o teste estava errado, não o
+código. Trocado por um que exercita o caminho real.
+
+### Estratégia de URL
+
+Flutter usa hash por padrão, e a primeira verificação no navegador mostrou
+`localhost:8087/transacoes?mes=2026-07#/hoje` — o caminho era ignorado. Ligado o
+caminho limpo, por import condicional, porque `flutter_web_plugins` só existe na
+web e este app também compila para iOS.
+
+**Requisito de hospedagem:** o servidor precisa devolver `index.html` para
+qualquer caminho não encontrado, senão recarregar um endereço profundo dá 404.
+No Vercel é uma reescrita de `/(.*)` para `/index.html`.
+
+### Ficou de fora, com motivo
+
+- **A tela de entrada não tem endereço próprio.** O `AuthGate` virou envelope da
+  shell roteada em vez de virar `redirect`; um redirect de verdade precisa de um
+  `refreshListenable` sobre o stream de autenticação, e o fluxo de recuperação de
+  senha é sutil demais para mexer junto com roteamento. Vai no PR 5.
+- **Deep link para fatura** — não existe tela de fatura para abrir. Vai no PR 6,
+  com o painel lateral.
+
+### Evidência
+
+| Verificação | Resultado |
+|---|---|
+| `dart format --set-exit-if-changed lib test` | sem alterações |
+| `flutter analyze --no-fatal-infos` | 0 erros, 0 warnings |
+| `flutter test --exclude-tags golden` | **564 passam, 0 adiados** |
+| `flutter test --tags golden` | 31 passam |
+
+### No navegador, não só em teste
+
+Build de desenvolvimento em `localhost:8087`, Chromium:
+
+| O que | Resultado |
+|---|---|
+| Abrir `/transacoes?mes=2026-07&q=uber` direto | cai no Histórico, julho de 2026, filtrado — 1 lançamento, e **o campo de busca mostra "uber"** |
+| Clicar em "Cartões e faturas" na sidebar | endereço vira `/faturas?mes=2026-08`, `history.length` cresce |
+| Voltar do navegador | volta para `/hoje` **dentro do app**, com a sidebar marcando Hoje |
+| F5 em endereço profundo | mesma tela, mesmo mês, mesmo filtro |
+| Endereço inexistente | tela que explica, com saída para Hoje |
+
+O campo de busca foi um achado desta verificação: o filtro vinha da URL e era
+aplicado, mas o campo continuava vazio — filtro invisível sobre lista filtrada.
+Passou a ser semeado do endereço.

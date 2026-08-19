@@ -1,7 +1,6 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -21,24 +20,50 @@ class TransactionsPage extends ConsumerStatefulWidget {
     required this.snapshot,
     required this.period,
     required this.onPeriodChanged,
+    required this.filter,
+    required this.onFilterChanged,
   });
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
   final ValueChanged<FinancePeriod> onPeriodChanged;
+
+  /// The filter now lives in the address, not in this widget's state, so a
+  /// slice of the ledger is a link and F5 keeps it.
+  final TransactionFilter filter;
+  final ValueChanged<TransactionFilter> onFilterChanged;
   @override
   ConsumerState<TransactionsPage> createState() => _TransactionsPageState();
 }
 
 class _TransactionsPageState extends ConsumerState<TransactionsPage> {
-  TransactionFilter _filter = const TransactionFilter();
   Timer? _debounce;
+
+  /// Seeded from the address, so a shared link shows the term it filtered by
+  /// instead of an empty box over a filtered list.
+  late final TextEditingController _query = TextEditingController(
+    text: widget.filter.query,
+  );
+
+  TransactionFilter get _filter => widget.filter;
 
   /// Ids picked for a bulk change. Non-empty puts the list in selection mode.
   final Set<String> _selected = {};
 
   @override
+  void didUpdateWidget(TransactionsPage old) {
+    super.didUpdateWidget(old);
+    // The address can change from outside the field — a cleared filter, a link
+    // opened in place. Only write when they actually differ, or typing would
+    // fight the controller.
+    if (widget.filter.query != _query.text) {
+      _query.text = widget.filter.query;
+    }
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
+    _query.dispose();
     super.dispose();
   }
 
@@ -48,7 +73,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   void _onQueryChanged(String value) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 250), () {
-      if (mounted) setState(() => _filter = _filter.copyWith(query: value));
+      if (mounted) widget.onFilterChanged(_filter.copyWith(query: value));
     });
   }
 
@@ -90,6 +115,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   children: [
                     Expanded(
                       child: TextField(
+                        controller: _query,
                         onChanged: _onQueryChanged,
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.search),
@@ -288,7 +314,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
       snapshot: widget.snapshot,
       filter: _filter,
     );
-    if (updated != null && mounted) setState(() => _filter = updated);
+    if (updated != null && mounted) widget.onFilterChanged(updated);
   }
 
   /// Applies one category to everything selected, then offers to remember it —

@@ -5,7 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+  const AuthGate({this.child, super.key});
+
+  /// The routed shell. Given by the router so the address bar keeps working
+  /// while signed in; the sign-in screen itself does not have an address of its
+  /// own yet — that is PR 5, together with account recovery.
+  final Widget? child;
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +26,7 @@ class AuthGate extends StatelessWidget {
         if (auth.currentSession == null) {
           return const AuthPage();
         }
-        return AppShell(onSignOut: auth.signOut);
+        return child ?? AppShell(onSignOut: auth.signOut);
       },
     );
   }

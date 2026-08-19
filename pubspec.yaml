@@ -39,6 +39,9 @@ dependencies:
   # unless a test overrides it.
   clock: ^1.1.2
   flutter_riverpod: ^3.3.2
+  # URLs. Without a Router the web had no address, no Back button and no F5:
+  # the whole app was one Scaffold holding an int.
+  go_router: ^16.2.4
   supabase_flutter: ^2.17.2
   intl: ^0.20.3
   fl_chart: ^1.2.0

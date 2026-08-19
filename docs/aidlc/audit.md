@@ -257,3 +257,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — PR 3. Branch `feat/ui-remake-pr3`.
 
 ---
+
+## Construction — Code Generation (PR 4: roteamento)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Sim, segue"
+**AI Response**: "PR 4 na branch `feat/ui-remake-pr4`, fechando o primeiro achado da auditoria. Sete endereços de verdade, período na query (`?mes=2026-08` para mês inteiro, `?de=&ate=` para intervalo) e o filtro do histórico também — o que obrigou a tirar o `TransactionFilter` do estado do `TransactionsPage`. Duas coisas que só apareceram fazendo: primeiro, escrevi um teste afirmando que `popRoute` devolve `true` no Voltar, ele falhou, e **o teste estava errado, não o código** — os sete destinos são rotas irmãs sob uma chave de página só, então o `Navigator` tem uma página e nada a desempilhar; na web o histórico é do navegador e o Voltar chega por `setNewRoutePath`. Segundo, a primeira verificação no navegador mostrou `localhost:8087/transacoes?mes=2026-07#/hoje`: o Flutter usa hash por padrão e o caminho era ignorado. Liguei caminho limpo por import condicional, porque `flutter_web_plugins` só existe na web e este app também compila iOS — e isso passa a exigir que a hospedagem devolva `index.html` para caminho não encontrado, uma reescrita no Vercel. Verifiquei no navegador de verdade, não só em teste: abrir endereço direto cai na tela certa com mês e filtro, clicar na sidebar muda o endereço e cresce o histórico, Voltar volta dentro do app, F5 preserva tudo. Um achado veio dessa verificação: o filtro vinha da URL e era aplicado, mas o campo de busca ficava vazio — filtro invisível sobre lista filtrada; passou a ser semeado do endereço. Ficaram de fora com motivo a tela de entrada com endereço próprio (precisa de `refreshListenable` sobre o stream de auth, e o fluxo de recuperação de senha é sutil demais para mexer junto — vai no PR 5) e o deep link de fatura (não existe tela de fatura para abrir — vai no PR 6). 564 testes passam."
+**Context**: Construction / Code Generation — PR 4. Branch `feat/ui-remake-pr4`.
+
+---

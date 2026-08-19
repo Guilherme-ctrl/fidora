@@ -201,19 +201,42 @@ Dois defeitos meus no caminho, ambos pegos pela rede:
 Números mágicos de largura: **23 → 14**. Os que sobraram decidem contagem de
 colunas dentro de uma página, não navegação, e migram no PR 4 junto com a tabela.
 
-### PR 4 — Roteamento · ~1,5 dia
+### PR 4 — Roteamento · **entregue** (2026-08-19)
 
-Independente do visual — **pode correr em paralelo com o PR 2**.
+- [x] `go_router`; `MaterialApp` → `MaterialApp.router`
+- [x] Sete endereços, um por destino, na ordem da navegação
+- [x] Período na query: `?mes=2026-08` para mês inteiro,
+      `?de=…&ate=…` para intervalo — o formato curto é o que se cola numa mensagem
+- [x] Filtro do histórico na query: `q`, `categoria`, `cartao`, `estado`,
+      `min`, `max`, `parcelado`, `todoPeriodo`
+- [x] `/transacoes/:id` abre o lançamento e devolve o endereço ao fechar
+- [x] Endereço desconhecido explica o que houve em vez de tela branca
+- [x] `routes.dart` separado do `router.dart`, para o codec ser testado sem
+      montar widget
+- [x] `routing_test.dart` — 16 casos
 
-- [ ] `go_router`; `MaterialApp` → `MaterialApp.router`
-- [ ] Rotas nomeadas para os quatro espaços e as telas
-- [ ] Período e filtros como query params
-      (`/transacoes?de=2026-08-01&ate=2026-08-31&cat=mercado`)
-- [ ] Deep link para entidade (`/faturas/nubank-1847/2026-09`, `/transacoes/:id`)
-- [ ] `AuthGate` como redirect do router, não como `home`
+**O filtro saiu do estado do widget.** `TransactionsPage` guardava
+`TransactionFilter` internamente; agora ele vem do endereço, então um recorte do
+histórico é um link e F5 o preserva.
 
-**Pronto quando:** F5 em `/faturas/2026-08` devolve a mesma tela e o Voltar do
-navegador funciona.
+**Os sete destinos são rotas irmãs sob a mesma chave de página.** Com uma chave
+só o elemento é reaproveitado entre rotas, o `IndexedStack` mantém a posição de
+rolagem de cada tela e não há transição entre abas — que é como uma sidebar deve
+se comportar. O efeito colateral é que o `Navigator` tem uma página só, então
+`popRoute` não tem o que desempilhar: na web o histórico é do navegador, e o
+Voltar chega pelo `setNewRoutePath`. O teste exercita esse caminho, e a
+verificação no navegador está em `04-validation.md`.
+
+Ficou de fora, com motivo:
+
+- [ ] **A tela de entrada não tem endereço próprio.** O `AuthGate` virou
+      envelope da shell roteada em vez de virar `redirect`. Um redirect de
+      verdade precisa de um `refreshListenable` sobre o stream de autenticação,
+      e o fluxo de recuperação de senha é sutil demais para mexer junto com
+      roteamento. Vai com a recuperação de senha, no PR 5.
+- [ ] **Deep link para fatura** (`/faturas/:cartao/:competencia`) — não existe
+      tela de fatura para abrir; a fatura é renderizada dentro da lista de
+      cartões. Vai com o painel lateral, no PR 6.
 
 ### PR 5 — Superfícies e limpeza · ~1,5 dia
 
