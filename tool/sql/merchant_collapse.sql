@@ -1,7 +1,13 @@
 -- Quanto a normalização do nome junta?
 --
 -- Nenhum nome sai daqui: só contagens de distintos. O número que interessa é a
--- última coluna — quantos estabelecimentos deixam de ser tratados como vários.
+-- última coluna — quantos estabelecimentos deixam de ser tratados como vários.--
+-- A regra aparece embutida em três consultas deste diretório porque elas
+-- precisam responder antes da migration existir. A definição de verdade está em
+-- `supabase/migrations/202608200003_merchant_identity.sql`, e em
+-- `lib/domain/merchant_identity.dart` e
+-- `supabase/functions/capture-transaction/rules.ts` para o app. Se mudar, mude
+-- nas cinco — ou a medição deixa de descrever o que o produto faz.
 
 with nomes as (
   select
