@@ -2,18 +2,23 @@
 
 ## 1. Gere um token
 
-Gere pelo menos 32 bytes aleatórios. Guarde o valor original no Atalho e grave somente seu SHA-256 no banco:
+No app: **Mais → Automação Apple Pay → Gerenciar tokens → Gerar**. Ele aparece
+uma única vez e já vai para a área de transferência; o banco guarda apenas o
+SHA-256, então não há como recuperá-lo depois — se perder, revogue e gere outro.
 
-```sql
-insert into public.shortcut_tokens (user_id, name, token_hash)
-values ('SEU-USER-ID', 'iPhone principal', encode(digest('SEU-TOKEN-SECRETO', 'sha256'), 'hex'));
-```
+> A versão anterior desta página mandava inserir a linha à mão no SQL. Isso
+> deixou de ser necessário quando a tela de tokens foi entregue, e a instrução
+> ficou para trás.
 
 ## 2. Implante a função
 
 ```bash
 supabase functions deploy capture-transaction
 ```
+
+Ela já está publicada no projeto `ddmilzlinvpxfvzyigok`. Republique sempre que
+`index.ts` ou `rules.ts` mudarem — o que está no ar é o código do último deploy,
+não o do repositório.
 
 O projeto já declara `verify_jwt = false` especificamente para essa função em `supabase/config.toml`, porque o Atalho não possui uma sessão Supabase. A função aplica sua própria autenticação por token revogável e usa a chave secreta somente no servidor.
 
@@ -23,7 +28,7 @@ Crie uma automação pessoal `Transação`, selecione um cartão e escolha `Exec
 
 Adicione uma lista com as categorias e a ação `Escolher da Lista`. Em seguida use `Obter Conteúdo do URL`:
 
-- URL: `https://SEU-PROJETO.supabase.co/functions/v1/capture-transaction`
+- URL: `https://ddmilzlinvpxfvzyigok.supabase.co/functions/v1/capture-transaction`
 - Método: `POST`
 - Cabeçalho `x-shortcut-token`: o token original
 - Corpo: JSON
@@ -38,4 +43,13 @@ Adicione uma lista com as categorias e a ação `Escolher da Lista`. Em seguida 
 }
 ```
 
-O Atalho é o único componente autorizado a enxergar o token original. Revogue-o preenchendo `revoked_at` se o aparelho for perdido.
+## 4. Confirme que chegou
+
+Pague qualquer coisa com Apple Pay no cartão que você escolheu na automação,
+escolha a categoria quando o Atalho perguntar, e abra **Hoje**. A compra tem de
+estar lá em segundos. Se não estiver, o Atalho mostra o erro da requisição na
+própria execução — `401` é token errado ou revogado, `404` é `card_last_four`
+que não bate com nenhum cartão cadastrado.
+
+O Atalho é o único componente autorizado a enxergar o token original. Para
+revogar, use a mesma tela que o gerou.
