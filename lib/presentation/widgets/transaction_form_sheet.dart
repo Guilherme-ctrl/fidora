@@ -51,6 +51,7 @@ class _TransactionFormState extends State<_TransactionForm> {
   bool _hasInstallments = false;
   bool _isShared = false;
   String? _holderId;
+  String? _accountId;
   bool _saving = false;
   String? _failure;
   TransactionDraftErrors _errors = const TransactionDraftErrors();
@@ -78,6 +79,7 @@ class _TransactionFormState extends State<_TransactionForm> {
     );
     _isShared = existing?.isShared ?? false;
     _holderId = existing?.holderId;
+    _accountId = existing?.accountId;
     _date = existing?.date ?? DateTime.now();
     _hasInstallments = existing?.isInstallment ?? false;
     _isIncome = existing?.isIncome ?? false;
@@ -119,6 +121,7 @@ class _TransactionFormState extends State<_TransactionForm> {
         ? int.tryParse(_installmentTotal.text)
         : null,
     holderId: _holderId,
+    accountId: _cardId == null ? _accountId : null,
     personalAmount: _isShared && !_isIncome
         ? (parseAmountInput(_share.text) ?? double.nan)
         : null,
@@ -311,6 +314,35 @@ class _TransactionFormState extends State<_TransactionForm> {
                     onChanged: (value) => setState(() => _cardId = value),
                   ),
                   if (card != null) _CompetenceHint(date: _date, card: card),
+                  // Only meaningful without a card: an account movement has an
+                  // origin, and without one the history shows it as "----".
+                  if (card == null && widget.snapshot.accounts.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String?>(
+                      initialValue: _accountId,
+                      isExpanded: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Conta',
+                        helperText: 'De onde saiu ou para onde entrou.',
+                        prefixIcon: Icon(Icons.account_balance_rounded),
+                      ),
+                      items: [
+                        const DropdownMenuItem<String?>(
+                          child: Text('Não informar'),
+                        ),
+                        ...widget.snapshot.accounts.map(
+                          (item) => DropdownMenuItem<String?>(
+                            value: item.id,
+                            child: Text(
+                              item.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (value) => setState(() => _accountId = value),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,

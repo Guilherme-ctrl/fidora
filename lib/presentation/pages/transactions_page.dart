@@ -201,6 +201,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: _TransactionRow(
                     item: item,
+                    accounts: widget.snapshot.accounts,
                     selected: _selected.contains(item.id),
                     selecting: _selected.isNotEmpty,
                     onToggleSelect: () => setState(
@@ -371,6 +372,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
 class _TransactionRow extends StatelessWidget {
   const _TransactionRow({
     required this.item,
+    required this.accounts,
     required this.selected,
     required this.selecting,
     required this.onToggleSelect,
@@ -378,6 +380,7 @@ class _TransactionRow extends StatelessWidget {
     required this.onDelete,
   });
   final FinanceTransaction item;
+  final List<Account> accounts;
   final bool selected;
   final bool selecting;
   final VoidCallback onToggleSelect;
@@ -455,7 +458,9 @@ class _TransactionRow extends StatelessWidget {
             SizedBox(
               width: 92,
               child: Text(
-                '•• ${item.cardLastFour}',
+                _origin,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(color: context.palette.inkMuted),
               ),
             ),
@@ -487,6 +492,16 @@ class _TransactionRow extends StatelessWidget {
     ),
   );
 
+  /// The card final, or the account name — anything that was not a card used
+  /// to render as the literal "----".
+  String get _origin {
+    if (item.isCard) return '•• ${item.cardLastFour}';
+    final account = accounts
+        .where((entry) => entry.id == item.accountId)
+        .firstOrNull;
+    return account?.name ?? 'Conta';
+  }
+
   void _openDetails(BuildContext context) => showDetailSheet(
     context,
     title: item.merchant,
@@ -511,7 +526,10 @@ class _TransactionRow extends StatelessWidget {
             value: currency.format(item.amount - item.personalShare),
           ),
         ],
-        DetailValue(label: 'Cartão', value: 'final ${item.cardLastFour}'),
+        DetailValue(
+          label: item.isCard ? 'Cartão' : 'Origem',
+          value: item.isCard ? 'final ${item.cardLastFour}' : _origin,
+        ),
         DetailValue(
           label: 'Modalidade',
           value: item.isInstallment

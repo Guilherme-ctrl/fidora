@@ -9,6 +9,7 @@ import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
+import 'package:financeiro_ai/presentation/pages/accounts_page.dart';
 import 'package:financeiro_ai/presentation/pages/holders_page.dart';
 import 'package:financeiro_ai/presentation/pages/shortcut_tokens_page.dart';
 import 'package:financeiro_ai/presentation/pages/subscriptions_page.dart';
@@ -156,6 +157,20 @@ class MorePage extends ConsumerWidget {
                         onPeriodChanged: (_) {},
                       ),
                     ),
+                  ),
+                ),
+              ),
+              _OperationTile(
+                icon: Icons.account_balance_rounded,
+                color: const Color(0xFF477D9B),
+                title: 'Contas',
+                subtitle: snapshot.accounts.isEmpty
+                    ? 'Onde o dinheiro fica fora do cartão'
+                    : '${snapshot.accounts.length} cadastradas',
+                tooltip: 'Gerenciar contas e ver saldos',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => AccountsPage(snapshot: snapshot),
                   ),
                 ),
               ),

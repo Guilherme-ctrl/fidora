@@ -135,3 +135,53 @@ List<RecurringCharge> detectRecurring(
 
 double recurringMonthlyTotal(List<RecurringCharge> charges) =>
     charges.fold<double>(0, (sum, item) => sum + item.monthlyCost);
+
+class AccountBalance {
+  const AccountBalance({
+    required this.account,
+    required this.moved,
+    required this.entries,
+  });
+
+  final Account account;
+
+  /// Income minus expenses recorded on the account, all time.
+  final double moved;
+  final int entries;
+
+  double get balance => account.openingBalance + moved;
+
+  /// A balance with no opening figure is really just the movement so far, and
+  /// the screen has to say which one it is showing.
+  bool get isMovementOnly => account.openingBalance == 0;
+}
+
+/// Current balance per account, not scoped to the selected period: a balance is
+/// state, the same reason card availability ignores the period.
+List<AccountBalance> accountBalances(FinanceSnapshot snapshot) {
+  final moved = <String, double>{};
+  final counted = <String, int>{};
+  for (final item in snapshot.transactions) {
+    final id = item.accountId;
+    if (id == null || item.status == TransactionStatus.ignored) continue;
+    counted[id] = (counted[id] ?? 0) + 1;
+    moved[id] =
+        (moved[id] ?? 0) + (item.isIncome ? item.amount : -item.expenseImpact);
+  }
+  return snapshot.accounts
+      .map(
+        (account) => AccountBalance(
+          account: account,
+          moved: moved[account.id] ?? 0,
+          entries: counted[account.id] ?? 0,
+        ),
+      )
+      .toList();
+}
+
+/// What the accounts hold together — the closest the app gets to net worth,
+/// and deliberately not including credit cards, which are debt rather than
+/// something you own.
+double totalAccountBalance(List<AccountBalance> balances) => balances
+    .where((item) => item.account.includeInTotals)
+    .fold<double>(0, (sum, item) => sum + item.balance);

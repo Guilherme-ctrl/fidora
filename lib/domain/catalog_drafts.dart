@@ -123,6 +123,50 @@ class GoalDraft {
   );
 }
 
+class AccountDraftErrors {
+  const AccountDraftErrors({this.name, this.openingBalance});
+  final String? name;
+  final String? openingBalance;
+  bool get isEmpty => name == null && openingBalance == null;
+  String? get firstMessage => name ?? openingBalance;
+}
+
+class AccountDraft {
+  const AccountDraft({
+    required this.name,
+    this.id,
+    this.bank = '',
+    this.type = 'checking',
+    this.openingBalance = 0,
+    this.includeInTotals = true,
+    this.active = true,
+  });
+
+  final String? id;
+  final String name;
+  final String bank;
+  final String type;
+  final double openingBalance;
+  final bool includeInTotals;
+  final bool active;
+
+  bool get isEdit => id != null;
+
+  AccountDraftErrors validate() => AccountDraftErrors(
+    name: name.trim().isEmpty ? 'Dê um nome à conta' : null,
+    // A negative opening balance is legitimate — an overdraft — so only a
+    // non-number is refused.
+    openingBalance: openingBalance.isNaN ? 'Informe um valor válido' : null,
+  );
+}
+
+const accountTypes = <String, String>{
+  'checking': 'Conta corrente',
+  'savings': 'Poupança',
+  'wallet': 'Carteira',
+  'investment': 'Investimento',
+};
+
 class HolderDraftErrors {
   const HolderDraftErrors({this.name});
   final String? name;
