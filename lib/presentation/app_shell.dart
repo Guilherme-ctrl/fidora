@@ -1,4 +1,5 @@
 import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/application/reminder_service.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/load_failure.dart';
@@ -58,8 +59,24 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   /// The tabs whose contents depend on the selected period.
   static const _periodAware = {0, 1, 2, 3};
+
+  /// Rescheduling on every fresh snapshot is what keeps a paid or re-dated
+  /// invoice from still buzzing: the reminders screen only runs when someone
+  /// opens it, and paying a fatura happens somewhere else entirely.
+  Future<void> _syncReminders(FinanceSnapshot snapshot) async {
+    final service = ref.read(reminderServiceProvider);
+    if (!ReminderService.isSupported) return;
+    final settings = await service.loadSettings();
+    if (!settings.enabled) return;
+    await service.sync(snapshot, settings, money: currency.format);
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen(financeSnapshotProvider, (_, next) {
+      final data = next.value;
+      if (data != null) _syncReminders(data);
+    });
     final state = ref.watch(financeSnapshotProvider);
     final wide = MediaQuery.sizeOf(context).width >= 900;
     // Keeping the last snapshot on screen while a reload runs is what stops the

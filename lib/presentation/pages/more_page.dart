@@ -8,6 +8,7 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/pages/projection_page.dart';
+import 'package:financeiro_ai/presentation/pages/reminders_page.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/pages/accounts_page.dart';
 import 'package:financeiro_ai/presentation/pages/data_page.dart';
@@ -233,6 +234,18 @@ class MorePage extends ConsumerWidget {
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => HoldersPage(snapshot: snapshot),
+                  ),
+                ),
+              ),
+              _OperationTile(
+                icon: Icons.notifications_active_rounded,
+                color: const Color(0xFFA8763E),
+                title: 'Lembretes',
+                subtitle: 'Avisar antes de a fatura vencer',
+                tooltip: 'Configurar notificações de vencimento',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => RemindersPage(snapshot: snapshot),
                   ),
                 ),
               ),
