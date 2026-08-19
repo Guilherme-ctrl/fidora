@@ -24,7 +24,14 @@ O projeto já declara `verify_jwt = false` especificamente para essa função em
 
 ## 3. Monte o Atalho
 
-Crie uma automação pessoal `Transação`, selecione um cartão e escolha `Executar imediatamente`. Para cartões com nomes iguais, crie uma automação por cartão e fixe os quatro últimos dígitos.
+Crie uma automação pessoal a partir de **Wallet** na lista de gatilhos — a Apple
+documenta como *Transaction trigger*, mas ele aparece agrupado sob Wallet.
+Selecione o cartão e marque **Executar imediatamente**. Para cartões com nomes
+iguais, crie uma automação por cartão e fixe os quatro últimos dígitos.
+
+> **O gatilho só dispara em pagamento por aproximação.** Compra online ou dentro
+> de app com Apple Pay não aciona a automação — essas continuam entrando pela
+> importação da fatura. Não é defeito da configuração.
 
 Adicione uma lista com as categorias e a ação `Escolher da Lista`. Em seguida use `Obter Conteúdo do URL`:
 
