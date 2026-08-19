@@ -460,3 +460,74 @@ build compiles and links, and the permission strings are present in the built
 `Info.plist`, but no receipt has been photographed or read. Everything up to
 the recognizer call is covered by tests with a stubbed recognizer; the call
 itself needs a real iPhone.
+
+## Phase 5 — technical debt (2026-08-19)
+
+### The snapshot split
+
+The `.limit(2000)` was a correctness bug, not a performance choice: past that
+row the ledger was silently short and every derived figure was wrong with
+nothing on screen to say so. The loader pages through everything; the 50.000
+ceiling exists only to bound the loop and raises a banner when reached.
+
+The load is split into catalog and ledger and composed by the provider, so no
+screen changed. Transaction writes refresh only the ledger.
+
+A trap worth recording: the first version of these tests deadlocked. The fake
+extended the demo repository, whose loaders sleep, and a `Future.delayed`
+cannot resolve while the test body is blocked on an await instead of pumping
+the clock.
+
+### The spreadsheet reader
+
+CSV and XLSX go in directly. The rules live in a pure function over extracted
+cells, so they are tested without fixture files. **PDF is not done** — text
+extraction in Dart needs a heavy, licence-encumbered dependency, and a wrong
+number read off an invoice is worse than a manual step. The plan item is half
+closed, deliberately.
+
+Two defects found while wiring it: the payload validator rejects duplicate
+external ids, so two identical charges on one day would have failed the whole
+file; and `raw_source` recorded the literal `chatgpt` for every import, which
+would file a bank export as if a model had transcribed it.
+
+### Database tests — the standing gap is now closed
+
+**32 pgTAP tests run against a real Postgres**, and `.github/workflows/ci.yml`
+runs them on every push. This closes the gap recorded above since the first
+audit: "everything that talks to Supabase is covered only through the demo
+repository, never executed against Postgres."
+
+Now demonstrated rather than assumed:
+
+- The paid/`paid_at` invariant holds in both directions.
+- Competence is pinned to the first of a month.
+- A personal share larger than the amount is refused.
+- **RLS isolates.** A signed-in user sees only their own rows and is refused
+  when writing a row owned by someone else. This is what makes shipping the
+  publishable key safe and it had never been shown.
+- The receipts bucket is private, capped and image-only, and all four policies
+  key on the owner folder — the same shape the upload code writes.
+- The import RPC creates, queues for review, and recognises a re-import as a
+  duplicate batch instead of writing it twice.
+- The provenance fix records `sheet`, not `chatgpt`.
+
+The CI also runs `supabase db reset`, proving the migrations replay from
+scratch rather than only working against today's production database.
+
+Every gate was run locally before committing. Two would have failed on first
+push: fifteen unformatted files and one brace lint.
+
+### What is still not verified
+
+- **No receipt has been photographed or read.** ML Kit ships no arm64
+  simulator slices, so on Apple Silicon the recognizer cannot run in the
+  Simulator at all. Needs a real iPhone.
+- **No invoice reminder has been delivered.** Same reason: needs a device.
+- **The two new migrations have not been applied to production** —
+  `202608200001_receipts` and `202608200002_import_source`. Both pass against
+  a local Postgres and replay from scratch.
+- **Dynamic Type is covered only on the dashboard.**
+- **The app has not been driven by hand against the production Supabase.** The
+  browser pane here does not deliver clicks into the Flutter canvas; the
+  overview was driven with synthesised wheel events, no other screen was.

@@ -177,3 +177,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — último item da fase 4.
 
 ---
+
+## Construction — Fase 5 (dívida técnica)
+**Timestamp**: 2026-08-19T00:00:00Z
+**User Input**: "Pode continuar a fase 4 e depois fazer a fase 5 sem me perguntar, voce esta rodando enquanto estou dormindo"
+**AI Response**: "Fase 5 concluída em três commits. (1) O snapshot deixou de truncar em silêncio: pagina o histórico inteiro, e a carga foi partida em catálogo e histórico, composta no provider — nenhuma tela mudou, mas registrar uma compra não recarrega mais cartões e categorias. (2) Leitor de extrato CSV/XLSX do próprio banco, com as regras numa função pura testada sem arquivo de exemplo; PDF ficou de fora por exigir dependência pesada e licenciada. (3) 32 testes pgTAP contra Postgres real mais um workflow de CI — fecha a lacuna que estava aberta desde a primeira auditoria, incluindo a primeira demonstração de que o RLS isola de fato. Subi o Docker e rodei tudo localmente: as quatro portas do CI passam. Duas teriam falhado no primeiro push (quinze arquivos fora de formatação e um lint de chaves), corrigidas antes. Encerrei o Docker e o Supabase local ao final."
+**Context**: Construction / Build and Test — trabalho autônomo autorizado. Nada foi enviado ao remoto nem aplicado em produção.
+
+---
