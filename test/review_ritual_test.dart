@@ -112,6 +112,45 @@ void main() {
     });
   });
 
+  testWidgets('the card carries what a decision needs', (tester) async {
+    await withGoldenClock(() async {
+      await _pump(tester, const Size(390, 844));
+      // The first version showed a name, a category and a suggestion, and the
+      // owner's answer after using it was that there was too little to decide
+      // on. Everything below is already in the row.
+      expect(find.text('QUANDO'), findsOneWidget);
+      expect(find.textContaining('CATEGORIA'), findsWidgets);
+      expect(find.textContaining('ENTROU POR'), findsOneWidget);
+      expect(
+        find.textContaining('CONFIANÇA'),
+        findsWidgets,
+        reason: 'a confiança é o motivo de o item estar na fila',
+      );
+    });
+  });
+
+  testWidgets('correcting moves the progress counter', (tester) async {
+    await withGoldenClock(() async {
+      final container = await _pump(tester, const Size(390, 844));
+      final before = (await container.read(reviewQueueProvider.future)).length;
+      expect(find.text('0'), findsOneWidget, reason: 'começa em zero');
+
+      // Correcting settles the item that asked, and the header used to go on
+      // saying the same number because the counter lived in the parent and the
+      // correction did not.
+      await tester.tap(find.text('Corrigir'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 60));
+      }
+      expect(
+        find.byType(TextField),
+        findsWidgets,
+        reason: 'o formulário de correção abriu',
+      );
+      expect(before, greaterThan(0));
+    });
+  });
+
   testWidgets('a wide screen names the keyboard', (tester) async {
     await withGoldenClock(() async {
       await _pump(tester, const Size(1280, 900));

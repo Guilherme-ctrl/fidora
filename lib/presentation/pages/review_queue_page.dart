@@ -8,6 +8,7 @@ import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/core/typography.dart';
+import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
@@ -19,18 +20,46 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// is where most of the weight of a 24-item queue actually goes: not motivation,
 /// volume.
 class _Group {
-  _Group({required this.label, required this.items, this.transaction});
+  _Group({
+    required this.label,
+    required this.items,
+    required this.transactions,
+  });
 
   final String label;
   final List<ReviewItem> items;
-  final FinanceTransaction? transaction;
+
+  /// Every transaction behind the group, not a sample. The card shows what the
+  /// group is worth and when it happened, and one row cannot say either.
+  final List<FinanceTransaction> transactions;
 
   int get size => items.length;
   ReviewItem get first => items.first;
+  FinanceTransaction? get sample => transactions.firstOrNull;
+
+  double get total =>
+      transactions.fold<double>(0, (sum, row) => sum + row.amount);
+
+  DateTime? get earliest => transactions.isEmpty
+      ? null
+      : transactions.map((r) => r.date).reduce((a, b) => a.isBefore(b) ? a : b);
+
+  DateTime? get latest => transactions.isEmpty
+      ? null
+      : transactions.map((r) => r.date).reduce((a, b) => a.isAfter(b) ? a : b);
+
+  /// The categories the group currently sits in. More than one means the shop
+  /// has been filed inconsistently, which is worth seeing before deciding.
+  Set<String> get categories =>
+      transactions.map((r) => r.category).where((c) => c.isNotEmpty).toSet();
+
+  Set<String> get cards => transactions
+      .map((r) => r.isCard ? '·${r.cardLastFour}' : 'conta')
+      .toSet();
 
   static List<_Group> from(List<ReviewItem> items, FinanceSnapshot? snapshot) {
     final byKey = <String, List<ReviewItem>>{};
-    final sample = <String, FinanceTransaction?>{};
+    final rows = <String, List<FinanceTransaction>>{};
     for (final item in items) {
       final transaction = snapshot?.transactions
           .where((row) => row.id == item.transactionId)
@@ -41,14 +70,15 @@ class _Group {
       final merchant = transaction?.merchant;
       final key = merchant == null ? item.reason : merchantIdentity(merchant);
       byKey.putIfAbsent(key, () => []).add(item);
-      sample.putIfAbsent(key, () => transaction);
+      rows.putIfAbsent(key, () => []);
+      if (transaction != null) rows[key]!.add(transaction);
     }
     return [
       for (final entry in byKey.entries)
         _Group(
           label: entry.key,
           items: entry.value,
-          transaction: sample[entry.key],
+          transactions: rows[entry.key] ?? const [],
         ),
     ]..sort((a, b) => b.size.compareTo(a.size));
   }
@@ -106,6 +136,42 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
         ).showSnackBar(SnackBar(content: Text(error.message)));
       }
     }
+  }
+
+  /// Correcting settles the entry that asked, because a saved edit answers it.
+  ///
+  /// It used to live inside the card, which meant the progress counter never
+  /// moved: a correction resolved the item and the header went on saying the
+  /// same number. Answering an item any way at all has to count.
+  Future<void> _correct(
+    _Group group,
+    FinanceTransaction transaction,
+    FinanceSnapshot snapshot,
+  ) async {
+    final item = group.items.firstWhere(
+      (row) => row.transactionId == transaction.id,
+      orElse: () => group.first,
+    );
+    final saved = await showTransactionFormSheet(
+      context,
+      snapshot: snapshot,
+      existing: transaction,
+      onSave: (draft) async {
+        await ref.read(financeRepositoryProvider).saveTransaction(draft);
+        await ref
+            .read(financeRepositoryProvider)
+            .settleReview(item.id, status: 'resolved');
+        await refreshLedger(ref);
+        await refreshReviewQueue(ref);
+      },
+    );
+    if (saved != true || !mounted) return;
+    setState(() {
+      _settled += 1;
+      _decisions += 1;
+      _exit = 1;
+    });
+    ref.invalidate(financeSnapshotProvider);
   }
 
   void _move(int delta, int length) {
@@ -175,9 +241,9 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
                                 groups: groups,
                                 cursor: _cursor,
                                 exit: _exit,
-                                snapshot: snapshot,
                                 onKeep: (g) => _settleGroup(g, 'resolved'),
                                 onDismiss: (g) => _settleGroup(g, 'dismissed'),
+                                onCorrect: (g, t) => _correct(g, t, snapshot),
                               ),
                       ),
                       if (Breakpoint.of(context).hasRail && groups.isNotEmpty)
@@ -284,17 +350,17 @@ class _Deck extends StatelessWidget {
     required this.groups,
     required this.cursor,
     required this.exit,
-    required this.snapshot,
     required this.onKeep,
     required this.onDismiss,
+    required this.onCorrect,
   });
 
   final List<_Group> groups;
   final int cursor;
   final int exit;
-  final FinanceSnapshot? snapshot;
   final ValueChanged<_Group> onKeep;
   final ValueChanged<_Group> onDismiss;
+  final void Function(_Group, FinanceTransaction) onCorrect;
 
   @override
   Widget build(BuildContext context) {
@@ -355,9 +421,9 @@ class _Deck extends StatelessWidget {
                 child: _GroupCard(
                   key: ValueKey(group.label),
                   group: group,
-                  snapshot: snapshot,
                   onKeep: () => onKeep(group),
                   onDismiss: () => onDismiss(group),
+                  onCorrect: (transaction) => onCorrect(group, transaction),
                 ),
               ),
             ],
@@ -368,26 +434,53 @@ class _Deck extends StatelessWidget {
   }
 }
 
-/// The one decision on screen.
-class _GroupCard extends ConsumerWidget {
+/// The one decision on screen, with everything known about it.
+///
+/// The first version showed the merchant, its category and the suggestion, and
+/// the owner's reaction after using it was that there was too little to decide
+/// on. Deciding whether a charge is filed correctly needs the charge: what it
+/// cost, when, on which card, how it was classified and how sure the classifier
+/// was. All of it is already in the row.
+class _GroupCard extends StatelessWidget {
   const _GroupCard({
     super.key,
     required this.group,
-    required this.snapshot,
     required this.onKeep,
     required this.onDismiss,
+    required this.onCorrect,
   });
 
   final _Group group;
-  final FinanceSnapshot? snapshot;
   final VoidCallback onKeep;
   final VoidCallback onDismiss;
+  final void Function(FinanceTransaction) onCorrect;
+
+  static String _origin(String source) => switch (source) {
+    'apple_pay' => 'Atalho, no momento da compra',
+    'shortcut' => 'Atalho, no momento da compra',
+    'manual' => 'Digitado no app',
+    'invoice_import' => 'Importação de fatura',
+    'statement_import' => 'Importação de extrato',
+    'migration' => 'Migração da planilha',
+    _ => source,
+  };
+
+  static (String, Color) _confidence(BuildContext context, String value) =>
+      switch (value) {
+        'high' => ('alta', context.palette.income),
+        'medium' => ('média', context.palette.pending),
+        'low' => ('baixa', context.palette.negative),
+        _ => (value, context.palette.inkSubtle),
+      };
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final palette = context.palette;
-    final transaction = group.transaction;
+    final type = context.type;
+    final sample = group.sample;
     final many = group.size > 1;
+    final earliest = group.earliest;
+    final latest = group.latest;
 
     return Dismissible(
       key: ValueKey('swipe-${group.label}'),
@@ -424,14 +517,85 @@ class _GroupCard extends ConsumerWidget {
               ],
             ),
             const SizedBox(height: Space.xs),
-            Text(group.label, style: context.type.titleLg),
-            if (transaction != null) ...[
-              const SizedBox(height: Space.xxs),
-              Text(
-                '${transaction.category} · final ${transaction.cardLastFour}',
-                style: context.type.meta.copyWith(color: palette.inkSubtle),
+            Text(group.label, style: type.titleLg),
+            const SizedBox(height: Space.xs),
+
+            // What it cost. For a group this is the sum, which is the number
+            // that decides whether it deserves a closer look.
+            if (group.transactions.isNotEmpty) ...[
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  AmountText(
+                    group.total,
+                    tone: MoneyTone.expense,
+                    size: AmountSize.metric,
+                    sign: false,
+                    align: TextAlign.start,
+                  ),
+                  const SizedBox(width: Space.xs),
+                  if (many)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: Text(
+                        'no total',
+                        style: type.meta.copyWith(color: palette.inkSubtle),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Space.sm),
+            ],
+
+            _Facts(
+              rows: [
+                if (earliest != null)
+                  (
+                    'quando',
+                    latest == null || _sameDay(earliest, latest)
+                        ? longDate.format(earliest)
+                        : '${shortDate.format(earliest)} a ${shortDate.format(latest)}',
+                  ),
+                if (group.categories.isNotEmpty)
+                  (
+                    group.categories.length == 1
+                        ? 'categoria hoje'
+                        : 'categorias hoje',
+                    group.categories.join(', '),
+                  ),
+                if (group.cards.isNotEmpty)
+                  (
+                    group.cards.length == 1 ? 'cartão' : 'cartões',
+                    group.cards.join(', '),
+                  ),
+                if (sample != null && sample.isInstallment)
+                  (
+                    'parcela',
+                    '${sample.installmentCurrent}/${sample.installmentTotal}',
+                  ),
+                if (sample != null && sample.rawModality != null)
+                  ('modalidade', sample.rawModality!),
+                if (sample != null) ('entrou por', _origin(sample.source)),
+                if (sample?.sourceFile != null)
+                  ('arquivo', sample!.sourceFile!),
+                if (sample?.isShared ?? false)
+                  ('sua parte', currency.format(sample!.personalShare)),
+              ],
+            ),
+
+            if (sample?.confidence != null) ...[
+              const SizedBox(height: Space.xs),
+              Row(
+                children: [
+                  const Expanded(child: SectionLabel('classificação')),
+                  MonoTag(
+                    'confiança ${_confidence(context, sample!.confidence!).$1}',
+                    color: _confidence(context, sample.confidence!).$2,
+                  ),
+                ],
               ),
             ],
+
             if (group.first.suggestedAction != null) ...[
               const SizedBox(height: Space.sm),
               Container(
@@ -443,10 +607,11 @@ class _GroupCard extends ConsumerWidget {
                 ),
                 child: Text(
                   group.first.suggestedAction!,
-                  style: context.type.bodySm.copyWith(color: palette.accent),
+                  style: type.bodySm.copyWith(color: palette.accent),
                 ),
               ),
             ],
+
             const SizedBox(height: Space.lg),
             Row(
               children: [
@@ -458,20 +623,21 @@ class _GroupCard extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(width: Space.xs),
-                if (transaction != null && snapshot != null)
+                if (sample != null)
                   InkButton(
                     label: 'Corrigir',
                     secondary: true,
-                    onPressed: () => _correctOne(
-                      context,
-                      ref,
-                      snapshot!,
-                      transaction,
-                      group.first,
-                    ),
+                    onPressed: () => onCorrect(sample),
                   ),
               ],
             ),
+            if (many && sample != null) ...[
+              const SizedBox(height: Space.xxs),
+              Text(
+                'Corrigir resolve um; os outros ${group.size - 1} continuam na fila.',
+                style: type.meta.copyWith(color: palette.inkSubtle),
+              ),
+            ],
             const SizedBox(height: Space.xs),
             Align(
               alignment: Alignment.centerLeft,
@@ -486,26 +652,45 @@ class _GroupCard extends ConsumerWidget {
     );
   }
 
-  /// Correcting settles the entry that asked, because a saved edit answers it.
-  Future<void> _correctOne(
-    BuildContext context,
-    WidgetRef ref,
-    FinanceSnapshot snapshot,
-    FinanceTransaction transaction,
-    ReviewItem item,
-  ) async {
-    await showTransactionFormSheet(
-      context,
-      snapshot: snapshot,
-      existing: transaction,
-      onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveTransaction(draft);
-        await ref
-            .read(financeRepositoryProvider)
-            .settleReview(item.id, status: 'resolved');
-        await refreshLedger(ref);
-        await refreshReviewQueue(ref);
-      },
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+}
+
+/// A compact label-and-value list. Everything known, without a wall of text.
+class _Facts extends StatelessWidget {
+  const _Facts({required this.rows});
+  final List<(String, String)> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    if (rows.isEmpty) return const SizedBox.shrink();
+    final palette = context.palette;
+    return Container(
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: palette.rule)),
+      ),
+      padding: const EdgeInsets.only(top: Space.xs),
+      child: Column(
+        children: [
+          for (final (label, value) in rows)
+            Padding(
+              padding: const EdgeInsets.only(bottom: Space.xxs),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(width: 110, child: SectionLabel(label)),
+                  Expanded(
+                    child: Text(
+                      value,
+                      style: context.type.bodySm,
+                      textAlign: TextAlign.end,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

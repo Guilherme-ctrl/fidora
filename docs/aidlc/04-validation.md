@@ -1250,3 +1250,27 @@ cru arquiva os clientes de cada agregador debaixo do agregador.
 **A lição:** a pergunta que o dono fez tinha resposta negativa, e a consulta que
 existia só para depurar a resposta negativa achou um problema maior — que já
 estava atrapalhando a tela sobre a qual ele tinha reclamado dois dias antes.
+
+### Depois de usar a fila (2026-08-19)
+
+Três coisas do dono usando a tela com dados reais, e a primeira era bug meu.
+
+**O progresso não andava ao corrigir.** `_settled` só era incrementado no
+caminho de grupo; a correção resolvia o item e o cabeçalho seguia dizendo o
+mesmo número. A correção morava dentro do card, que não alcança o estado do pai.
+Subiu para o estado. **Responder um item de qualquer maneira tem de contar** — e
+o teste novo falha se voltar a não contar.
+
+**O card dizia pouco demais.** Mostrava nome, categoria e sugestão. Decidir se
+uma cobrança está arquivada certo exige a cobrança: quanto custou, quando, em
+que cartão, como foi classificada e com que confiança. Tudo isso já estava na
+linha e não era mostrado. Agora aparece — inclusive a procedência que o PR 6
+tinha mapeado e que só o painel de detalhe usava.
+
+Para um grupo, o valor é a **soma**, que é o número que decide se merece um olhar
+mais atento, e as datas viram intervalo. Se o grupo estiver em mais de uma
+categoria, as duas aparecem — é sinal de que a loja foi arquivada de forma
+inconsistente, e vale ver antes de decidir.
+
+**E o card passou a dizer o que "Corrigir" faz num grupo:** resolve um, os
+outros continuam. Antes o botão não contava isso e o comportamento surpreendia.
