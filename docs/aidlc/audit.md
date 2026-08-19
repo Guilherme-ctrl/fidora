@@ -153,3 +153,11 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — primeiro item da fase 4. Branch feat/fase-4-previsao.
 
 ---
+
+## Construction — Code Generation (Fase 4: insights em linguagem natural)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Sim, pode seguir com os insights"
+**AI Response**: "Insights derivados, não gerados por LLM: `lib/domain/narrative.dart` produz frases cujos números saem das mesmas contas das outras telas. Três geradores — movimento de categoria contra a média dos meses anteriores (com os estabelecimentos que explicam a alta, e distinção entre alta concentrada e diluída), mudança de preço de assinatura, e fatura em aberto acima da média. Card na Visão geral que se remove sozinho quando não tem nada a dizer. 26 testes novos, 331 no total, analyze limpo. Uma constatação para o usuário: o repositório de demonstração tem 8 lançamentos num único mês, então nem os insights nem a estimativa da previsão aparecem em modo demo — as guardas estão certas, o fixture é que é raso demais."
+**Context**: Construction / Code Generation — segundo item da fase 4.
+
+---

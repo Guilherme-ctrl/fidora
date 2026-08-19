@@ -6,6 +6,7 @@ import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/presentation/widgets/insights_card.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
@@ -186,6 +187,10 @@ class DashboardPage extends ConsumerWidget {
           },
         ),
         const SizedBox(height: 14),
+        // After the numbers, before the breakdowns: it reads as the answer to
+        // the numbers above, and the charts below are where someone goes to
+        // check it. Removes itself when there is nothing worth saying.
+        InsightsCard(snapshot: snapshot, period: period),
         _MonthOverMonth(comparison: comparison, average: average),
         const SizedBox(height: 14),
         _BudgetComparison(

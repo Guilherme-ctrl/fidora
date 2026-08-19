@@ -306,3 +306,46 @@ A golden render was used to inspect layout and was discarded afterwards:
 widget tests load no font, so every glyph renders as a box and line wrapping
 in that image says nothing about the real app. Layout facts were recovered
 from the render tree instead, which is font-independent.
+
+## Natural-language insights (fase 4)
+
+**Derived, not generated.** No model writes these sentences. Every figure in
+them comes from the same arithmetic the other screens use, so a reader who
+checks a number will find it. Wording that cannot be backed by a computed
+figure is not written.
+
+Covered by tests: 20 on the derivation, 6 on the widget. The guards that
+carry the weight:
+
+- **Two observed months minimum.** One month is an anecdote.
+- **A month absent from the data is not a month of restraint** — the same trap
+  as the invoice forecast. Without the guard, opening the app for the first
+  time would report every category as a spike.
+- **Both a money floor and a proportion floor.** 30 reais over a 40-real
+  average is a large percentage and a meaningless amount; ranking is by money
+  for the same reason.
+- **No percentage from zero.** A category with no baseline is left alone
+  rather than described as an infinite increase.
+- **Custom ranges produce nothing**, as with budget alerts: a monthly average
+  against an arbitrary window is a number that means nothing.
+- **A price change is weighed against a year**, because a monthly charge keeps
+  costing the difference every month.
+- **Concentrated and diffuse increases are worded differently.** "Puxado por 3
+  compras" is a fact to act on; the same phrase over fourteen purchases would
+  be the wrong word for a habit.
+
+A test fixture caught something worth recording: the same merchant at the same
+amount every month is this app's own definition of a subscription, so a naive
+fixture produced a price-change insight alongside the category one and changed
+what the test was measuring. Fixtures now vary the merchant per month.
+
+**Demo data cannot exercise either phase-4 feature.** `DemoFinanceRepository`
+holds 8 transactions spanning 8–18 August 2026 — a single month. Insights
+therefore produce nothing (correctly: no baseline), and the forecast shows
+`hasBaseline: false` for both cards, so the estimate is always zero and the
+card says "sem ciclo anterior". Both features are invisible in demo mode. The
+guards are behaving; the demo fixture is what is too thin to show them.
+
+**Not verified:** the screen has not been driven by hand, for the same reason
+as the forecast — the browser pane here does not deliver clicks into the
+Flutter canvas.
