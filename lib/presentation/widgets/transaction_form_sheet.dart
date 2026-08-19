@@ -633,7 +633,7 @@ Future<void> createTransaction(
     existing: existing,
     onSave: (draft) async {
       await ref.read(financeRepositoryProvider).saveTransaction(draft);
-      await refreshFinanceSnapshot(ref);
+      await refreshLedger(ref);
     },
   );
   if (saved == true && context.mounted) {

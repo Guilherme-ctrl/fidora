@@ -469,7 +469,7 @@ Future<void> _setPaid(
     await ref
         .read(financeRepositoryProvider)
         .setInvoicePaid(invoice.id, paid: paid);
-    await refreshFinanceSnapshot(ref);
+    await refreshLedger(ref);
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

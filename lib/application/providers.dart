@@ -10,6 +10,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 abstract class FinanceRepository {
   Future<FinanceSnapshot> loadSnapshot();
+
+  /// The rarely-changing half: categories, cards, goals, holders, accounts and
+  /// the currency. Loaded separately so a captured purchase does not refetch
+  /// all of it.
+  Future<FinanceCatalog> loadCatalog();
+
+  /// The half that changes on every write. Pages through the whole ledger
+  /// rather than stopping at a fixed count.
+  Future<FinanceLedger> loadLedger();
   Future<InvoiceImportPreview> previewInvoiceImport(
     InvoiceImportDocument document,
   );
@@ -89,9 +98,20 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
     'FinanceRepository must be overridden at startup.',
   ),
 );
-final financeSnapshotProvider = FutureProvider<FinanceSnapshot>(
-  (ref) => ref.watch(financeRepositoryProvider).loadSnapshot(),
+final financeCatalogProvider = FutureProvider<FinanceCatalog>(
+  (ref) => ref.watch(financeRepositoryProvider).loadCatalog(),
 );
+final financeLedgerProvider = FutureProvider<FinanceLedger>(
+  (ref) => ref.watch(financeRepositoryProvider).loadLedger(),
+);
+
+/// Composed from the two halves, so every screen keeps reading one object
+/// while a capture only invalidates the half that actually changed.
+final financeSnapshotProvider = FutureProvider<FinanceSnapshot>((ref) async {
+  final catalog = await ref.watch(financeCatalogProvider.future);
+  final ledger = await ref.watch(financeLedgerProvider.future);
+  return FinanceSnapshot.compose(catalog: catalog, ledger: ledger);
+});
 
 /// Loaded when its screen opens rather than folded into the snapshot, so the
 /// first paint does not wait on data most sessions never look at.
@@ -111,7 +131,18 @@ final importBatchesProvider = FutureProvider<List<ImportBatch>>(
 /// Reloads the snapshot and completes only when the new data has arrived, so a
 /// `RefreshIndicator` keeps spinning for exactly as long as the reload takes.
 Future<void> refreshFinanceSnapshot(WidgetRef ref) async {
-  ref.invalidate(financeSnapshotProvider);
+  ref.invalidate(financeCatalogProvider);
+  ref.invalidate(financeLedgerProvider);
+  await ref.read(financeSnapshotProvider.future);
+}
+
+/// Reloads only what a captured, edited or deleted transaction can change.
+///
+/// Cards, categories, holders and accounts are edited from their own screens
+/// and cannot move because a purchase was recorded, so refetching them on every
+/// save was work with no possible effect on the result.
+Future<void> refreshLedger(WidgetRef ref) async {
+  ref.invalidate(financeLedgerProvider);
   await ref.read(financeSnapshotProvider.future);
 }
 

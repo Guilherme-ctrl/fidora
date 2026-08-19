@@ -650,34 +650,35 @@ class SupabaseFinanceRepository implements FinanceRepository {
 
   @override
   Future<FinanceSnapshot> loadSnapshot() async {
+    // Both halves in flight together: splitting them is about what gets
+    // *refetched* after a write, not about making the first load serial.
+    final loaded = await Future.wait([loadCatalog(), loadLedger()]);
+    return FinanceSnapshot.compose(
+      catalog: loaded[0] as FinanceCatalog,
+      ledger: loaded[1] as FinanceLedger,
+    );
+  }
+
+  @override
+  Future<FinanceCatalog> loadCatalog() async {
     final results = await Future.wait([
-      _client
-          .from('transactions')
-          .select('*, categories(name), cards(last_four)')
-          .order('purchased_at', ascending: false)
-          .limit(2000),
       _client
           .from('categories')
           .select()
           .eq('active', true)
           .order('sort_order'),
       _client.from('cards').select().eq('active', true).order('name'),
-      _client
-          .from('invoices')
-          .select()
-          .order('reference_month', ascending: false)
-          .limit(12),
       _client.from('goals').select().eq('active', true).order('created_at'),
-      _client.from('review_queue').select('id').eq('status', 'pending'),
-      _client.from('profiles').select('currency').limit(1).maybeSingle(),
       _client.from('holders').select().order('name'),
       _client.from('accounts').select().eq('active', true).order('name'),
+      _client.from('profiles').select('currency').limit(1).maybeSingle(),
     ]);
-    // The stored colour and icon are read now. They were written by the
+
+    // The stored colour and icon are read here. They were written by the
     // schema's defaults from the first migration and ignored ever since: the
     // colour came from list position, so it changed whenever a category was
     // added, and every category drew the same icon.
-    final categories = (results[1] as List).map((row) {
+    final categories = (results[0] as List).map((row) {
       final json = row as Map<String, dynamic>;
       return FinanceCategory(
         id: json['id'] as String,
@@ -687,32 +688,74 @@ class SupabaseFinanceRepository implements FinanceRepository {
         monthlyBudget: (json['monthly_budget'] as num?)?.toDouble(),
       );
     }).toList();
-    return FinanceSnapshot(
-      transactions: (results[0] as List)
-          .map(
-            (json) => FinanceTransaction.fromJson(json as Map<String, dynamic>),
-          )
-          .toList(),
+
+    final profile = results[5] as Map<String, dynamic>?;
+
+    return FinanceCatalog(
       categories: categories,
-      cards: (results[2] as List)
+      cards: (results[1] as List)
           .map((json) => CreditCard.fromJson(json as Map<String, dynamic>))
           .toList(),
-      invoices: (results[3] as List)
-          .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
-          .toList(),
-      goals: (results[4] as List)
+      goals: (results[2] as List)
           .map((json) => Goal.fromJson(json as Map<String, dynamic>))
           .toList(),
-      holders: (results[7] as List)
+      holders: (results[3] as List)
           .map((json) => Holder.fromJson(json as Map<String, dynamic>))
           .toList(),
-      accounts: (results[8] as List)
+      accounts: (results[4] as List)
           .map((json) => Account.fromJson(json as Map<String, dynamic>))
           .toList(),
-      pendingReviews: (results[5] as List).length,
-      currencyCode:
-          ((results[6] as Map<String, dynamic>?)?['currency'] as String?) ??
-          'BRL',
+      currencyCode: (profile?['currency'] as String?) ?? 'BRL',
+    );
+  }
+
+  /// Rows fetched per request while paging the ledger.
+  static const _pageSize = 1000;
+
+  /// A ceiling that exists to stop an unbounded loop, not to bound the ledger.
+  /// Reaching it sets [FinanceLedger.truncated], which the screen announces.
+  static const _maxTransactions = 50000;
+
+  @override
+  Future<FinanceLedger> loadLedger() async {
+    final rows = <Map<String, dynamic>>[];
+    var truncated = false;
+
+    // Paged rather than capped. A fixed `.limit(2000)` silently dropped
+    // everything past the two-thousandth row, and every figure the app derives
+    // — totals, averages, the trailing baselines behind every insight — was
+    // then computed on a partial history with nothing on screen to say so.
+    while (true) {
+      final page = await _client
+          .from('transactions')
+          .select('*, categories(name), cards(last_four)')
+          .order('purchased_at', ascending: false)
+          .range(rows.length, rows.length + _pageSize - 1);
+      rows.addAll((page as List).cast<Map<String, dynamic>>());
+
+      if ((page).length < _pageSize) break;
+      if (rows.length >= _maxTransactions) {
+        truncated = true;
+        break;
+      }
+    }
+
+    final rest = await Future.wait([
+      _client
+          .from('invoices')
+          .select()
+          .order('reference_month', ascending: false)
+          .limit(24),
+      _client.from('review_queue').select('id').eq('status', 'pending'),
+    ]);
+
+    return FinanceLedger(
+      transactions: rows.map(FinanceTransaction.fromJson).toList(),
+      invoices: (rest[0] as List)
+          .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
+          .toList(),
+      pendingReviews: (rest[1] as List).length,
+      truncated: truncated,
     );
   }
 }

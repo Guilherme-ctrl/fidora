@@ -184,7 +184,7 @@ class _ReviewCard extends ConsumerWidget {
         await ref
             .read(financeRepositoryProvider)
             .settleReview(item.id, status: 'resolved');
-        await refreshFinanceSnapshot(ref);
+        await refreshLedger(ref);
         await refreshReviewQueue(ref);
       },
     );

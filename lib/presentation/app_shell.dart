@@ -147,6 +147,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                         minHeight: 2,
                         backgroundColor: context.palette.hairline,
                       ),
+                    if (data.truncated) const _TruncatedLedgerBanner(),
                     Expanded(
                       child: RefreshIndicator(
                         onRefresh: () => refreshFinanceSnapshot(ref),
@@ -385,6 +386,46 @@ class _SnapshotSkeleton extends StatelessWidget {
           block(210),
           const SizedBox(height: 14),
           block(150),
+        ],
+      ),
+    );
+  }
+}
+
+/// Says out loud that the ledger on screen is not all of it.
+///
+/// The loader used to stop at two thousand rows in silence, which made every
+/// total and every average quietly wrong past that point. It now pages through
+/// everything, and this exists for the case where a hard ceiling is reached:
+/// numbers derived from a partial history must never look like numbers derived
+/// from the whole of it.
+class _TruncatedLedgerBanner extends StatelessWidget {
+  const _TruncatedLedgerBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      color: palette.warning.withValues(alpha: .18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.warning_amber_rounded, size: 18, color: palette.onWarning),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Seu histórico passa do que o app carrega de uma vez. Os totais '
+              'e comparações desta tela consideram apenas a parte carregada.',
+              style: TextStyle(
+                color: palette.onWarning,
+                fontSize: 12.5,
+                height: 1.4,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ],
       ),
     );

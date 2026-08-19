@@ -589,17 +589,32 @@ class DemoFinanceRepository implements FinanceRepository {
 
   @override
   Future<FinanceSnapshot> loadSnapshot() async {
-    await Future<void>.delayed(const Duration(milliseconds: 180));
-    return FinanceSnapshot(
-      transactions: List.unmodifiable(_transactions),
+    final loaded = await Future.wait([loadCatalog(), loadLedger()]);
+    return FinanceSnapshot.compose(
+      catalog: loaded[0] as FinanceCatalog,
+      ledger: loaded[1] as FinanceLedger,
+    );
+  }
+
+  @override
+  Future<FinanceCatalog> loadCatalog() async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return FinanceCatalog(
       categories: List.unmodifiable(_categories),
       cards: List.unmodifiable(_cards),
-      invoices: List.unmodifiable(_invoices),
       goals: List.unmodifiable(_goals),
       holders: List.unmodifiable(_holders),
       accounts: List.unmodifiable(_accounts),
-      pendingReviews: _reviews.where((item) => item.isPending).length,
-      currencyCode: 'BRL',
+    );
+  }
+
+  @override
+  Future<FinanceLedger> loadLedger() async {
+    await Future<void>.delayed(const Duration(milliseconds: 120));
+    return FinanceLedger(
+      transactions: List.unmodifiable(_transactions),
+      invoices: List.unmodifiable(_invoices),
+      pendingReviews: _reviews.where((item) => item.status == 'pending').length,
     );
   }
 

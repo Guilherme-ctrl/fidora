@@ -329,7 +329,70 @@ class Holder {
   );
 }
 
+/// The parts of the ledger that change rarely.
+///
+/// Split from [FinanceLedger] so saving a transaction does not refetch every
+/// card, category, holder and account. They are edited from their own screens,
+/// a handful of times ever; the ledger changes on every capture.
+class FinanceCatalog {
+  const FinanceCatalog({
+    required this.categories,
+    required this.cards,
+    required this.goals,
+    this.holders = const [],
+    this.accounts = const [],
+    this.currencyCode = 'BRL',
+  });
+
+  final List<FinanceCategory> categories;
+  final List<CreditCard> cards;
+  final List<Goal> goals;
+  final List<Holder> holders;
+  final List<Account> accounts;
+  final String currencyCode;
+}
+
+/// The parts that change on every write.
+class FinanceLedger {
+  const FinanceLedger({
+    required this.transactions,
+    required this.invoices,
+    required this.pendingReviews,
+    this.truncated = false,
+  });
+
+  final List<FinanceTransaction> transactions;
+  final List<Invoice> invoices;
+  final int pendingReviews;
+
+  /// Whether the ledger was cut short of what the account holds.
+  ///
+  /// The loader used to stop at a fixed two thousand rows and say nothing, so
+  /// every total, average and insight past that point was computed on a partial
+  /// history and simply wrong, with nothing on screen to suggest it. It now
+  /// pages through everything; this flag exists so that if a hard ceiling is
+  /// ever reached, the screen can say so instead of quietly lying.
+  final bool truncated;
+}
+
 class FinanceSnapshot {
+  /// Assembles the view model the screens read from its two halves.
+  factory FinanceSnapshot.compose({
+    required FinanceCatalog catalog,
+    required FinanceLedger ledger,
+  }) => FinanceSnapshot(
+    transactions: ledger.transactions,
+    invoices: ledger.invoices,
+    pendingReviews: ledger.pendingReviews,
+    truncated: ledger.truncated,
+    categories: catalog.categories,
+    cards: catalog.cards,
+    goals: catalog.goals,
+    holders: catalog.holders,
+    accounts: catalog.accounts,
+    currencyCode: catalog.currencyCode,
+  );
+
   const FinanceSnapshot({
     required this.transactions,
     required this.categories,
@@ -340,6 +403,7 @@ class FinanceSnapshot {
     this.holders = const [],
     this.accounts = const [],
     this.currencyCode = 'BRL',
+    this.truncated = false,
   });
   final List<FinanceTransaction> transactions;
   final List<FinanceCategory> categories;
@@ -352,6 +416,9 @@ class FinanceSnapshot {
 
   /// From `profiles.currency`; drives the money formatter.
   final String currencyCode;
+
+  /// See [FinanceLedger.truncated].
+  final bool truncated;
 
   double get monthSpend => transactions
       .where((item) => item.status != TransactionStatus.ignored)
