@@ -129,3 +129,19 @@ recorded verbatim and is never summarized.
 
 ---
 
+
+## Construction — Code Generation (Fase 3: lembretes de vencimento)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode terminar 100% da fase 3"
+**AI Response**: "Implementei o lembrete de vencimento de fatura, último item da fase 3: `lib/domain/reminders.dart` (derivação pura do conjunto de lembretes), `lib/application/reminder_service.dart` (agendamento via flutter_local_notifications 22.3.0, preferências em shared_preferences), `lib/presentation/pages/reminders_page.dart` (tela de ajustes com prévia do que está agendado), reagendamento a cada snapshot novo no `app_shell.dart`, e o delegate de UNUserNotificationCenter no `AppDelegate.swift`. 19 testes novos; 275 no total, analyze limpo. Dois defeitos foram encontrados pelos testes antes de subir: `daysBefore` truncava por causa da hora escolhida, e a primeira versão usava a API posicional do plugin v18. Não verificado: a entrega em aparelho — `flutter build ios` falhou porque o disco está cheio (194 MiB livres de 228 GiB), então nem a compilação Swift foi alcançada."
+**Context**: Construction / Code Generation — encerra a fase 3 do plano. Commit 00c07ab na branch feat/fase-3-financas.
+
+---
+
+## Build verification (iOS)
+**Timestamp**: 2026-08-18T00:00:00Z
+**User Input**: "Pode apagar os dois e o docker"
+**AI Response**: "Apaguei iOS DeviceSupport (13 G), DerivedData (2,5 G) e o Docker.raw (21 G) — o Docker estava parado, verifiquei antes. Espaço livre foi de 194 MiB para 36 GiB. Com isso o `flutter build ios --no-codesign --debug` passou, o que fecha uma lacuna: o `AppDelegate` compila e o `Runner.debug.dylib` carrega o plugin de notificação, o `UNUserNotificationCenter` e o link com o `UserNotifications.framework`. Uma primeira leitura minha deu 'não linkado' porque eu tinha inspecionado o `Runner` — que num build de debug para device é só um stub de 71 KB. Um teste de controle com `share_plus` mostrou o mesmo resultado falso e revelou o erro. A entrega da notificação em aparelho segue não verificada."
+**Context**: Construction / Build and Test — limpeza de disco autorizada pelo usuário após aviso explícito de que apagar o Docker.raw destrói imagens, containers e volumes.
+
+---

@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "finora-demo",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "8087",
+        "--web-hostname",
+        "127.0.0.1"
+      ],
+      "port": 8087
+    },
+    {
+      "name": "finora-supabase",
+      "runtimeExecutable": "flutter",
+      "runtimeArgs": [
+        "run",
+        "-d",
+        "web-server",
+        "--web-port",
+        "8088",
+        "--web-hostname",
+        "127.0.0.1",
+        "--dart-define-from-file",
+        "config/finora.production.json"
+      ],
+      "port": 8088
+    }
+  ]
+}

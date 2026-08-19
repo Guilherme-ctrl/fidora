@@ -231,3 +231,46 @@ This file is updated by the build workflow. A gate passes only with reproducible
   than 404. Any Shortcut logic keyed on the old failure needs revisiting.
 - **Supabase review and rule methods** have the same gap as the write path:
   covered only through the demo repository, never executed against Postgres.
+
+## Invoice due-date reminders (2026-08-18)
+
+Covered by tests: the reminder set itself. `test/reminders_test.dart` pins
+that paid, empty and already-past invoices drop out, that ordering follows
+the fire time, that the notification id is stable across reschedules, and
+that the day count survives the hour offset. `test/reminders_page_test.dart`
+drives the screen against a stubbed service: permission is requested only on
+turning it on, a refusal leaves the switch off and schedules nothing, and
+changing a knob reschedules without re-prompting.
+
+Two defects were found by these tests before shipping:
+
+- `daysBefore` was derived as `dueDate.difference(fireAt).inDays`, which
+  truncates because the two differ by whole days *plus* the chosen hour. A
+  reminder three days out measured as 2, and one day out measured as 0. The
+  value is now carried from the caller, which knows it exactly.
+- The v22 plugin API is all-named; the first cut was written against v18's
+  positional `initialize` and `zonedSchedule`.
+
+**Not verified — needs the device.** No part of the actual delivery has run:
+
+- The iOS permission prompt has never been shown. `requestPermission` is
+  covered only through a stub that returns a boolean.
+- No notification has ever been scheduled or delivered. `zonedSchedule` has
+  never been called with a live channel.
+- The `AppDelegate` change (setting the `UNUserNotificationCenter` delegate so
+  a reminder arriving with Finora open is not silent) **does compile and link**.
+  `flutter build ios --no-codesign --debug` first failed here for an unrelated
+  reason — the disk was full, 194 MiB free of 228 GiB, and `rsync` could not
+  copy the framework. After clearing space the build succeeds, and
+  `Runner.debug.dylib` carries `FlutterLocalNotifications`,
+  `UNUserNotificationCenter` and a link against
+  `UserNotifications.framework`. Note the binary to inspect: the top-level
+  `Runner` is a 71 KB stub and contains none of this; in a debug device build
+  the native code lives in `Runner.debug.dylib`.
+- What compiling does **not** prove: that a notification is ever delivered.
+  The permission prompt, the scheduling and the delivery still need a device.
+- `America/Sao_Paulo` is hardcoded as the scheduling zone. Correct for the
+  ledger today; wrong the moment the app is used from another timezone.
+
+Reminder preferences live in `shared_preferences`, deliberately: whether this
+phone buzzes is a property of the phone, not of the account.
