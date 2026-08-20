@@ -4,11 +4,10 @@ import 'package:financeiro_ai/features/transactions/domain/amount_input.dart';
 import 'package:financeiro_ai/features/catalog/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
-import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/core/state/submission_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -51,13 +50,15 @@ class _CategoryForm extends StatefulWidget {
 }
 
 class _CategoryFormState extends State<_CategoryForm> {
+  /// Owns the write while the sheet is open. Six forms hand-rolled
+  /// this same busy-and-failure pair; this is the one copy.
+  final _submission = SubmissionCubit();
+
   late final TextEditingController _name;
   late final TextEditingController _budget;
   late Color _color;
   late String _iconName;
   late bool _hasBudget;
-  bool _saving = false;
-  String? _failure;
   CategoryDraftErrors _errors = const CategoryDraftErrors();
 
   @override
@@ -77,6 +78,7 @@ class _CategoryFormState extends State<_CategoryForm> {
 
   @override
   void dispose() {
+    _submission.close();
     _name.dispose();
     _budget.dispose();
     super.dispose();
@@ -95,185 +97,172 @@ class _CategoryFormState extends State<_CategoryForm> {
   Future<void> _submit() async {
     final draft = _buildDraft();
     final errors = draft.validate();
-    setState(() {
-      _errors = errors;
-      _failure = null;
-    });
+    setState(() => _errors = errors);
+    _submission.reset();
     if (!errors.isEmpty) return;
-    setState(() => _saving = true);
-    try {
-      await widget.onSave(draft);
-      if (mounted) Navigator.of(context).pop(true);
-    } on Failure catch (failure) {
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.of(failure).short;
-          _saving = false;
-        });
-      }
-    } catch (error, stack) {
-      appLogger.error('saveCategory', error, stack);
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.from(error, stack).short;
-          _saving = false;
-        });
-      }
-    }
+    final ok = await _submission.run(
+      'saveCategory',
+      () => widget.onSave(draft),
+    );
+    if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.sizeOf(context).height * .88,
-        ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SheetHeader(
-                title: widget.existing == null
-                    ? 'Nova categoria'
-                    : 'Editar categoria',
-              ),
-              const SizedBox(height: 20),
-              // A live preview, because the colour and icon are what make a
-              // category recognisable at a glance in every other screen.
-              Row(
+  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+    bloc: _submission,
+    builder: (context, submission) =>
+    SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * .88,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: _color.withValues(alpha: .16),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Icon(categoryIconFor(_iconName), color: _color),
+                  SheetHeader(
+                    title: widget.existing == null
+                        ? 'Nova categoria'
+                        : 'Editar categoria',
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: TextField(
-                      controller: _name,
-                      textCapitalization: TextCapitalization.sentences,
-                      onChanged: (_) => setState(() {}),
-                      decoration: InputDecoration(
-                        labelText: 'Nome',
-                        errorText: _errors.name,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Text('Cor', style: _labelStyle(context)),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: categoryColors
-                    .map(
-                      (color) => _Swatch(
-                        color: color,
-                        selected: color.toARGB32() == _color.toARGB32(),
-                        onTap: () => setState(() => _color = color),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 20),
-              Text('Ícone', style: _labelStyle(context)),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: categoryIcons.entries
-                    .map(
-                      (entry) => _IconChoice(
-                        icon: entry.value,
-                        color: _color,
-                        selected: entry.key == _iconName,
-                        onTap: () => setState(() => _iconName = entry.key),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 8),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _hasBudget,
-                onChanged: (value) => setState(() => _hasBudget = value),
-                title: const Text(
-                  'Definir orçamento mensal',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              if (_hasBudget)
-                TextField(
-                  controller: _budget,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Orçamento',
-                    hintText: '0,00',
-                    prefixText: 'R\$ ',
-                    prefixIcon: const Icon(Icons.flag_outlined),
-                    errorText: _errors.budget,
-                  ),
-                ),
-              if (_failure != null) ...[
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: context.palette.negative.withValues(alpha: .12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Row(
+                  const SizedBox(height: 20),
+                  // A live preview, because the colour and icon are what make a
+                  // category recognisable at a glance in every other screen.
+                  Row(
                     children: [
-                      Icon(
-                        Icons.error_outline_rounded,
-                        color: context.palette.negative,
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _color.withValues(alpha: .16),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(categoryIconFor(_iconName), color: _color),
                       ),
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 14),
                       Expanded(
-                        child: Text(
-                          _failure!,
-                          style: TextStyle(
-                            color: context.palette.negative,
-                            fontWeight: FontWeight.w700,
+                        child: TextField(
+                          controller: _name,
+                          textCapitalization: TextCapitalization.sentences,
+                          onChanged: (_) => setState(() {}),
+                          decoration: InputDecoration(
+                            labelText: 'Nome',
+                            errorText: _errors.name,
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-              const SizedBox(height: 20),
-              FilledButton(
-                onPressed: _saving ? null : _submit,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 13),
-                  child: _saving
-                      ? const SizedBox.square(
-                          dimension: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                  const SizedBox(height: 20),
+                  Text('Cor', style: _labelStyle(context)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: categoryColors
+                        .map(
+                          (color) => _Swatch(
+                            color: color,
+                            selected: color.toARGB32() == _color.toARGB32(),
+                            onTap: () => setState(() => _color = color),
+                          ),
                         )
-                      : Text(
-                          widget.existing == null
-                              ? 'Criar categoria'
-                              : 'Salvar alterações',
-                        ),
-                ),
+                        .toList(),
+                  ),
+                  const SizedBox(height: 20),
+                  Text('Ícone', style: _labelStyle(context)),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: categoryIcons.entries
+                        .map(
+                          (entry) => _IconChoice(
+                            icon: entry.value,
+                            color: _color,
+                            selected: entry.key == _iconName,
+                            onTap: () => setState(() => _iconName = entry.key),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _hasBudget,
+                    onChanged: (value) => setState(() => _hasBudget = value),
+                    title: const Text(
+                      'Definir orçamento mensal',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  if (_hasBudget)
+                    TextField(
+                      controller: _budget,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Orçamento',
+                        hintText: '0,00',
+                        prefixText: 'R\$ ',
+                        prefixIcon: const Icon(Icons.flag_outlined),
+                        errorText: _errors.budget,
+                      ),
+                    ),
+                  if (submission.failure != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: context.palette.negative.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: context.palette.negative,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              FailureCopy.of(submission.failure!).short,
+                              style: TextStyle(
+                                color: context.palette.negative,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: submission.isBusy ? null : _submit,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      child: submission.isBusy
+                          ? const SizedBox.square(
+                              dimension: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Text(
+                              widget.existing == null
+                                  ? 'Criar categoria'
+                                  : 'Salvar alterações',
+                            ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
-    ),
   );
 
   TextStyle _labelStyle(BuildContext context) => TextStyle(
