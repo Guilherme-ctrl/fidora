@@ -1,15 +1,7 @@
-import 'dart:convert';
-import 'dart:typed_data';
 
-import 'package:financeiro_ai/core/platform/file_access.dart';
-import 'package:financeiro_ai/features/imports/infra/xlsx_reader.dart';
 import 'package:financeiro_ai/core/theme/breakpoints.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/core/theme/tokens.dart';
-import 'package:financeiro_ai/features/imports/domain/invoice_import.dart';
-import 'package:financeiro_ai/features/imports/domain/statement_import.dart';
-import 'package:financeiro_ai/features/imports/domain/statement_sheet.dart';
-import 'package:financeiro_ai/features/imports/presenter/widgets/statement_context_sheet.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/review/presenter/pages/merchant_rules_page.dart';
@@ -24,11 +16,9 @@ import 'package:financeiro_ai/features/invoices/presenter/pages/subscriptions_pa
 import 'package:financeiro_ai/features/catalog/presenter/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
-import 'package:financeiro_ai/features/imports/presenter/widgets/invoice_review_dialog.dart';
 import 'package:financeiro_ai/features/settings/presenter/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/core/theme/typography.dart';
-import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
-import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/features/imports/presenter/import_flow.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -223,7 +213,7 @@ class MorePage extends StatelessWidget {
                 subtitle: 'Validar, conciliar e cadastrar uma fatura',
                 tooltip:
                     'Selecionar o JSON e revisar a importação antes de gravar',
-                onTap: () => _pickInvoice(context),
+                onTap: () => pickInvoiceImport(context, snapshot: snapshot),
               ),
               _OperationTile(
                 icon: Icons.table_chart_outlined,
@@ -233,7 +223,7 @@ class MorePage extends StatelessWidget {
                 tooltip:
                     'Ler o extrato exportado pelo banco e revisar antes '
                     'de gravar',
-                onTap: () => _pickStatement(context),
+                onTap: () => pickStatementImport(context, snapshot: snapshot),
               ),
               _OperationTile(
                 icon: Icons.download_rounded,
@@ -293,212 +283,6 @@ class MorePage extends StatelessWidget {
     );
   }
 
-  Future<void> _pickInvoice(BuildContext context) async {
-    final filePicker = context.read<FilePicker>();
-    try {
-      const jsonType = FileTypeFilter(
-        label: 'JSON do Finora',
-        extensions: ['json'],
-        mimeTypes: ['application/json'],
-        uniformTypeIdentifiers: ['public.json'],
-      );
-      final picked = await filePicker
-          .pickFile(accept: const [jsonType]);
-      if (picked == null || !context.mounted) return;
-      final document = InvoiceImportDocument.decode(utf8.decode(picked.bytes));
-      if (!context.mounted) return;
-      await _runImport(context, document);
-    } on InvoiceImportException catch (error) {
-      if (context.mounted) _message(context, error.message, error: true);
-    } catch (error) {
-      if (context.mounted) {
-        _message(context, _friendlyImportError(error), error: true);
-      }
-    }
-  }
-
-  /// Reads a bank's own spreadsheet export, so the ledger stops depending on a
-  /// JSON produced outside the app.
-  Future<void> _pickStatement(BuildContext context) async {
-    final filePicker = context.read<FilePicker>();
-    try {
-      const sheetType = FileTypeFilter(
-        label: 'Extrato (CSV ou XLSX)',
-        extensions: ['csv', 'txt', 'xlsx'],
-      );
-      final picked = await filePicker
-          .pickFile(accept: const [sheetType]);
-      if (picked == null || !context.mounted) return;
-
-      final bytes = picked.bytes;
-      final isXlsx = picked.name.toLowerCase().endsWith('.xlsx');
-      final cells = isXlsx
-          ? readXlsxCells(bytes)
-          // Falls back to Latin-1 because a statement exported by an older
-          // banking site is not always UTF-8, and a decode failure would look
-          // like an unreadable file rather than an encoding mismatch.
-          : readDelimitedCells(_decodeText(bytes));
-      final parse = parseStatementSheet(cells);
-
-      if (!context.mounted) return;
-      final statementContext = await askStatementContext(
-        context,
-        cards: snapshot.cards,
-        parse: parse,
-        fileName: picked.name,
-      );
-      if (statementContext == null || !context.mounted) return;
-
-      await _runImport(
-        context,
-        buildStatementImport(parse, statementContext),
-      );
-    } on StatementParseException catch (error) {
-      if (context.mounted) _message(context, error.message, error: true);
-    } on InvoiceImportException catch (error) {
-      if (context.mounted) _message(context, error.message, error: true);
-    } catch (error) {
-      if (context.mounted) {
-        _message(context, _friendlyImportError(error), error: true);
-      }
-    }
-  }
-
-  /// Preview, review and write. Shared by both readers on purpose: a second
-  /// path into the ledger would be a second place for the duplicate check and
-  /// the category rules to drift.
-  /// UTF-8 when it decodes, Latin-1 otherwise.
-  ///
-  /// A statement exported by an older banking site is not always UTF-8, and a
-  /// hard decode failure would surface as "arquivo ilegível" when the file is
-  /// perfectly readable in another encoding.
-  String _decodeText(Uint8List bytes) {
-    try {
-      return utf8.decode(bytes);
-    } on FormatException {
-      return latin1.decode(bytes, allowInvalid: true);
-    }
-  }
-
-  Future<void> _runImport(
-    BuildContext context,
-    InvoiceImportDocument document,
-  ) async {
-    final invoices = context.read<InvoiceRepository>();
-    final finance = context.read<FinanceCubit>();
-    var loadingOpen = false;
-    try {
-      _showLoading(context, 'Validando e conciliando…');
-      loadingOpen = true;
-      final preview = await invoices
-          .previewInvoiceImport(document);
-      if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      loadingOpen = false;
-      final reviewedDocument = await showInvoiceReviewDialog(
-        context,
-        document: document,
-        preview: preview,
-        categories: snapshot.categories,
-      );
-      if (reviewedDocument == null || !context.mounted) return;
-
-      _showLoading(context, 'Conferindo revisão…');
-      loadingOpen = true;
-      final finalPreview = await invoices
-          .previewInvoiceImport(reviewedDocument);
-      final missingCategoriesApproved =
-          reviewedDocument.createMissingCategories &&
-          finalPreview.missingCategories.isNotEmpty;
-      if (finalPreview.alreadyImported ||
-          (!finalPreview.canImport && !missingCategoriesApproved)) {
-        throw const InvoiceImportException(
-          'Ainda existem categorias ou duplicidades que impedem a importação.',
-        );
-      }
-      if (!context.mounted) return;
-      final result = await invoices
-          .importInvoice(reviewedDocument);
-      finance.reloadAll();
-      if (!context.mounted) return;
-      Navigator.of(context, rootNavigator: true).pop();
-      loadingOpen = false;
-      _message(
-        context,
-        result.duplicateBatch
-            ? 'Esta fatura já havia sido importada.'
-            : 'Fatura importada: ${result.created} novos, ${result.reconciled} conciliados e ${result.reviews} para revisão.',
-      );
-    } on InvoiceImportException catch (error) {
-      if (context.mounted) {
-        if (loadingOpen) _closeLoading(context);
-        _message(context, error.message, error: true);
-      }
-    } catch (error) {
-      if (context.mounted) {
-        if (loadingOpen) _closeLoading(context);
-        _message(context, _friendlyImportError(error), error: true);
-      }
-    }
-  }
-
-  void _showLoading(BuildContext context, String label) {
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 3),
-            ),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Text(
-                label,
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _closeLoading(BuildContext context) {
-    final navigator = Navigator.of(context, rootNavigator: true);
-    if (navigator.canPop()) navigator.pop();
-  }
-
-  void _message(BuildContext context, String message, {bool error = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: error
-            ? context.palette.negative
-            : context.palette.income,
-      ),
-    );
-  }
-
-  String _friendlyImportError(Object error) {
-    final text = '$error';
-    if (text.contains('card_not_found')) {
-      return 'O cartão final informado no JSON não está cadastrado ou está inativo.';
-    }
-    if (text.contains('missing_categories')) {
-      return 'O JSON usa categorias que ainda não existem no Finora.';
-    }
-    if (text.contains('reconciled_total_mismatch')) {
-      return 'A conciliação não fechou com o total da fatura. Nada foi importado.';
-    }
-    if (text.contains('personal_total_mismatch')) {
-      return 'As decisões item a item não fecharam com o total pessoal. Nada foi importado.';
-    }
-    return 'Não foi possível importar: $text';
-  }
 }
 
 class _AutomationCard extends StatelessWidget {
