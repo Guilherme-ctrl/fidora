@@ -1,31 +1,47 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/csv_export.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
+import 'package:financeiro_ai/presentation/cubits/catalog_cubits.dart';
+import 'package:financeiro_ai/core/platform/file_access.dart';
+import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Export and import history in one place: both answer "what is in here, and
 /// how do I get it out".
-class DataPage extends ConsumerWidget {
+class DataPage extends StatefulWidget {
   const DataPage({super.key, required this.snapshot});
   final FinanceSnapshot snapshot;
 
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final batches = ref.watch(importBatchesProvider);
+  State<DataPage> createState() => _DataPageState();
+}
+
+class _DataPageState extends State<DataPage> {
+  @override
+  void initState() {
+    super.initState();
+    // The queue used to be a FutureProvider, which fetched on first
+    // watch. A cubit does not, so the screen asks — which keeps the
+    // load off the app's first paint, where it never belonged.
+    context.read<ImportBatchesCubit>().loadOnce();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final batches = context.watch<ImportBatchesCubit>().state;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Seus dados')),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.invalidate(importBatchesProvider);
-          await ref.read(importBatchesProvider.future);
+          await context.read<ImportBatchesCubit>().reload();
         },
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -46,7 +62,7 @@ class DataPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Um arquivo CSV com os ${snapshot.transactions.length} '
+                      'Um arquivo CSV com os ${widget.snapshot.transactions.length} '
                       'lançamentos carregados. Separado por ponto e vírgula e '
                       'com vírgula decimal, que é o que o Excel e o Planilhas '
                       'esperam em português.',
@@ -57,9 +73,9 @@ class DataPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
-                      onPressed: snapshot.transactions.isEmpty
+                      onPressed: widget.snapshot.transactions.isEmpty
                           ? null
-                          : () => _export(context, ref),
+                          : () => _export(context),
                       icon: const Icon(Icons.ios_share_rounded),
                       label: const Text('Exportar CSV'),
                     ),
@@ -75,16 +91,13 @@ class DataPage extends ConsumerWidget {
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 12),
-            batches.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (_, _) => _Message(
+            switch (batches) {
+          LoadFailed() => _Message(
                 text: 'Não foi possível carregar o histórico de importações.',
                 color: context.palette.negative,
               ),
-              data: (items) => items.isEmpty
+          LoadSuccess(data: final items) ||
+          LoadReloading(previous: final items) => items.isEmpty
                   ? _Message(
                       text:
                           'Nenhuma importação registrada. Cada fatura importada '
@@ -114,17 +127,22 @@ class DataPage extends ConsumerWidget {
                         ),
                       ],
                     ),
-            ),
+          _ => const Padding(
+                padding: EdgeInsets.symmetric(vertical: 40),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+        },
           ],
         ),
       ),
     );
   }
 
-  Future<void> _export(BuildContext context, WidgetRef ref) async {
-    final csv = buildTransactionsCsv(snapshot, snapshot.transactions);
+  Future<void> _export(BuildContext context) async {
+    final shareService = context.read<ShareService>();
+    final csv = buildTransactionsCsv(widget.snapshot, widget.snapshot.transactions);
     try {
-      await ref.read(shareServiceProvider).shareFile(
+      await shareService.shareFile(
         bytes: utf8.encode(csv),
         name: csvFileName(clock.now()),
         mimeType: 'text/csv',

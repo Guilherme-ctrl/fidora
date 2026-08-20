@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -6,38 +5,57 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/catalog_cubits.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class MerchantRulesPage extends ConsumerWidget {
+class MerchantRulesPage extends StatefulWidget {
   const MerchantRulesPage({super.key});
 
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final rules = ref.watch(merchantRulesProvider);
-    final snapshot = ref.watch(financeSnapshotProvider).value;
+  State<MerchantRulesPage> createState() => _MerchantRulesPageState();
+}
+
+class _MerchantRulesPageState extends State<MerchantRulesPage> {
+  @override
+  void initState() {
+    super.initState();
+    // The queue used to be a FutureProvider, which fetched on first
+    // watch. A cubit does not, so the screen asks — which keeps the
+    // load off the app's first paint, where it never belonged.
+    context.read<MerchantRulesCubit>().loadOnce();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final rules = context.watch<MerchantRulesCubit>().state;
+    final snapshot = context.watch<FinanceCubit>().state.snapshot;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Regras de estabelecimento')),
       floatingActionButton: snapshot == null
           ? null
           : FloatingActionButton.extended(
-              onPressed: () => editRule(context, ref, snapshot),
+              onPressed: () => editRule(context, snapshot),
               icon: const Icon(Icons.add),
               label: const Text('Nova regra'),
             ),
       body: RefreshIndicator(
-        onRefresh: () => refreshMerchantRules(ref),
-        child: rules.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => _RulesMessage(
+        onRefresh: () => context.read<MerchantRulesCubit>().reload(),
+        child: switch (rules) {
+          LoadFailed() => _RulesMessage(
             icon: Icons.cloud_off_rounded,
             color: context.palette.negative,
             title: 'Não foi possível carregar as regras',
             body: 'Verifique sua conexão e tente novamente.',
-            onRetry: () => ref.invalidate(merchantRulesProvider),
+            onRetry: () => context.read<MerchantRulesCubit>().reload(),
           ),
-          data: (items) => items.isEmpty
+          LoadSuccess(data: final items) ||
+          LoadReloading(previous: final items) => items.isEmpty
               ? _RulesMessage(
                   icon: Icons.psychology_alt_rounded,
                   color: context.palette.accent,
@@ -73,24 +91,25 @@ class MerchantRulesPage extends ConsumerWidget {
                           ? null
                           : () => editRule(
                               context,
-                              ref,
                               snapshot,
                               existing: rule,
                             ),
-                      onDelete: () => _confirmDelete(context, ref, rule),
+                      onDelete: () => _confirmDelete(context, rule),
                     );
                   },
                 ),
-        ),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
       ),
     );
   }
 
   Future<void> _confirmDelete(
     BuildContext context,
-    WidgetRef ref,
     MerchantRule rule,
   ) async {
+    final review = context.read<ReviewRepository>();
+    final merchantRules = context.read<MerchantRulesCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -116,8 +135,8 @@ class MerchantRulesPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(reviewRepositoryProvider).deleteMerchantRule(rule.id);
-      await refreshMerchantRules(ref);
+      await review.deleteMerchantRule(rule.id);
+      await merchantRules.reload();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -273,7 +292,6 @@ class _RulesMessage extends StatelessWidget {
 /// "learn this categorization" shortcut behave identically.
 Future<void> editRule(
   BuildContext context,
-  WidgetRef ref,
   FinanceSnapshot snapshot, {
   MerchantRule? existing,
   String? suggestedPattern,
@@ -285,8 +303,10 @@ Future<void> editRule(
       existing: existing,
       suggestedPattern: suggestedPattern,
       onSave: (draft) async {
-        await ref.read(reviewRepositoryProvider).saveMerchantRule(draft);
-        await refreshMerchantRules(ref);
+        final review = context.read<ReviewRepository>();
+        final merchantRules = context.read<MerchantRulesCubit>();
+        await review.saveMerchantRule(draft);
+        await merchantRules.reload();
       },
     ),
   );

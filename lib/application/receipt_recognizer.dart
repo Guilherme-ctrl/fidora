@@ -1,6 +1,5 @@
 import 'package:financeiro_ai/domain/receipt_scan.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 /// Reads text off a photographed receipt.
@@ -63,12 +62,15 @@ class UnavailableReceiptRecognizer implements ReceiptRecognizer {
   Future<void> dispose() async {}
 }
 
-final receiptRecognizerProvider = Provider<ReceiptRecognizer>((ref) {
+/// The recognizer this build can actually use.
+///
+/// Composed once, at start-up, so the native model is loaded once rather than
+/// per photograph. On the web and anywhere ML Kit has no implementation this
+/// is the unavailable one, which returns an empty reading instead of throwing
+/// — the photograph is still worth attaching.
+ReceiptRecognizer defaultReceiptRecognizer() {
   final recognizer = MlKitReceiptRecognizer();
-  // The provider outlives any single form, so the model is loaded once and
-  // released when the container goes away rather than per photograph.
-  ref.onDispose(recognizer.dispose);
   return recognizer.isSupported
       ? recognizer
       : const UnavailableReceiptRecognizer();
-});
+}

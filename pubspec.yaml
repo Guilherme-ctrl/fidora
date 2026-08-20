@@ -47,7 +47,12 @@ dependencies:
   # ledger stops drifting with the calendar. `clock.now()` is `DateTime.now()`
   # unless a test overrides it.
   clock: ^1.1.2
-  flutter_riverpod: ^3.3.2
+  # Bloc, by the owner's decision on 20 Aug 2026. The reference architecture
+  # names Cubit/BLoC explicitly; Riverpod filled the same role and is being
+  # replaced for conformance rather than for a defect. See
+  # `docs/aidlc/plans/arch-remake.md`.
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.7
   # URLs. Without a Router the web had no address, no Back button and no F5:
   # the whole app was one Scaffold holding an int.
   go_router: ^16.2.4

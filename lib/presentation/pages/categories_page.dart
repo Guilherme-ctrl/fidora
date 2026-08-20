@@ -9,9 +9,8 @@ import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class CategoriesPage extends ConsumerWidget {
+class CategoriesPage extends StatelessWidget {
   const CategoriesPage({
     super.key,
     required this.snapshot,
@@ -23,7 +22,7 @@ class CategoriesPage extends ConsumerWidget {
   final ValueChanged<FinancePeriod> onPeriodChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final layout = Breakpoint.of(context);
     final columns = switch (layout) {
@@ -50,7 +49,7 @@ class CategoriesPage extends ConsumerWidget {
               ? Semantics(
                   label: 'Criar uma categoria e definir seu orçamento',
                   child: FilledButton.icon(
-                    onPressed: () => editCategory(context, ref),
+                    onPressed: () => editCategory(context),
                     icon: const Icon(Icons.add),
                     label: const Text('Nova categoria'),
                   ),
@@ -62,7 +61,7 @@ class CategoriesPage extends ConsumerWidget {
           // The only list on the six tabs that had nothing to say when it was
           // empty. A blank screen reads as a failure; this says what will
           // appear here and offers the one action that fills it.
-          _EmptyCategories(onCreate: () => editCategory(context, ref))
+          _EmptyCategories(onCreate: () => editCategory(context))
         else
           _CategoryGrid(
             columns: columns,
@@ -80,7 +79,7 @@ class CategoriesPage extends ConsumerWidget {
                   clipBehavior: Clip.antiAlias,
                   child: InkWell(
                     onTap: () =>
-                        _showCategory(context, ref, category, spend, analytics),
+                        _showCategory(context, category, spend, analytics),
                     child: Padding(
                       padding: const EdgeInsets.all(18),
                       child: Column(
@@ -143,7 +142,6 @@ class CategoriesPage extends ConsumerWidget {
 
   void _showCategory(
     BuildContext context,
-    WidgetRef ref,
     FinanceCategory category,
     double spend,
     PeriodAnalytics analytics,
@@ -171,7 +169,7 @@ class CategoriesPage extends ConsumerWidget {
             child: OutlinedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
-                editCategory(context, ref, existing: category);
+                editCategory(context, existing: category);
               },
               icon: const Icon(Icons.edit_outlined),
               label: const Text('Editar categoria'),

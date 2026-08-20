@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/typography.dart';
@@ -16,10 +15,12 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:financeiro_ai/presentation/category_visuals.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class TransactionsPage extends ConsumerStatefulWidget {
+class TransactionsPage extends StatefulWidget {
   const TransactionsPage({
     super.key,
     required this.snapshot,
@@ -37,10 +38,10 @@ class TransactionsPage extends ConsumerStatefulWidget {
   final TransactionFilter filter;
   final ValueChanged<TransactionFilter> onFilterChanged;
   @override
-  ConsumerState<TransactionsPage> createState() => _TransactionsPageState();
+  State<TransactionsPage> createState() => _TransactionsPageState();
 }
 
-class _TransactionsPageState extends ConsumerState<TransactionsPage> {
+class _TransactionsPageState extends State<TransactionsPage> {
   Timer? _debounce;
 
   /// Seeded from the address, so a shared link shows the term it filtered by
@@ -147,7 +148,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                       const SizedBox(width: 8),
                       FilledButton.icon(
                         onPressed: () =>
-                            createTransaction(context, ref, widget.snapshot),
+                            createTransaction(context, widget.snapshot),
                         icon: const Icon(Icons.add),
                         label: const Text('Adicionar'),
                       ),
@@ -262,7 +263,6 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                     ),
                     onEdit: () => createTransaction(
                       context,
-                      ref,
                       widget.snapshot,
                       existing: item,
                     ),
@@ -282,6 +282,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     BuildContext context,
     FinanceTransaction item,
   ) async {
+    final transactions = context.read<TransactionRepository>();
+    final finance = context.read<FinanceCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -308,8 +310,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(transactionRepositoryProvider).deleteTransaction(item.id);
-      await refreshLedger(ref);
+      await transactions.deleteTransaction(item.id);
+      await finance.reloadLedger();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -342,6 +344,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
   /// Applies one category to everything selected, then offers to remember it —
   /// the moment right after a correction is when the intent is clearest.
   Future<void> _recategorizeSelection() async {
+    final transactions = context.read<TransactionRepository>();
+    final finance = context.read<FinanceCubit>();
     final category = await showResponsiveSurface<FinanceCategory>(
       context,
       builder: (context) => SafeArea(
@@ -380,10 +384,8 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         .where((item) => item.id == ids.first)
         .firstOrNull;
     try {
-      await ref
-          .read(transactionRepositoryProvider)
-          .recategorizeTransactions(ids, category.id);
-      await refreshLedger(ref);
+      await transactions.recategorizeTransactions(ids, category.id);
+      await finance.reloadLedger();
       if (!mounted) return;
       setState(_selected.clear);
       final pattern = sample == null ? '' : suggestRulePattern(sample.merchant);
@@ -400,7 +402,6 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                   textColor: Colors.white,
                   onPressed: () => editRule(
                     context,
-                    ref,
                     widget.snapshot,
                     suggestedPattern: pattern,
                   ),

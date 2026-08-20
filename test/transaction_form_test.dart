@@ -1,13 +1,13 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/receipt_recognizer.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 Future<void> pumpForm(
@@ -17,16 +17,12 @@ Future<void> pumpForm(
   FinanceTransaction? existing,
 }) async {
   await tester.pumpWidget(
-    // The sheet reads the repository to upload a receipt, so it needs a scope.
-    // The recognizer is overridden to the unavailable one: these tests are
+    // The sheet reads the repository to upload a receipt, so it needs the
+    // dependencies. The recognizer is the unavailable one: these tests are
     // about the form, and the real one would reach for a camera.
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-        receiptRecognizerProvider.overrideWithValue(
-          const UnavailableReceiptRecognizer(),
-        ),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
+      recognizer: const UnavailableReceiptRecognizer(),
       child: MaterialApp(
         home: Scaffold(
           body: Builder(

@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/data/xlsx_reader.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/tokens.dart';
@@ -26,18 +25,20 @@ import 'package:financeiro_ai/presentation/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_review_dialog.dart';
-import 'package:financeiro_ai/application/appearance.dart';
+import 'package:financeiro_ai/presentation/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/core/typography.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class MorePage extends ConsumerWidget {
+class MorePage extends StatelessWidget {
   const MorePage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
@@ -58,10 +59,10 @@ class MorePage extends ConsumerWidget {
             final goals = RuledSection(
               title: 'Metas',
               tooltip: 'Criar uma meta',
-              onTap: () => editGoal(context, ref),
+              onTap: () => editGoal(context),
               trailing: IconButton(
                 tooltip: 'Nova meta',
-                onPressed: () => editGoal(context, ref),
+                onPressed: () => editGoal(context),
                 icon: const Icon(Icons.add_rounded),
               ),
               child: Column(
@@ -71,7 +72,7 @@ class MorePage extends ConsumerWidget {
                         label: 'Ver detalhes da meta ${goal.name}',
                         child: InkWell(
                           borderRadius: BorderRadius.circular(12),
-                          onTap: () => editGoal(context, ref, existing: goal),
+                          onTap: () => editGoal(context, existing: goal),
                           child: Padding(
                             padding: const EdgeInsets.only(bottom: 18),
                             child: Column(
@@ -222,7 +223,7 @@ class MorePage extends ConsumerWidget {
                 subtitle: 'Validar, conciliar e cadastrar uma fatura',
                 tooltip:
                     'Selecionar o JSON e revisar a importação antes de gravar',
-                onTap: () => _pickInvoice(context, ref),
+                onTap: () => _pickInvoice(context),
               ),
               _OperationTile(
                 icon: Icons.table_chart_outlined,
@@ -232,7 +233,7 @@ class MorePage extends ConsumerWidget {
                 tooltip:
                     'Ler o extrato exportado pelo banco e revisar antes '
                     'de gravar',
-                onTap: () => _pickStatement(context, ref),
+                onTap: () => _pickStatement(context),
               ),
               _OperationTile(
                 icon: Icons.download_rounded,
@@ -292,7 +293,8 @@ class MorePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _pickInvoice(BuildContext context, WidgetRef ref) async {
+  Future<void> _pickInvoice(BuildContext context) async {
+    final filePicker = context.read<FilePicker>();
     try {
       const jsonType = FileTypeFilter(
         label: 'JSON do Finora',
@@ -300,13 +302,12 @@ class MorePage extends ConsumerWidget {
         mimeTypes: ['application/json'],
         uniformTypeIdentifiers: ['public.json'],
       );
-      final picked = await ref
-          .read(filePickerProvider)
+      final picked = await filePicker
           .pickFile(accept: const [jsonType]);
       if (picked == null || !context.mounted) return;
       final document = InvoiceImportDocument.decode(utf8.decode(picked.bytes));
       if (!context.mounted) return;
-      await _runImport(context, ref, document);
+      await _runImport(context, document);
     } on InvoiceImportException catch (error) {
       if (context.mounted) _message(context, error.message, error: true);
     } catch (error) {
@@ -318,14 +319,14 @@ class MorePage extends ConsumerWidget {
 
   /// Reads a bank's own spreadsheet export, so the ledger stops depending on a
   /// JSON produced outside the app.
-  Future<void> _pickStatement(BuildContext context, WidgetRef ref) async {
+  Future<void> _pickStatement(BuildContext context) async {
+    final filePicker = context.read<FilePicker>();
     try {
       const sheetType = FileTypeFilter(
         label: 'Extrato (CSV ou XLSX)',
         extensions: ['csv', 'txt', 'xlsx'],
       );
-      final picked = await ref
-          .read(filePickerProvider)
+      final picked = await filePicker
           .pickFile(accept: const [sheetType]);
       if (picked == null || !context.mounted) return;
 
@@ -350,7 +351,6 @@ class MorePage extends ConsumerWidget {
 
       await _runImport(
         context,
-        ref,
         buildStatementImport(parse, statementContext),
       );
     } on StatementParseException catch (error) {
@@ -382,15 +382,15 @@ class MorePage extends ConsumerWidget {
 
   Future<void> _runImport(
     BuildContext context,
-    WidgetRef ref,
     InvoiceImportDocument document,
   ) async {
+    final invoices = context.read<InvoiceRepository>();
+    final finance = context.read<FinanceCubit>();
     var loadingOpen = false;
     try {
       _showLoading(context, 'Validando e conciliando…');
       loadingOpen = true;
-      final preview = await ref
-          .read(invoiceRepositoryProvider)
+      final preview = await invoices
           .previewInvoiceImport(document);
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -405,8 +405,7 @@ class MorePage extends ConsumerWidget {
 
       _showLoading(context, 'Conferindo revisão…');
       loadingOpen = true;
-      final finalPreview = await ref
-          .read(invoiceRepositoryProvider)
+      final finalPreview = await invoices
           .previewInvoiceImport(reviewedDocument);
       final missingCategoriesApproved =
           reviewedDocument.createMissingCategories &&
@@ -418,10 +417,9 @@ class MorePage extends ConsumerWidget {
         );
       }
       if (!context.mounted) return;
-      final result = await ref
-          .read(invoiceRepositoryProvider)
+      final result = await invoices
           .importInvoice(reviewedDocument);
-      ref.invalidate(financeSnapshotProvider);
+      finance.reloadAll();
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
       loadingOpen = false;
@@ -666,13 +664,13 @@ class _OperationTile extends StatelessWidget {
 /// Three named choices rather than a cycling icon: an icon that rotates through
 /// states cannot tell you what the states are, and "Sistema" is a real answer,
 /// not the absence of one.
-class _Appearance extends ConsumerWidget {
+class _Appearance extends StatelessWidget {
   const _Appearance();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final palette = context.palette;
-    final current = ref.watch(appearanceProvider);
+    final current = context.watch<AppearanceCubit>().state;
 
     return RuledSection(
       title: 'Aparência',
@@ -706,7 +704,7 @@ class _Appearance extends ConsumerWidget {
                         label: 'Tema ${mode.label}',
                         child: InkWell(
                           onTap: () =>
-                              ref.read(appearanceProvider.notifier).set(mode),
+                              context.read<AppearanceCubit>().set(mode),
                           child: Container(
                             color: mode == current ? palette.ink : null,
                             padding: const EdgeInsets.symmetric(

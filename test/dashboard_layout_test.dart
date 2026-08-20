@@ -1,12 +1,12 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 /// The metric grid fixes its cell height, so anything that adds a line to a
@@ -24,10 +24,8 @@ Future<void> _pump(
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
       child: MaterialApp(
         theme: buildAppTheme(brightness: Brightness.light),
         home: MediaQuery(

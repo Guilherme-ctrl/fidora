@@ -4,18 +4,18 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/reminders.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Turns invoice due dates into notifications on this phone.
-class RemindersPage extends ConsumerStatefulWidget {
+class RemindersPage extends StatefulWidget {
   const RemindersPage({super.key, required this.snapshot});
   final FinanceSnapshot snapshot;
 
   @override
-  ConsumerState<RemindersPage> createState() => _RemindersPageState();
+  State<RemindersPage> createState() => _RemindersPageState();
 }
 
-class _RemindersPageState extends ConsumerState<RemindersPage> {
+class _RemindersPageState extends State<RemindersPage> {
   ReminderSettings? _settings;
   bool _busy = false;
 
@@ -30,7 +30,8 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
   }
 
   Future<void> _load() async {
-    final settings = await ref.read(reminderServiceProvider).loadSettings();
+    final reminderService = context.read<ReminderService>();
+    final settings = await reminderService.loadSettings();
     if (mounted) setState(() => _settings = settings);
   }
 
@@ -124,7 +125,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
   }
 
   Future<void> _toggle(bool value) async {
-    final service = ref.read(reminderServiceProvider);
+    final service = context.read<ReminderService>();
     setState(() => _busy = true);
 
     if (value) {
@@ -152,7 +153,7 @@ class _RemindersPageState extends ConsumerState<RemindersPage> {
     ReminderSettings settings, {
     bool clearPermissionWarning = false,
   }) async {
-    final service = ref.read(reminderServiceProvider);
+    final service = context.read<ReminderService>();
     setState(() {
       _settings = settings;
       _busy = true;

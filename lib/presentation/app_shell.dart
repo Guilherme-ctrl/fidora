@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/appearance.dart';
-import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/presentation/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/application/reminder_service.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
@@ -25,8 +24,10 @@ import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/command_palette.dart';
 import 'package:flutter/services.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/presentation/states/finance_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 /// The shell, driven by the address bar.
@@ -34,7 +35,7 @@ import 'package:go_router/go_router.dart';
 /// It used to own `int index` and a `FinancePeriod` in its own state, which is
 /// why F5 returned to tab zero and threw the selected month away. Both now come
 /// from the route, and every navigation writes them back into it.
-class AppShell extends ConsumerStatefulWidget {
+class AppShell extends StatefulWidget {
   const AppShell({
     this.index = 0,
     this.period,
@@ -57,10 +58,10 @@ class AppShell extends ConsumerStatefulWidget {
   final Future<void> Function()? onSignOut;
 
   @override
-  ConsumerState<AppShell> createState() => _AppShellState();
+  State<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends ConsumerState<AppShell> {
+class _AppShellState extends State<AppShell> {
   String? _opened;
 
   FinancePeriod get period => widget.period ?? FinancePeriod.month(clock.now());
@@ -75,7 +76,7 @@ class _AppShellState extends ConsumerState<AppShell> {
   /// invoice from still buzzing: the reminders screen only runs when someone
   /// opens it, and paying a fatura happens somewhere else entirely.
   Future<void> _syncReminders(FinanceSnapshot snapshot) async {
-    final service = ref.read(reminderServiceProvider);
+    final service = context.read<ReminderService>();
     if (!ReminderService.isSupported) return;
     final settings = await service.loadSettings();
     if (!settings.enabled) return;
@@ -111,21 +112,21 @@ class _AppShellState extends ConsumerState<AppShell> {
         group: 'Ação',
         icon: Icons.add_rounded,
         hint: 'N',
-        run: () => createTransaction(context, ref, snapshot),
+        run: () => createTransaction(context, snapshot),
       ),
     Command(
       label: 'Recarregar os dados',
       group: 'Ação',
       icon: Icons.refresh_rounded,
-      run: () => refreshFinanceSnapshot(ref),
+      run: () => context.read<FinanceCubit>().reloadAll(),
     ),
     Command(
       label: 'Alternar o tema',
       group: 'Ajustes',
       icon: Icons.brightness_6_rounded,
       run: () {
-        final mode = ref.read(appearanceProvider);
-        ref.read(appearanceProvider.notifier).set(mode.next);
+        final mode = context.read<AppearanceCubit>().state;
+        context.read<AppearanceCubit>().set(mode.next);
       },
     ),
   ];
@@ -176,15 +177,14 @@ class _AppShellState extends ConsumerState<AppShell> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(financeSnapshotProvider, (_, next) {
-      final data = next.value;
-      if (data != null) _syncReminders(data);
-    });
-    final state = ref.watch(financeSnapshotProvider);
+    final state = context.watch<FinanceCubit>().state;
+    // Rescheduling on every fresh snapshot is what keeps a paid or re-dated
+    // invoice from still buzzing. It was a provider listener; a BlocListener
+    // in the tree below does the same and disposes with the widget.
     final layout = Breakpoint.of(context);
     // Keeping the last snapshot on screen while a reload runs is what stops the
     // whole app blanking to a spinner after every write.
-    final snapshot = state.value;
+    final snapshot = state.snapshot;
     if (snapshot != null) {
       configureCurrency(snapshot.currencyCode);
       _maybeOpenAddressed(snapshot);
@@ -193,10 +193,10 @@ class _AppShellState extends ConsumerState<AppShell> {
     final index = widget.index;
     final items = _withBadge(snapshot?.pendingReviews ?? 0);
 
-    Widget content() => switch ((snapshot, state.hasError)) {
+    Widget content() => switch ((snapshot, state.hasFailure)) {
       (null, true) => _ErrorState(
-        failure: FailureCopy.from(state.error!, state.stackTrace),
-        onRetry: () => ref.invalidate(financeSnapshotProvider),
+        failure: FailureCopy.of(state.failure!),
+        onRetry: () => context.read<FinanceCubit>().reloadAll(),
       ),
       (null, false) => const _SnapshotSkeleton(),
       (final data?, _) => Column(
@@ -217,7 +217,7 @@ class _AppShellState extends ConsumerState<AppShell> {
                 onChanged: (value) => _goTo(index, period: value),
               ),
             ),
-          if (state.isLoading)
+          if (state.busy)
             LinearProgressIndicator(
               minHeight: 2,
               backgroundColor: context.palette.rule,
@@ -225,7 +225,7 @@ class _AppShellState extends ConsumerState<AppShell> {
           if (data.truncated) const _TruncatedLedgerBanner(),
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => refreshFinanceSnapshot(ref),
+              onRefresh: () => context.read<FinanceCubit>().reloadAll(),
               child: _SelectedPage(
                 index: index,
                 snapshot: data,
@@ -244,76 +244,84 @@ class _AppShellState extends ConsumerState<AppShell> {
     // The keyboard is the desktop's interface for a product built around
     // entering and reviewing the same kinds of row. There was not a single
     // `Shortcuts` widget in the codebase before this.
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
-            showCommandPalette(context, commands: _commands(snapshot)),
-        const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
-            showCommandPalette(context, commands: _commands(snapshot)),
-        if (snapshot != null)
-          const SingleActivator(LogicalKeyboardKey.keyN): () =>
-              createTransaction(context, ref, snapshot),
-        for (var i = 0; i < 4; i++)
-          SingleActivator(
-            [
-              LogicalKeyboardKey.digit1,
-              LogicalKeyboardKey.digit2,
-              LogicalKeyboardKey.digit3,
-              LogicalKeyboardKey.digit4,
-            ][i],
-          ): () =>
-              _goTo(i),
-      },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          body: Row(
-            children: [
-              if (layout.hasRail)
-                LedgerSidebar(
-                  items: items,
-                  selected: index,
-                  compact: !layout.hasSidebar,
-                  onSelected: _goTo,
-                  // Not `_Brand`: that one is the phone's top bar, with a status
-                  // pill and a sign-out button, and it overflowed a 68pt rail by
-                  // 200px.
-                  header: _SidebarBrand(
+    return BlocListener<FinanceCubit, FinanceState>(
+      // Rescheduling on every fresh snapshot is what keeps a paid or re-dated
+      // invoice from still buzzing: the reminders screen only runs when someone
+      // opens it, and paying a fatura happens somewhere else entirely. This was
+      // a provider listener; a BlocListener disposes with the widget.
+      listenWhen: (_, after) => after.snapshot != null,
+      listener: (_, next) => _syncReminders(next.snapshot!),
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.keyK, meta: true): () =>
+              showCommandPalette(context, commands: _commands(snapshot)),
+          const SingleActivator(LogicalKeyboardKey.keyK, control: true): () =>
+              showCommandPalette(context, commands: _commands(snapshot)),
+          if (snapshot != null)
+            const SingleActivator(LogicalKeyboardKey.keyN): () =>
+                createTransaction(context, snapshot),
+          for (var i = 0; i < 4; i++)
+            SingleActivator(
+              [
+                LogicalKeyboardKey.digit1,
+                LogicalKeyboardKey.digit2,
+                LogicalKeyboardKey.digit3,
+                LogicalKeyboardKey.digit4,
+              ][i],
+            ): () =>
+                _goTo(i),
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            body: Row(
+              children: [
+                if (layout.hasRail)
+                  LedgerSidebar(
+                    items: items,
+                    selected: index,
                     compact: !layout.hasSidebar,
-                    onSearch: () => showCommandPalette(
-                      context,
-                      commands: _commands(snapshot),
-                    ),
-                  ),
-                  footer: _ShellFooter(
-                    compact: !layout.hasSidebar,
-                    onSignOut: widget.onSignOut,
-                  ),
-                ),
-              Expanded(
-                child: SafeArea(
-                  // A ledger row loses the eye between merchant and amount long
-                  // before a 1920px monitor ends. Content is capped and centred.
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: maxContentWidth,
+                    onSelected: _goTo,
+                    // Not `_Brand`: that one is the phone's top bar, with a status
+                    // pill and a sign-out button, and it overflowed a 68pt rail by
+                    // 200px.
+                    header: _SidebarBrand(
+                      compact: !layout.hasSidebar,
+                      onSearch: () => showCommandPalette(
+                        context,
+                        commands: _commands(snapshot),
                       ),
-                      child: content(),
+                    ),
+                    footer: _ShellFooter(
+                      compact: !layout.hasSidebar,
+                      onSignOut: widget.onSignOut,
+                    ),
+                  ),
+                Expanded(
+                  child: SafeArea(
+                    // A ledger row loses the eye between merchant and amount long
+                    // before a 1920px monitor ends. Content is capped and centred.
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(
+                          maxWidth: maxContentWidth,
+                        ),
+                        child: content(),
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
+            bottomNavigationBar: layout.hasRail || snapshot == null
+                ? null
+                : LedgerTabBar(
+                    items: [for (final slot in _phone) items[slot]],
+                    selected: _phone.indexOf(index),
+                    onSelected: (value) => _goTo(_phone[value]),
+                    onCreate: () => createTransaction(context, snapshot),
+                  ),
           ),
-          bottomNavigationBar: layout.hasRail || snapshot == null
-              ? null
-              : LedgerTabBar(
-                  items: [for (final slot in _phone) items[slot]],
-                  selected: _phone.indexOf(index),
-                  onSelected: (value) => _goTo(_phone[value]),
-                  onCreate: () => createTransaction(context, ref, snapshot),
-                ),
         ),
       ),
     );
@@ -321,14 +329,14 @@ class _AppShellState extends ConsumerState<AppShell> {
 }
 
 /// Theme and sign-out, at the foot of the sidebar.
-class _ShellFooter extends ConsumerWidget {
+class _ShellFooter extends StatelessWidget {
   const _ShellFooter({required this.compact, this.onSignOut});
   final bool compact;
   final Future<void> Function()? onSignOut;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final mode = ref.watch(appearanceProvider);
+  Widget build(BuildContext context) {
+    final mode = context.watch<AppearanceCubit>().state;
     return Row(
       mainAxisAlignment: compact
           ? MainAxisAlignment.center
@@ -340,7 +348,7 @@ class _ShellFooter extends ConsumerWidget {
             iconSize: 18,
             visualDensity: VisualDensity.compact,
             onPressed: () =>
-                ref.read(appearanceProvider.notifier).set(mode.next),
+                context.read<AppearanceCubit>().set(mode.next),
             icon: Icon(mode.icon),
           ),
         ),

@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
@@ -13,8 +12,10 @@ import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:financeiro_ai/presentation/category_visuals.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Opens the create/edit form. Resolves to true when a transaction was saved.
 Future<bool?> showTransactionFormSheet(
@@ -28,7 +29,7 @@ Future<bool?> showTransactionFormSheet(
       _TransactionForm(snapshot: snapshot, onSave: onSave, existing: existing),
 );
 
-class _TransactionForm extends ConsumerStatefulWidget {
+class _TransactionForm extends StatefulWidget {
   const _TransactionForm({
     required this.snapshot,
     required this.onSave,
@@ -40,10 +41,10 @@ class _TransactionForm extends ConsumerStatefulWidget {
   final FinanceTransaction? existing;
 
   @override
-  ConsumerState<_TransactionForm> createState() => _TransactionFormState();
+  State<_TransactionForm> createState() => _TransactionFormState();
 }
 
-class _TransactionFormState extends ConsumerState<_TransactionForm> {
+class _TransactionFormState extends State<_TransactionForm> {
   late final TextEditingController _merchant;
   late final TextEditingController _amount;
   late final TextEditingController _installmentCurrent;
@@ -147,6 +148,7 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
   );
 
   Future<void> _submit() async {
+    final receipts = context.read<ReceiptStorage>();
     final errors = _buildDraft(receiptPath: _receiptPath).validate();
     setState(() {
       _errors = errors;
@@ -163,8 +165,7 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
       var path = _receiptPath;
       final pending = _pendingReceipt;
       if (pending != null) {
-        path = await ref
-            .read(receiptStorageProvider)
+        path = await receipts
             .uploadReceipt(
               bytes: pending.bytes,
               fileName: pending.fileName,
@@ -625,7 +626,6 @@ class _CompetenceHint extends StatelessWidget {
 /// paths behave identically.
 Future<void> createTransaction(
   BuildContext context,
-  WidgetRef ref,
   FinanceSnapshot snapshot, {
   FinanceTransaction? existing,
 }) async {
@@ -634,8 +634,10 @@ Future<void> createTransaction(
     snapshot: snapshot,
     existing: existing,
     onSave: (draft) async {
-      await ref.read(transactionRepositoryProvider).saveTransaction(draft);
-      await refreshLedger(ref);
+      final transactions = context.read<TransactionRepository>();
+      final finance = context.read<FinanceCubit>();
+      await transactions.saveTransaction(draft);
+      await finance.reloadLedger();
     },
   );
   if (saved == true && context.mounted) {

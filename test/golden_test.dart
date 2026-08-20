@@ -1,7 +1,6 @@
 @Tags(['golden'])
 library;
 
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
@@ -17,8 +16,9 @@ import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
 import 'package:financeiro_ai/presentation/app_shell.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -174,10 +174,8 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),
@@ -188,7 +186,15 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
       ),
     ),
   );
-  for (var i = 0; i < 8; i++) {
+  // Past the animation, not into it.
+  //
+  // Eight pumps of 50ms was 400ms, exactly `Motion.count` — but the demo
+  // repository sleeps before answering, so the progress ring beside "Hoje"
+  // had not even started its sweep when the image was taken. The reference
+  // recorded a frame of a running animation, which is a golden that moves
+  // whenever anything upstream lands a frame earlier or later. Three seconds
+  // clears the sleep and the 400ms tween together.
+  for (var i = 0; i < 60; i++) {
     await tester.pump(const Duration(milliseconds: 50));
   }
 }
@@ -199,10 +205,8 @@ Future<void> _pumpQueue(WidgetTester tester, Size size) async {
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(),

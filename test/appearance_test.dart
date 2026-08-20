@@ -1,16 +1,16 @@
-import 'package:financeiro_ai/application/appearance.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/presentation/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/presentation/pages/more_page.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/golden.dart';
+import 'support/harness.dart';
 
 /// The product had two themes and, on a phone, no way to choose between them.
 ///
@@ -30,20 +30,15 @@ void main() {
     });
   });
 
-  Future<ProviderContainer> pumpMore(WidgetTester tester, Size size) async {
+  /// Returns the cubit the tree is actually using, so an assertion reads the
+  /// same object the widget does.
+  Future<AppearanceCubit> pumpMore(WidgetTester tester, Size size) async {
     tester.view.devicePixelRatio = 1;
     tester.view.physicalSize = size;
     addTearDown(tester.view.reset);
-    final container = ProviderContainer(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
-    );
-    addTearDown(container.dispose);
 
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
+      withDependencies(
         child: MaterialApp(
           theme: buildAppTheme(),
           home: MediaQuery(
@@ -65,7 +60,9 @@ void main() {
       maxScrolls: 60,
     );
     await tester.pump(const Duration(milliseconds: 100));
-    return container;
+    return tester
+        .element(find.text('Aparência'))
+        .read<AppearanceCubit>();
   }
 
   testWidgets('a phone can reach the theme, and it is named', (tester) async {
@@ -82,26 +79,26 @@ void main() {
 
   testWidgets('choosing one changes the app-wide mode', (tester) async {
     await withGoldenClock(() async {
-      final container = await pumpMore(tester, const Size(390, 900));
+      final appearance = await pumpMore(tester, const Size(390, 900));
       // O padrão é escuro: é o modo em que a marca foi desenhada, e o modo
       // claro existe porque o dono pediu, não porque é o ponto de partida.
-      expect(container.read(appearanceProvider), ThemeMode.dark);
+      expect(appearance.state, ThemeMode.dark);
 
       await tester.tap(find.text('Sistema'));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(container.read(appearanceProvider), ThemeMode.system);
+      expect(appearance.state, ThemeMode.system);
 
       await tester.tap(find.text('Claro'));
       await tester.pump(const Duration(milliseconds: 100));
-      expect(container.read(appearanceProvider), ThemeMode.light);
+      expect(appearance.state, ThemeMode.light);
     });
   });
 
   test('the choice survives a restart', () async {
     SharedPreferences.setMockInitialValues(<String, Object>{});
-    final container = ProviderContainer();
-    addTearDown(container.dispose);
-    await container.read(appearanceProvider.notifier).set(ThemeMode.dark);
+    final appearance = AppearanceCubit();
+    addTearDown(appearance.close);
+    await appearance.set(ThemeMode.dark);
 
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getString('appearance.themeMode'), 'dark');

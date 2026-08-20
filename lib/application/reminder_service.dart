@@ -2,7 +2,6 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/reminders.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
@@ -136,9 +135,8 @@ class ReminderService {
   }
 }
 
-final reminderServiceProvider = Provider<ReminderService>(
-  (ref) => ReminderService(FlutterLocalNotificationsPlugin()),
-);
+ReminderService defaultReminderService() =>
+    ReminderService(FlutterLocalNotificationsPlugin());
 
 class ReminderSettings {
   const ReminderSettings({

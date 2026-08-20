@@ -1,11 +1,11 @@
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'harness.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// The instant every golden is rendered at.
@@ -53,10 +53,8 @@ Future<void> pumpGolden(
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: buildAppTheme(brightness: brightness),

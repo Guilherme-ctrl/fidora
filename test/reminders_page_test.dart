@@ -4,8 +4,9 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/pages/reminders_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 /// Stands in for the real service so the screen can be driven without a
@@ -82,8 +83,8 @@ FinanceSnapshot _snapshot() => FinanceSnapshot(
 
 Future<void> _pump(WidgetTester tester, _FakeReminderService service) async {
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [reminderServiceProvider.overrideWithValue(service)],
+    withDependencies(
+      reminders: service,
       child: MaterialApp(
         theme: buildAppTheme(brightness: Brightness.light),
         home: RemindersPage(snapshot: _snapshot()),

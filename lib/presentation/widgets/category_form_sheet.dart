@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
@@ -8,12 +7,14 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> editCategory(
   BuildContext context,
-  WidgetRef ref, {
+  {
   FinanceCategory? existing,
 }) async {
   final saved = await showResponsiveSurface<bool>(
@@ -21,8 +22,10 @@ Future<void> editCategory(
     builder: (context) => _CategoryForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(catalogRepositoryProvider).saveCategory(draft);
-        await refreshFinanceSnapshot(ref);
+        final catalog = context.read<CatalogRepository>();
+        final finance = context.read<FinanceCubit>();
+        await catalog.saveCategory(draft);
+        await finance.reloadAll();
       },
     ),
   );

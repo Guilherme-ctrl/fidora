@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Which theme the person chose.
@@ -7,36 +7,30 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// Both themes existed and were good, and the product followed the operating
 /// system with no way to disagree with it. Someone who reads a ledger at night
 /// on a bright phone, or in daylight on a dark desktop, had no say.
-class AppearanceController extends Notifier<ThemeMode> {
-  static const _key = 'appearance.themeMode';
-
-  @override
-  ThemeMode build() {
+class AppearanceCubit extends Cubit<ThemeMode> {
+  /// Dark, not `system`. The palette was designed in the dark and that is
+  /// where it works; following the system handed half the devices the theme
+  /// the owner described as a scientific paper.
+  AppearanceCubit() : super(ThemeMode.dark) {
     _restore();
-    // Escuro, não `system`. A paleta foi desenhada no escuro e é lá que ela
-    // funciona; seguir o sistema entregava metade dos aparelhos ao tema que o
-    // dono descreveu como artigo científico.
-    return ThemeMode.dark;
   }
+
+  static const _key = 'appearance.themeMode';
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_key);
     if (stored == null) return;
     final mode = ThemeMode.values.where((value) => value.name == stored);
-    if (mode.isNotEmpty) state = mode.first;
+    if (mode.isNotEmpty && !isClosed) emit(mode.first);
   }
 
   Future<void> set(ThemeMode mode) async {
-    state = mode;
+    emit(mode);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_key, mode.name);
   }
 }
-
-final appearanceProvider = NotifierProvider<AppearanceController, ThemeMode>(
-  AppearanceController.new,
-);
 
 extension ThemeModeLabel on ThemeMode {
   String get label => switch (this) {

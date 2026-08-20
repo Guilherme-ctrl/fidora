@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/auth_repository.dart';
@@ -6,9 +5,9 @@ import 'package:financeiro_ai/domain/auth_rules.dart';
 import 'package:financeiro_ai/presentation/app_shell.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class AuthGate extends ConsumerWidget {
+class AuthGate extends StatelessWidget {
   const AuthGate({this.child, super.key});
 
   /// The routed shell. Given by the router so the address bar keeps working
@@ -17,8 +16,8 @@ class AuthGate extends ConsumerWidget {
   final Widget? child;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final auth = ref.watch(authRepositoryProvider);
+  Widget build(BuildContext context) {
+    final auth = context.read<AuthRepository>();
     return StreamBuilder<AuthChange>(
       stream: auth.changes(),
       builder: (context, snapshot) {
@@ -36,14 +35,14 @@ class AuthGate extends ConsumerWidget {
   }
 }
 
-class AuthPage extends ConsumerStatefulWidget {
+class AuthPage extends StatefulWidget {
   const AuthPage({super.key});
 
   @override
-  ConsumerState<AuthPage> createState() => _AuthPageState();
+  State<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends ConsumerState<AuthPage> {
+class _AuthPageState extends State<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -62,7 +61,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      final auth = ref.read(authRepositoryProvider);
+      final auth = context.read<AuthRepository>();
       if (_createAccount) {
         final outcome = await auth.signUp(
           email: _emailController.text.trim(),
@@ -99,6 +98,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
   /// not the address has an account, so the screen cannot be used to find out
   /// which e-mails are registered.
   Future<void> _recoverPassword() async {
+    final authRepository = context.read<AuthRepository>();
     final email = _emailController.text.trim();
     final problem = validateEmail(email);
     if (problem != null) {
@@ -109,7 +109,7 @@ class _AuthPageState extends ConsumerState<AuthPage> {
     }
     setState(() => _loading = true);
     try {
-      await ref.read(authRepositoryProvider).sendPasswordRecovery(email);
+      await authRepository.sendPasswordRecovery(email);
     } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -255,13 +255,13 @@ class _AuthPageState extends ConsumerState<AuthPage> {
 /// Shown when the person arrives through a recovery link. The recovery event
 /// has already signed them in at this point, so the only thing missing is the
 /// new password.
-class NewPasswordPage extends ConsumerStatefulWidget {
+class NewPasswordPage extends StatefulWidget {
   const NewPasswordPage({super.key});
   @override
-  ConsumerState<NewPasswordPage> createState() => _NewPasswordPageState();
+  State<NewPasswordPage> createState() => _NewPasswordPageState();
 }
 
-class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
+class _NewPasswordPageState extends State<NewPasswordPage> {
   final _password = TextEditingController();
   final _confirmation = TextEditingController();
   bool _loading = false;
@@ -276,13 +276,14 @@ class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
   }
 
   Future<void> _submit() async {
+    final authRepository = context.read<AuthRepository>();
     final errors = validateNewPassword(_password.text, _confirmation.text);
     setState(() => _errors = errors);
     if (!errors.isEmpty) return;
 
     setState(() => _loading = true);
     try {
-      await ref.read(authRepositoryProvider).updatePassword(_password.text);
+      await authRepository.updatePassword(_password.text);
       if (mounted) {
         ScaffoldMessenger.of(
           context,

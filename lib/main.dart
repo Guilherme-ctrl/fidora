@@ -1,5 +1,5 @@
-import 'package:financeiro_ai/application/appearance.dart';
-import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/presentation/cubits/appearance_cubit.dart';
+import 'package:financeiro_ai/core/di/dependencies.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/url_strategy.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
@@ -11,7 +11,7 @@ import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/presentation/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -40,26 +40,24 @@ Future<void> main() async {
   }
 
   runApp(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(repository),
-        authRepositoryProvider.overrideWithValue(auth),
-      ],
+    Dependencies(
+      repository: repository,
+      auth: auth,
       child: FinanceiroApp(useSupabase: useSupabase),
     ),
   );
 }
 
-class FinanceiroApp extends ConsumerStatefulWidget {
+class FinanceiroApp extends StatefulWidget {
   const FinanceiroApp({required this.useSupabase, super.key});
 
   final bool useSupabase;
 
   @override
-  ConsumerState<FinanceiroApp> createState() => _FinanceiroAppState();
+  State<FinanceiroApp> createState() => _FinanceiroAppState();
 }
 
-class _FinanceiroAppState extends ConsumerState<FinanceiroApp> {
+class _FinanceiroAppState extends State<FinanceiroApp> {
   late final GoRouter _router = buildRouter(useSupabase: widget.useSupabase);
 
   @override
@@ -89,7 +87,7 @@ class _FinanceiroAppState extends ConsumerState<FinanceiroApp> {
     // O escuro é o padrão. O claro continua inteiro e escolhível em Ajustes,
     // mas deixou de ser o rosto do produto: é no escuro que a cor tem energia
     // e é no escuro que este app é aberto à noite.
-    themeMode: ref.watch(appearanceProvider),
+    themeMode: context.watch<AppearanceCubit>().state,
     routerConfig: _router,
   );
 }

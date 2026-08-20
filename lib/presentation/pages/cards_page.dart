@@ -10,19 +10,20 @@ import 'package:financeiro_ai/presentation/widgets/card_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/invoice_forecast_card.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class CardsPage extends ConsumerWidget {
+class CardsPage extends StatelessWidget {
   const CardsPage({super.key, required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -39,7 +40,7 @@ class CardsPage extends ConsumerWidget {
           action: width > 560
               ? FilledButton.icon(
                   onPressed: () =>
-                      editCard(context, ref, holders: snapshot.holders),
+                      editCard(context, holders: snapshot.holders),
                   icon: const Icon(Icons.add_card),
                   label: const Text('Adicionar cartão'),
                 )
@@ -64,7 +65,6 @@ class CardsPage extends ConsumerWidget {
                         usage: cardUsage(snapshot, card),
                         onEdit: () => editCard(
                           context,
-                          ref,
                           holders: snapshot.holders,
                           existing: card,
                         ),
@@ -287,7 +287,7 @@ class _CardDetail extends StatelessWidget {
   );
 }
 
-class _InvoicesList extends ConsumerWidget {
+class _InvoicesList extends StatelessWidget {
   const _InvoicesList({required this.snapshot, required this.period});
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
@@ -299,7 +299,7 @@ class _InvoicesList extends ConsumerWidget {
       .where((item) => period.contains(item.referenceMonth))
       .toList();
   @override
-  Widget build(BuildContext context, WidgetRef ref) => RuledSection(
+  Widget build(BuildContext context) => RuledSection(
     title: 'Faturas recentes',
     tooltip: 'Abrir todas as faturas e suas competências',
     onTap: () => showDetailSheet(
@@ -366,7 +366,6 @@ class _InvoicesList extends ConsumerWidget {
                               ? OutlinedButton.icon(
                                   onPressed: () => _setPaid(
                                     context,
-                                    ref,
                                     invoice,
                                     paid: false,
                                   ),
@@ -376,7 +375,6 @@ class _InvoicesList extends ConsumerWidget {
                               : FilledButton.icon(
                                   onPressed: () => _setPaid(
                                     context,
-                                    ref,
                                     invoice,
                                     paid: true,
                                   ),
@@ -478,16 +476,15 @@ Color _stateColor(BuildContext context, InvoiceState state) => switch (state) {
 /// reload for the card face to catch up.
 Future<void> _setPaid(
   BuildContext context,
-  WidgetRef ref,
   Invoice invoice, {
   required bool paid,
 }) async {
   Navigator.of(context).pop();
   try {
-    await ref
-        .read(invoiceRepositoryProvider)
-        .setInvoicePaid(invoice.id, paid: paid);
-    await refreshLedger(ref);
+    final invoices = context.read<InvoiceRepository>();
+    final finance = context.read<FinanceCubit>();
+    await invoices.setInvoicePaid(invoice.id, paid: paid);
+    await finance.reloadLedger();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

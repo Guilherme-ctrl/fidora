@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -9,12 +8,14 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> editGoal(
   BuildContext context,
-  WidgetRef ref, {
+  {
   Goal? existing,
 }) async {
   final saved = await showResponsiveSurface<bool>(
@@ -22,8 +23,10 @@ Future<void> editGoal(
     builder: (context) => _GoalForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(catalogRepositoryProvider).saveGoal(draft);
-        await refreshFinanceSnapshot(ref);
+        final catalog = context.read<CatalogRepository>();
+        final finance = context.read<FinanceCubit>();
+        await catalog.saveGoal(draft);
+        await finance.reloadAll();
       },
     ),
   );

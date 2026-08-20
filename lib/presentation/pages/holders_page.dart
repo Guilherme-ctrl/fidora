@@ -1,29 +1,30 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class HoldersPage extends ConsumerWidget {
+class HoldersPage extends StatelessWidget {
   const HoldersPage({super.key, required this.snapshot});
   final FinanceSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final holders = snapshot.holders;
     return Scaffold(
       appBar: AppBar(title: const Text('Portadores')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _edit(context, ref),
+        onPressed: () => _edit(context),
         icon: const Icon(Icons.person_add_alt_rounded),
         label: const Text('Novo portador'),
       ),
       body: holders.isEmpty
-          ? _Empty(onCreate: () => _edit(context, ref))
+          ? _Empty(onCreate: () => _edit(context))
           : ListView.builder(
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
               itemCount: holders.length + 1,
@@ -45,8 +46,8 @@ class HoldersPage extends ConsumerWidget {
                   cards: snapshot.cards
                       .where((card) => card.holderId == holder.id)
                       .length,
-                  onEdit: () => _edit(context, ref, existing: holder),
-                  onDelete: () => _delete(context, ref, holder),
+                  onEdit: () => _edit(context, existing: holder),
+                  onDelete: () => _delete(context, holder),
                 );
               },
             ),
@@ -55,7 +56,7 @@ class HoldersPage extends ConsumerWidget {
 
   Future<void> _edit(
     BuildContext context,
-    WidgetRef ref, {
+    {
     Holder? existing,
   }) async {
     final nameController = TextEditingController(text: existing?.name ?? '');
@@ -124,8 +125,10 @@ class HoldersPage extends ConsumerWidget {
     if (draft == null || !context.mounted) return;
 
     try {
-      await ref.read(catalogRepositoryProvider).saveHolder(draft);
-      await refreshFinanceSnapshot(ref);
+      final catalog = context.read<CatalogRepository>();
+      final finance = context.read<FinanceCubit>();
+      await catalog.saveHolder(draft);
+      await finance.reloadAll();
       if (context.mounted) _toast(context, 'Portador salvo.');
     } on Failure catch (failure) {
       if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
@@ -134,9 +137,10 @@ class HoldersPage extends ConsumerWidget {
 
   Future<void> _delete(
     BuildContext context,
-    WidgetRef ref,
     Holder holder,
   ) async {
+    final catalog = context.read<CatalogRepository>();
+    final finance = context.read<FinanceCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -162,8 +166,8 @@ class HoldersPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(catalogRepositoryProvider).deleteHolder(holder.id);
-      await refreshFinanceSnapshot(ref);
+      await catalog.deleteHolder(holder.id);
+      await finance.reloadAll();
       if (context.mounted) _toast(context, 'Portador excluído.');
     } on Failure catch (failure) {
       if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);

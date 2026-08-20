@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/tokens.dart';
@@ -12,8 +11,9 @@ import 'package:financeiro_ai/domain/narrative.dart';
 import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/presentation/cubits/catalog_cubits.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// What needs you now.
 ///
@@ -35,7 +35,7 @@ double _monthProgress(FinancePeriod period) {
   return (passed / total).clamp(0.0, 1.0);
 }
 
-class TodayPage extends ConsumerWidget {
+class TodayPage extends StatefulWidget {
   const TodayPage({
     super.key,
     required this.snapshot,
@@ -47,17 +47,32 @@ class TodayPage extends ConsumerWidget {
   final FinancePeriod period;
   final VoidCallback onOpenInvoices;
 
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  State<TodayPage> createState() => _TodayPageState();
+}
+
+class _TodayPageState extends State<TodayPage> {
+  @override
+  void initState() {
+    super.initState();
+    // The queue used to be a FutureProvider, which fetched on first
+    // watch. A cubit does not, so the screen asks — which keeps the
+    // load off the app's first paint, where it never belonged.
+    context.read<ReviewQueueCubit>().loadOnce();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final palette = context.palette;
     final alerts = budgetAlerts(
-      snapshot,
-      period,
+      widget.snapshot,
+      widget.period,
     ).where((alert) => alert.level != BudgetLevel.fine).toList();
     final closing = forecastInvoices(
-      snapshot,
+      widget.snapshot,
     ).where((forecast) => forecast.daysRemaining <= 7).toList();
-    final reviews = snapshot.pendingReviews;
+    final reviews = widget.snapshot.pendingReviews;
     final quiet = reviews == 0 && closing.isEmpty && alerts.isEmpty;
 
     return ListView(
@@ -77,9 +92,9 @@ class TodayPage extends ConsumerWidget {
           // Pequeno, ao lado do título: quanto do mês já passou. O anel só
           // cresce na fila, onde progresso é o assunto da tela.
           action: ProgressRing(
-            value: _monthProgress(period),
+            value: _monthProgress(widget.period),
             child: Text(
-              '${(_monthProgress(period) * 100).round()}',
+              '${(_monthProgress(widget.period) * 100).round()}',
               style: context.type.labelCaps.copyWith(fontSize: 8),
             ),
           ),
@@ -90,7 +105,7 @@ class TodayPage extends ConsumerWidget {
           _ClosingInvoice(
             forecast: forecast,
             first: reviews == 0 && forecast == closing.first,
-            onOpen: onOpenInvoices,
+            onOpen: widget.onOpenInvoices,
           ),
         for (final alert in alerts)
           _BudgetCallout(
@@ -99,7 +114,7 @@ class TodayPage extends ConsumerWidget {
                 ? false
                 : reviews == 0 && closing.isEmpty && alert == alerts.first,
           ),
-        _Narrative(snapshot: snapshot, period: period, first: quiet),
+        _Narrative(snapshot: widget.snapshot, period: widget.period, first: quiet),
         if (quiet) ...[
           const SizedBox(height: Space.xl),
           Center(
@@ -114,16 +129,16 @@ class TodayPage extends ConsumerWidget {
   }
 }
 
-class _ReviewCallout extends ConsumerWidget {
+class _ReviewCallout extends StatelessWidget {
   const _ReviewCallout({required this.count, required this.first});
   final int count;
   final bool first;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final palette = context.palette;
-    final queue = ref.watch(reviewQueueProvider);
-    final item = queue.value?.isNotEmpty ?? false ? queue.value!.first : null;
+    final queue = context.watch<ReviewQueueCubit>().state;
+    final item = queue.dataOrNull?.isNotEmpty ?? false ? queue.dataOrNull!.first : null;
 
     return RuledSection(
       first: first,

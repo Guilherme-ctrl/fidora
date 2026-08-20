@@ -1,9 +1,9 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/presentation/states/finance_state.dart';
 import 'package:flutter_test/flutter_test.dart';
+
 
 /// Counts how often each half is fetched, which is the whole point of the
 /// split: a captured purchase must not refetch every card and category.
@@ -34,39 +34,13 @@ class _CountingRepository extends DemoFinanceRepository {
   }
 }
 
-/// Riverpod's refresh helpers take a WidgetRef, so the container is driven
-/// through a real widget rather than a bare ProviderContainer.
-class _Probe extends ConsumerWidget {
-  const _Probe({required this.onRef});
-  final void Function(WidgetRef) onRef;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    onRef(ref);
-    final snapshot = ref.watch(financeSnapshotProvider);
-    return MaterialApp(
-      home: Scaffold(
-        body: Text(
-          snapshot.hasValue
-              ? 'carregado:${snapshot.value!.transactions.length}'
-              : 'carregando',
-        ),
-      ),
-    );
-  }
-}
-
-Future<WidgetRef> _pump(WidgetTester tester, _CountingRepository repo) async {
-  late WidgetRef captured;
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [...financeOverrides(repo)],
-      child: _Probe(onRef: (ref) => captured = ref),
-    ),
-  );
-  await tester.pumpAndSettle();
-  return captured;
-}
+/// The cubit under test, wired to the counting repository.
+///
+/// This used to be driven through a widget, because Riverpod's refresh helpers
+/// took a `WidgetRef` and there was no way to call them without one. A cubit
+/// is an object, so the test is about the object.
+FinanceCubit _cubit(_CountingRepository repo) =>
+    FinanceCubit(catalog: repo, transactions: repo);
 
 void main() {
   group('composition', () {
@@ -107,25 +81,22 @@ void main() {
   });
 
   group('refreshing', () {
-    testWidgets('the first load fetches each half exactly once', (
-      tester,
-    ) async {
+    test('the first load fetches each half exactly once', () async {
       final repo = _CountingRepository();
-      await _pump(tester, repo);
+      final cubit = _cubit(repo);
+      await cubit.load();
 
       expect(repo.catalogLoads, 1);
       expect(repo.ledgerLoads, 1);
-      expect(find.textContaining('carregado:'), findsOneWidget);
+      expect(cubit.state.snapshot, isNotNull);
     });
 
-    testWidgets('a transaction write reloads the ledger and not the catalog', (
-      tester,
-    ) async {
+    test('a transaction write reloads the ledger and not the catalog', () async {
       final repo = _CountingRepository();
-      final ref = await _pump(tester, repo);
+      final cubit = _cubit(repo);
+      await cubit.load();
 
-      await refreshLedger(ref);
-      await tester.pumpAndSettle();
+      await cubit.reloadLedger();
 
       expect(repo.ledgerLoads, 2);
       // The point of the split: cards, categories, holders and accounts cannot
@@ -133,25 +104,29 @@ void main() {
       expect(repo.catalogLoads, 1);
     });
 
-    testWidgets('a catalog write reloads both', (tester) async {
+    test('a catalog write reloads both', () async {
       final repo = _CountingRepository();
-      final ref = await _pump(tester, repo);
+      final cubit = _cubit(repo);
+      await cubit.load();
 
-      await refreshFinanceSnapshot(ref);
-      await tester.pumpAndSettle();
+      await cubit.reloadAll();
 
       expect(repo.catalogLoads, 2);
       expect(repo.ledgerLoads, 2);
     });
 
-    testWidgets('the composed snapshot carries a truncated ledger through', (
-      tester,
-    ) async {
+    test('the composed snapshot carries a truncated ledger through', () async {
       final repo = _CountingRepository()..truncated = true;
-      final ref = await _pump(tester, repo);
+      final cubit = _cubit(repo);
+      await cubit.load();
 
-      final snapshot = await ref.read(financeSnapshotProvider.future);
-      expect(snapshot.truncated, isTrue);
+      expect(cubit.state.snapshot!.truncated, isTrue);
+    });
+
+    test('a half that has not arrived yields no snapshot', () async {
+      // Composing a ledger with no catalogue would render transactions whose
+      // categories cannot be resolved.
+      expect(const FinanceState().snapshot, isNull);
     });
   });
 }

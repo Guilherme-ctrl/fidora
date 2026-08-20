@@ -1,38 +1,55 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/catalog_cubits.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class ShortcutTokensPage extends ConsumerWidget {
+class ShortcutTokensPage extends StatefulWidget {
   const ShortcutTokensPage({super.key});
 
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = ref.watch(shortcutTokensProvider);
+  State<ShortcutTokensPage> createState() => _ShortcutTokensPageState();
+}
+
+class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
+  @override
+  void initState() {
+    super.initState();
+    // The queue used to be a FutureProvider, which fetched on first
+    // watch. A cubit does not, so the screen asks — which keeps the
+    // load off the app's first paint, where it never belonged.
+    context.read<ShortcutTokensCubit>().loadOnce();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.watch<ShortcutTokensCubit>().state;
     return Scaffold(
       appBar: AppBar(title: const Text('Tokens do Atalho')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _create(context, ref),
+        onPressed: () => _create(context),
         icon: const Icon(Icons.add),
         label: const Text('Novo token'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => refreshShortcutTokens(ref),
-        child: tokens.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) => _Message(
+        onRefresh: () => context.read<ShortcutTokensCubit>().reload(),
+        child: switch (tokens) {
+          LoadFailed() => _Message(
             icon: Icons.cloud_off_rounded,
             color: context.palette.negative,
             title: 'Não foi possível carregar os tokens',
             body: 'Verifique sua conexão e tente novamente.',
-            onRetry: () => ref.invalidate(shortcutTokensProvider),
+            onRetry: () => context.read<ShortcutTokensCubit>().reload(),
           ),
-          data: (items) => items.isEmpty
+          LoadSuccess(data: final items) ||
+          LoadReloading(previous: final items) => items.isEmpty
               ? _Message(
                   icon: Icons.key_rounded,
                   color: context.palette.accent,
@@ -58,16 +75,19 @@ class ShortcutTokensPage extends ConsumerWidget {
                     }
                     return _TokenTile(
                       token: items[index - 1],
-                      onRevoke: () => _revoke(context, ref, items[index - 1]),
+                      onRevoke: () => _revoke(context, items[index - 1]),
                     );
                   },
                 ),
-        ),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
       ),
     );
   }
 
-  Future<void> _create(BuildContext context, WidgetRef ref) async {
+  Future<void> _create(BuildContext context) async {
+    final tokens = context.read<ShortcutTokenRepository>();
+    final shortcutTokens = context.read<ShortcutTokensCubit>();
     final controller = TextEditingController(text: 'iPhone');
     final name = await showDialog<String>(
       context: context,
@@ -96,10 +116,8 @@ class ShortcutTokensPage extends ConsumerWidget {
     if (name == null || !context.mounted) return;
 
     try {
-      final issued = await ref
-          .read(shortcutTokenRepositoryProvider)
-          .createShortcutToken(name);
-      await refreshShortcutTokens(ref);
+      final issued = await tokens.createShortcutToken(name);
+ await shortcutTokens.reload();
       if (context.mounted) await _showSecret(context, issued);
     } on Failure catch (failure) {
       if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
@@ -165,9 +183,10 @@ class ShortcutTokensPage extends ConsumerWidget {
 
   Future<void> _revoke(
     BuildContext context,
-    WidgetRef ref,
     ShortcutToken token,
   ) async {
+    final tokens = context.read<ShortcutTokenRepository>();
+    final shortcutTokens = context.read<ShortcutTokensCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -193,8 +212,8 @@ class ShortcutTokensPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(shortcutTokenRepositoryProvider).revokeShortcutToken(token.id);
-      await refreshShortcutTokens(ref);
+      await tokens.revokeShortcutToken(token.id);
+      await shortcutTokens.reload();
       if (context.mounted) _toast(context, 'Token revogado.');
     } on Failure catch (failure) {
       if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);

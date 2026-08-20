@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
@@ -6,8 +5,9 @@ import 'package:financeiro_ai/presentation/app_shell.dart';
 import 'package:financeiro_ai/presentation/pages/today_page.dart';
 import 'package:financeiro_ai/presentation/widgets/navigation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -24,10 +24,8 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
   addTearDown(tester.view.reset);
 
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
       child: MaterialApp(
         theme: buildAppTheme(),
         home: MediaQuery(

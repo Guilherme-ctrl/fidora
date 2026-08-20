@@ -14,10 +14,9 @@ import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends StatelessWidget {
   const DashboardPage({
     super.key,
     required this.snapshot,
@@ -30,7 +29,7 @@ class DashboardPage extends ConsumerWidget {
   final ValueChanged<FinancePeriod> onPeriodChanged;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final columns = width >= 1250
         ? 4
@@ -65,7 +64,7 @@ class DashboardPage extends ConsumerWidget {
           // Below 900px the shell's floating action button owns this action.
           action: width >= 900
               ? FilledButton.icon(
-                  onPressed: () => createTransaction(context, ref, snapshot),
+                  onPressed: () => createTransaction(context, snapshot),
                   icon: const Icon(Icons.add),
                   label: const Text('Nova transação'),
                 )

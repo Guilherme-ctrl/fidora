@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -7,14 +6,16 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Opens the card editor and reloads the snapshot once something is saved.
 Future<void> editCard(
   BuildContext context,
-  WidgetRef ref, {
+  {
   required List<Holder> holders,
   CreditCard? existing,
 }) async {
@@ -24,8 +25,10 @@ Future<void> editCard(
       existing: existing,
       holders: holders,
       onSave: (draft) async {
-        await ref.read(catalogRepositoryProvider).saveCard(draft);
-        await refreshFinanceSnapshot(ref);
+        final catalog = context.read<CatalogRepository>();
+        final finance = context.read<FinanceCubit>();
+        await catalog.saveCard(draft);
+        await finance.reloadAll();
       },
     ),
   );

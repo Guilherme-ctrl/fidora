@@ -1,6 +1,5 @@
 import 'dart:typed_data';
 
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/receipt_recognizer.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/core/theme.dart';
@@ -11,8 +10,9 @@ import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/receipt_field.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 /// Hands back a fixed image instead of opening a camera.
@@ -80,14 +80,10 @@ Future<void> _pumpField(
   ValueChanged<PendingReceipt>? onPicked,
 }) async {
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        ...financeOverrides(DemoFinanceRepository()),
-        receiptRecognizerProvider.overrideWithValue(
-          recognizer ?? const UnavailableReceiptRecognizer(),
-        ),
-        if (capture != null) imageCaptureProvider.overrideWithValue(capture),
-      ],
+    withDependencies(
+      repository: DemoFinanceRepository(),
+      recognizer: recognizer ?? const UnavailableReceiptRecognizer(),
+      imageCapture: capture,
       child: MaterialApp(
         theme: buildAppTheme(brightness: Brightness.light),
         home: Scaffold(
@@ -243,11 +239,9 @@ void main() {
       void Function(TransactionDraft) capture,
     ) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...financeOverrides(DemoFinanceRepository()),
-            receiptRecognizerProvider.overrideWithValue(_FakeRecognizer()),
-          ],
+        withDependencies(
+          repository: DemoFinanceRepository(),
+          recognizer: _FakeRecognizer(),
           child: MaterialApp(
             home: Scaffold(
               body: Builder(

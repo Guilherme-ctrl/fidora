@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -9,22 +8,24 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
-class AccountsPage extends ConsumerWidget {
+class AccountsPage extends StatelessWidget {
   const AccountsPage({super.key, required this.snapshot});
   final FinanceSnapshot snapshot;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final balances = accountBalances(snapshot);
     final total = totalAccountBalance(balances);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Contas')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => editAccount(context, ref),
+        onPressed: () => editAccount(context),
         icon: const Icon(Icons.add),
         label: const Text('Nova conta'),
       ),
@@ -68,8 +69,8 @@ class AccountsPage extends ConsumerWidget {
                   (item) => _AccountTile(
                     balance: item,
                     onEdit: () =>
-                        editAccount(context, ref, existing: item.account),
-                    onArchive: () => _archive(context, ref, item),
+                        editAccount(context, existing: item.account),
+                    onArchive: () => _archive(context, item),
                   ),
                 ),
               ],
@@ -79,9 +80,10 @@ class AccountsPage extends ConsumerWidget {
 
   Future<void> _archive(
     BuildContext context,
-    WidgetRef ref,
     AccountBalance item,
   ) async {
+    final catalog = context.read<CatalogRepository>();
+    final finance = context.read<FinanceCubit>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -107,10 +109,8 @@ class AccountsPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref
-          .read(catalogRepositoryProvider)
-          .setAccountActive(item.account.id, active: false);
-      await refreshFinanceSnapshot(ref);
+      await catalog.setAccountActive(item.account.id, active: false);
+      await finance.reloadAll();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -270,7 +270,7 @@ class _Empty extends StatelessWidget {
 
 Future<void> editAccount(
   BuildContext context,
-  WidgetRef ref, {
+  {
   Account? existing,
 }) async {
   final saved = await showResponsiveSurface<bool>(
@@ -278,8 +278,10 @@ Future<void> editAccount(
     builder: (context) => _AccountForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(catalogRepositoryProvider).saveAccount(draft);
-        await refreshFinanceSnapshot(ref);
+        final catalog = context.read<CatalogRepository>();
+        final finance = context.read<FinanceCubit>();
+        await catalog.saveAccount(draft);
+        await finance.reloadAll();
       },
     ),
   );

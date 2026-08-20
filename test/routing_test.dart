@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
@@ -7,8 +6,9 @@ import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/router.dart';
 import 'package:financeiro_ai/presentation/routes.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -140,11 +140,9 @@ void main() {
       final router = buildRouter(initialLocation: at);
       addTearDown(router.dispose);
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            ...financeOverrides(DemoFinanceRepository()),
-          ],
-          child: MaterialApp.router(
+        withDependencies(
+      repository: DemoFinanceRepository(),
+      child: MaterialApp.router(
             theme: buildAppTheme(),
             routerConfig: router,
           ),

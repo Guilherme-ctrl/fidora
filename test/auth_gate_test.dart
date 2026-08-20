@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/fake_auth_repository.dart';
@@ -6,8 +5,9 @@ import 'package:financeiro_ai/domain/auth_repository.dart';
 import 'package:financeiro_ai/presentation/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import 'support/harness.dart';
 
 /// None of this was reachable before.
 ///
@@ -16,8 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// Every test here exists because the call became an injected contract.
 Future<void> pumpGate(WidgetTester tester, AuthRepository auth) async {
   await tester.pumpWidget(
-    ProviderScope(
-      overrides: [authRepositoryProvider.overrideWithValue(auth)],
+    withDependencies(
+      auth: auth,
       child: MaterialApp(
         theme: buildAppTheme(),
         locale: const Locale('pt', 'BR'),

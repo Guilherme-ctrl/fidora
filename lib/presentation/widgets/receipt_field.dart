@@ -1,13 +1,13 @@
 import 'dart:typed_data';
 
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/receipt_recognizer.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/receipt_scan.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
 
 /// A receipt picked but not yet stored.
@@ -32,7 +32,7 @@ class PendingReceipt {
 /// What it reads is offered, never applied: the form does not silently change a
 /// figure the person typed. A wrong amount that arrives prefilled gets
 /// confirmed along with everything else, and then it is a fact in the ledger.
-class ReceiptField extends ConsumerStatefulWidget {
+class ReceiptField extends StatefulWidget {
   const ReceiptField({
     super.key,
     required this.existingPath,
@@ -54,10 +54,10 @@ class ReceiptField extends ConsumerStatefulWidget {
   final ValueChanged<ReceiptScan> onApplyScan;
 
   @override
-  ConsumerState<ReceiptField> createState() => _ReceiptFieldState();
+  State<ReceiptField> createState() => _ReceiptFieldState();
 }
 
-class _ReceiptFieldState extends ConsumerState<ReceiptField> {
+class _ReceiptFieldState extends State<ReceiptField> {
   bool _busy = false;
   String? _failure;
 
@@ -65,7 +65,7 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final pending = widget.pending;
-    final recognizer = ref.read(receiptRecognizerProvider);
+    final recognizer = context.read<ReceiptRecognizer>();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,6 +153,8 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
   }
 
   Future<void> _pick(ImageOrigin origin) async {
+    final imageCapture = context.read<ImageCapture>();
+    final recognizer = context.read<ReceiptRecognizer>();
     setState(() {
       _busy = true;
       _failure = null;
@@ -161,14 +163,13 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
     try {
       // Downscaling is the contract's default rather than an argument spelled
       // out here: it is a property of what a receipt needs, not of this widget.
-      final picked = await ref.read(imageCaptureProvider).pick(origin);
+      final picked = await imageCapture.pick(origin);
       if (picked == null) {
         if (mounted) setState(() => _busy = false);
         return;
       }
 
       final bytes = picked.bytes;
-      final recognizer = ref.read(receiptRecognizerProvider);
       ReceiptScan? scan;
       if (recognizer.isSupported) {
         // A failed reading must not lose the photograph: the attachment is
@@ -299,42 +300,65 @@ class _ScanSummary extends StatelessWidget {
 }
 
 /// Shows a receipt already in storage, fetched through a signed URL.
-class _StoredReceipt extends ConsumerWidget {
+///
+/// A `StatefulWidget` holding one future rather than a provider family. The
+/// family existed so two receipts on screen would not share a request and so
+/// the short-lived link would be discarded; a future created once in
+/// [initState] gives both, and does not leave a registration in the
+/// presentation layer — which is where the old provider was declared, and
+/// should not have been.
+class _StoredReceipt extends StatefulWidget {
   const _StoredReceipt({required this.path});
   final String path;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final url = ref.watch(receiptUrlProvider(path));
+  State<_StoredReceipt> createState() => _StoredReceiptState();
+}
 
-    return url.when(
-      loading: () => const SizedBox(
-        height: 160,
-        child: Center(child: CircularProgressIndicator()),
-      ),
-      error: (_, _) => Text(
-        'Não foi possível carregar o comprovante.',
-        style: TextStyle(color: context.palette.negative, fontSize: 12.5),
-      ),
-      data: (value) => ClipRRect(
+class _StoredReceiptState extends State<_StoredReceipt> {
+  late Future<String> _url;
+
+  @override
+  void initState() {
+    super.initState();
+    _url = context.read<ReceiptStorage>().receiptUrl(widget.path);
+  }
+
+  @override
+  void didUpdateWidget(_StoredReceipt old) {
+    super.didUpdateWidget(old);
+    if (old.path != widget.path) {
+      _url = context.read<ReceiptStorage>().receiptUrl(widget.path);
+    }
+  }
+
+  Widget _unavailable(BuildContext context) => Text(
+    'Não foi possível carregar o comprovante.',
+    style: TextStyle(color: context.palette.negative, fontSize: 12.5),
+  );
+
+  @override
+  Widget build(BuildContext context) => FutureBuilder<String>(
+    future: _url,
+    builder: (context, snapshot) {
+      if (snapshot.hasError) return _unavailable(context);
+      final url = snapshot.data;
+      if (url == null) {
+        return const SizedBox(
+          height: 160,
+          child: Center(child: CircularProgressIndicator()),
+        );
+      }
+      return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.network(
-          value,
+          url,
           height: 160,
           width: double.infinity,
           fit: BoxFit.cover,
-          errorBuilder: (context, _, _) => Text(
-            'Não foi possível carregar o comprovante.',
-            style: TextStyle(color: context.palette.negative, fontSize: 12.5),
-          ),
+          errorBuilder: (context, _, _) => _unavailable(context),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
-
-/// A signed URL for one stored receipt. Family-keyed so two receipts on screen
-/// do not share one request, and auto-disposed because the link is short-lived.
-final receiptUrlProvider = FutureProvider.autoDispose.family<String, String>(
-  (ref, path) => ref.watch(receiptStorageProvider).receiptUrl(path),
-);

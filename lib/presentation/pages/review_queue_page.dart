@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/merchant_identity.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -12,8 +11,12 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/services.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/cubits/catalog_cubits.dart';
+import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Items that ask the same question about the same place.
 ///
@@ -95,14 +98,23 @@ class _Group {
 /// grouped, so twenty-four become six real decisions. One group is on screen at
 /// a time, so the next decision is all that is visible. And progress is shown
 /// and moves, so clearing has a direction and an end.
-class ReviewQueuePage extends ConsumerStatefulWidget {
+class ReviewQueuePage extends StatefulWidget {
   const ReviewQueuePage({super.key});
 
   @override
-  ConsumerState<ReviewQueuePage> createState() => _ReviewQueuePageState();
+  State<ReviewQueuePage> createState() => _ReviewQueuePageState();
 }
 
-class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
+class _ReviewQueuePageState extends State<ReviewQueuePage> {
+  @override
+  void initState() {
+    super.initState();
+    // The queue was a FutureProvider and fetched on first watch. A cubit does
+    // not, so the screen asks — which keeps the fetch off the app's first
+    // paint, where it never belonged.
+    context.read<ReviewQueueCubit>().loadOnce();
+  }
+
   int _cursor = 0;
 
   /// How many items this sitting has settled, and how many decisions it took.
@@ -116,11 +128,13 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
   bool _finished = false;
 
   Future<void> _settleGroup(_Group group, String status) async {
+    final review = context.read<ReviewRepository>();
+    final reviewQueue = context.read<ReviewQueueCubit>();
+    final finance = context.read<FinanceCubit>();
     setState(() => _exit = status == 'resolved' ? 1 : -1);
-    final repository = ref.read(reviewRepositoryProvider);
     try {
       for (final item in group.items) {
-        await repository.settleReview(item.id, status: status);
+        await review.settleReview(item.id, status: status);
       }
       if (!mounted) return;
       setState(() {
@@ -128,8 +142,8 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
         _decisions += 1;
         _cursor = 0;
       });
-      await refreshReviewQueue(ref);
-      ref.invalidate(financeSnapshotProvider);
+      await reviewQueue.reload();
+      finance.reloadAll();
     } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(
@@ -149,6 +163,10 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
     FinanceTransaction transaction,
     FinanceSnapshot snapshot,
   ) async {
+    final transactions = context.read<TransactionRepository>();
+    final review = context.read<ReviewRepository>();
+    final finance = context.read<FinanceCubit>();
+    final reviewQueue = context.read<ReviewQueueCubit>();
     final item = group.items.firstWhere(
       (row) => row.transactionId == transaction.id,
       orElse: () => group.first,
@@ -158,12 +176,10 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
       snapshot: snapshot,
       existing: transaction,
       onSave: (draft) async {
-        await ref.read(transactionRepositoryProvider).saveTransaction(draft);
-        await ref
-            .read(reviewRepositoryProvider)
-            .settleReview(item.id, status: 'resolved');
-        await refreshLedger(ref);
-        await refreshReviewQueue(ref);
+        await transactions.saveTransaction(draft);
+        await review.settleReview(item.id, status: 'resolved');
+        await finance.reloadLedger();
+        await reviewQueue.reload();
       },
     );
     if (saved != true || !mounted) return;
@@ -172,7 +188,7 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
       _decisions += 1;
       _exit = 1;
     });
-    ref.invalidate(financeSnapshotProvider);
+    finance.reloadAll();
   }
 
   void _move(int delta, int length) {
@@ -182,9 +198,9 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
 
   @override
   Widget build(BuildContext context) {
-    final queue = ref.watch(reviewQueueProvider);
-    final snapshot = ref.watch(financeSnapshotProvider).value;
-    final items = queue.value ?? const <ReviewItem>[];
+    final queue = context.watch<ReviewQueueCubit>().state;
+    final snapshot = context.watch<FinanceCubit>().state.snapshot;
+    final items = queue.dataOrNull ?? const <ReviewItem>[];
     final groups = _Group.from(items, snapshot);
     if (_startedWith == 0 && items.isNotEmpty) _startedWith = items.length;
     if (_cursor >= groups.length && groups.isNotEmpty) {
@@ -213,15 +229,10 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
         autofocus: true,
         child: Scaffold(
           appBar: AppBar(title: const Text('Revisões')),
-          body: queue.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (error, _) =>
-                _QueueError(onRetry: () => ref.invalidate(reviewQueueProvider)),
-            // Grouping needs the ledger: without it the key falls back to the
-            // reason, and the card visibly changes identity a beat after the
-            // screen opens — "Classificação com baixa confiança (4)" becoming
-            // "UNIFIQUE TELECOM (3)". Waiting is the honest render.
-            data: (_) => snapshot == null
+          body: switch (queue) {
+          LoadFailed() => _QueueError(onRetry: () => context.read<ReviewQueueCubit>().reload()),
+          LoadSuccess(data: final _) ||
+          LoadReloading(previous: final _) => snapshot == null
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                     children: [
@@ -263,7 +274,8 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
                         ),
                     ],
                   ),
-          ),
+          _ => const Center(child: CircularProgressIndicator()),
+        },
         ),
       ),
     );
