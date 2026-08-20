@@ -1,5 +1,12 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/data/supabase_failures.dart';
 import 'package:financeiro_ai/domain/auth_rules.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Failure failureFor(String message) =>
+    AuthException(message).toFailure(StackTrace.current);
 
 void main() {
   group('validateEmail', () {
@@ -57,36 +64,50 @@ void main() {
     });
   });
 
-  group('friendlyAuthMessage', () {
-    test('translates the failures a person actually hits', () {
+  group('Falhas de autenticação', () {
+    // This classification used to live in `domain/auth_rules.dart`, matching
+    // substrings of Supabase's English inside the domain layer. It now happens
+    // where knowing Supabase is the job, and the result is a type rather than
+    // a sentence — so these assert both halves.
+    test('names the failures a person actually hits', () {
+      expect(failureFor('Invalid login credentials'), isA<InvalidCredentials>());
+      expect(failureFor('Email not confirmed'), isA<EmailNotConfirmed>());
       expect(
-        friendlyAuthMessage('Invalid login credentials'),
-        'E-mail ou senha incorretos.',
+        failureFor('User already registered'),
+        isA<EmailAlreadyRegistered>(),
       );
       expect(
-        friendlyAuthMessage('Email not confirmed'),
-        'Confirme seu e-mail antes de entrar.',
-      );
-      expect(
-        friendlyAuthMessage('User already registered'),
-        'Já existe uma conta com este e-mail.',
-      );
-      expect(
-        friendlyAuthMessage(
+        failureFor(
           'For security purposes, you can only request this after 51 seconds.',
         ),
-        'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.',
+        isA<TooManyAttempts>(),
       );
       expect(
-        friendlyAuthMessage(
-          'New password should be different from the old password.',
-        ),
-        'A nova senha precisa ser diferente da anterior.',
+        failureFor('New password should be different from the old password.'),
+        isA<PasswordUnchanged>(),
       );
     });
 
+    test('a wrong pair says nothing about which half was wrong', () {
+      // The screen must not become a way to discover which addresses have
+      // accounts, so the copy names neither field.
+      final copy = FailureCopy.of(failureFor('Invalid login credentials'));
+      expect(copy.message, 'E-mail ou senha incorretos');
+    });
+
+    test('rate limiting is business, not a broken server', () {
+      expect(failureFor('rate limit exceeded'), isA<BusinessFailure>());
+      expect(FailureCopy.of(failureFor('rate limit exceeded')).canRetry, isTrue);
+    });
+
+    test('an expired token is a session problem, not a credential one', () {
+      expect(failureFor('JWT expired'), isA<SessionExpired>());
+    });
+
     test('passes through anything it does not recognise', () {
-      expect(friendlyAuthMessage('Algo inesperado'), 'Algo inesperado');
+      final failure = failureFor('Algo inesperado');
+      expect(failure, isA<AuthenticationFailure>());
+      expect(FailureCopy.of(failure).message, 'Algo inesperado');
     });
   });
 }

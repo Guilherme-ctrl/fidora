@@ -39,26 +39,3 @@ AuthFieldErrors validateNewPassword(String password, String confirmation) =>
       confirmation: validateConfirmation(password, confirmation),
     );
 
-/// Turns a Supabase auth failure into something worth reading.
-String friendlyAuthMessage(String raw) {
-  final text = raw.toLowerCase();
-  if (text.contains('invalid login credentials')) {
-    return 'E-mail ou senha incorretos.';
-  }
-  if (text.contains('email not confirmed')) {
-    return 'Confirme seu e-mail antes de entrar.';
-  }
-  if (text.contains('user already registered')) {
-    return 'Já existe uma conta com este e-mail.';
-  }
-  if (text.contains('for security purposes') || text.contains('rate limit')) {
-    return 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.';
-  }
-  // Supabase says "should be different from the old password"; older builds
-  // said "same as the old password". Both mean the same refusal.
-  if (text.contains('different from the old password') ||
-      text.contains('same as the old password')) {
-    return 'A nova senha precisa ser diferente da anterior.';
-  }
-  return raw;
-}

@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/domain/auth_repository.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -98,6 +99,14 @@ final financeRepositoryProvider = Provider<FinanceRepository>(
     'FinanceRepository must be overridden at startup.',
   ),
 );
+/// Overridden at start-up, beside the finance repository, so the two data
+/// paths are composed in the same place.
+final authRepositoryProvider = Provider<AuthRepository>(
+  (ref) => throw UnimplementedError(
+    'AuthRepository must be overridden at startup.',
+  ),
+);
+
 final financeCatalogProvider = FutureProvider<FinanceCatalog>(
   (ref) => ref.watch(financeRepositoryProvider).loadCatalog(),
 );

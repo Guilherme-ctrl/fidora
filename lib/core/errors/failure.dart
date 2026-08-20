@@ -150,15 +150,44 @@ final class StorageUnavailable extends TechnicalFailure {
   const StorageUnavailable();
 }
 
-/// Credentials were rejected, or the account cannot be created.
+/// An authentication refusal nothing more specific matched.
 ///
-/// Carries the provider's own text: authentication failures are numerous,
-/// change with provider configuration, and the provider phrases them for the
-/// end user. Typing every one of them would be inventing a taxonomy that only
-/// this class would ever read.
+/// Carries the provider's own text. The refusals worth acting on are typed as
+/// [BusinessFailure] below; this is the tail, and it keeps the raw sentence
+/// rather than inventing copy for a case nobody has seen.
 final class AuthenticationFailure extends TechnicalFailure {
   const AuthenticationFailure(this.reason);
   final String reason;
+}
+
+// --------------------------------------------------------------------------
+// Business — authentication
+// --------------------------------------------------------------------------
+
+/// The pair does not match. Deliberately says nothing about which half was
+/// wrong: the screen must not become a way to find out which addresses have
+/// accounts.
+final class InvalidCredentials extends BusinessFailure {
+  const InvalidCredentials();
+}
+
+final class EmailNotConfirmed extends BusinessFailure {
+  const EmailNotConfirmed();
+}
+
+final class EmailAlreadyRegistered extends BusinessFailure {
+  const EmailAlreadyRegistered();
+}
+
+/// The provider is rate-limiting. Business rather than technical: nothing is
+/// broken, and waiting is the correct response.
+final class TooManyAttempts extends BusinessFailure {
+  const TooManyAttempts();
+}
+
+/// A new password identical to the old one.
+final class PasswordUnchanged extends BusinessFailure {
+  const PasswordUnchanged();
 }
 
 // --------------------------------------------------------------------------

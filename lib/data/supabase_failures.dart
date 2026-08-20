@@ -62,9 +62,32 @@ extension StorageFailure on StorageException {
   }
 }
 
+/// The refusals worth acting on, typed.
+///
+/// This classification lived in `domain/auth_rules.dart` as
+/// `friendlyAuthMessage`, matching substrings of Supabase's English against
+/// Portuguese replacements — the domain layer reading a library's error prose.
+/// The matching has to happen somewhere, because the provider only offers
+/// sentences; it belongs here, where knowing Supabase is the job.
 extension AuthFailure on AuthException {
   Failure toFailure(StackTrace stack) {
-    final text = '$statusCode $message'.toLowerCase();
+    final text = message.toLowerCase();
+    if (text.contains('invalid login credentials')) {
+      return const InvalidCredentials();
+    }
+    if (text.contains('email not confirmed')) return const EmailNotConfirmed();
+    if (text.contains('user already registered')) {
+      return const EmailAlreadyRegistered();
+    }
+    if (text.contains('for security purposes') || text.contains('rate limit')) {
+      return const TooManyAttempts();
+    }
+    // Supabase says "should be different from the old password"; older builds
+    // said "same as the old password". Both mean the same refusal.
+    if (text.contains('different from the old password') ||
+        text.contains('same as the old password')) {
+      return const PasswordUnchanged();
+    }
     if (text.contains('jwt') || text.contains('expired')) {
       return const SessionExpired();
     }

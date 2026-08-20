@@ -1,10 +1,14 @@
+import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/domain/auth_repository.dart';
 import 'package:financeiro_ai/domain/auth_rules.dart';
 import 'package:financeiro_ai/presentation/app_shell.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AuthGate extends StatelessWidget {
+class AuthGate extends ConsumerWidget {
   const AuthGate({this.child, super.key});
 
   /// The routed shell. Given by the router so the address bar keeps working
@@ -13,14 +17,14 @@ class AuthGate extends StatelessWidget {
   final Widget? child;
 
   @override
-  Widget build(BuildContext context) {
-    final auth = Supabase.instance.client.auth;
-    return StreamBuilder<AuthState>(
-      stream: auth.onAuthStateChange,
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authRepositoryProvider);
+    return StreamBuilder<AuthChange>(
+      stream: auth.changes(),
       builder: (context, snapshot) {
         // A recovery link signs the person in; without this branch it would
         // drop them on the dashboard with no way to set a new password.
-        if (snapshot.data?.event == AuthChangeEvent.passwordRecovery) {
+        if (snapshot.data?.event == AuthEvent.passwordRecovery) {
           return const NewPasswordPage();
         }
         if (auth.currentSession == null) {
@@ -32,14 +36,14 @@ class AuthGate extends StatelessWidget {
   }
 }
 
-class AuthPage extends StatefulWidget {
+class AuthPage extends ConsumerStatefulWidget {
   const AuthPage({super.key});
 
   @override
-  State<AuthPage> createState() => _AuthPageState();
+  ConsumerState<AuthPage> createState() => _AuthPageState();
 }
 
-class _AuthPageState extends State<AuthPage> {
+class _AuthPageState extends ConsumerState<AuthPage> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -58,13 +62,13 @@ class _AuthPageState extends State<AuthPage> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _loading = true);
     try {
-      final auth = Supabase.instance.client.auth;
+      final auth = ref.read(authRepositoryProvider);
       if (_createAccount) {
-        final response = await auth.signUp(
+        final outcome = await auth.signUp(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        if (response.session == null && mounted) {
+        if (outcome == SignUpOutcome.confirmationRequired && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
@@ -75,15 +79,15 @@ class _AuthPageState extends State<AuthPage> {
           setState(() => _createAccount = false);
         }
       } else {
-        await auth.signInWithPassword(
+        await auth.signIn(
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
       }
-    } on AuthException catch (error) {
+    } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyAuthMessage(error.message))),
+          SnackBar(content: Text(FailureCopy.of(failure).short)),
         );
       }
     } finally {
@@ -105,11 +109,11 @@ class _AuthPageState extends State<AuthPage> {
     }
     setState(() => _loading = true);
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
-    } on AuthException catch (error) {
+      await ref.read(authRepositoryProvider).sendPasswordRecovery(email);
+    } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyAuthMessage(error.message))),
+          SnackBar(content: Text(FailureCopy.of(failure).short)),
         );
         setState(() => _loading = false);
       }
@@ -248,15 +252,16 @@ class _AuthPageState extends State<AuthPage> {
   );
 }
 
-/// Shown when the person arrives through a recovery link. Supabase has already
-/// signed them in at this point, so the only thing missing is the new password.
-class NewPasswordPage extends StatefulWidget {
+/// Shown when the person arrives through a recovery link. The recovery event
+/// has already signed them in at this point, so the only thing missing is the
+/// new password.
+class NewPasswordPage extends ConsumerStatefulWidget {
   const NewPasswordPage({super.key});
   @override
-  State<NewPasswordPage> createState() => _NewPasswordPageState();
+  ConsumerState<NewPasswordPage> createState() => _NewPasswordPageState();
 }
 
-class _NewPasswordPageState extends State<NewPasswordPage> {
+class _NewPasswordPageState extends ConsumerState<NewPasswordPage> {
   final _password = TextEditingController();
   final _confirmation = TextEditingController();
   bool _loading = false;
@@ -277,18 +282,16 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
 
     setState(() => _loading = true);
     try {
-      await Supabase.instance.client.auth.updateUser(
-        UserAttributes(password: _password.text),
-      );
+      await ref.read(authRepositoryProvider).updatePassword(_password.text);
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Senha atualizada.')));
       }
-    } on AuthException catch (error) {
+    } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(friendlyAuthMessage(error.message))),
+          SnackBar(content: Text(FailureCopy.of(failure).short)),
         );
       }
     } finally {

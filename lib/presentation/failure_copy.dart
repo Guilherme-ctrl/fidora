@@ -102,6 +102,36 @@ class FailureCopy {
       detail: 'ValidationFailure',
       canRetry: false,
     ),
+    InvalidCredentials() => const FailureCopy(
+      message: 'E-mail ou senha incorretos',
+      hint: 'Confira os dois campos e tente novamente.',
+      detail: 'InvalidCredentials',
+      canRetry: false,
+    ),
+    EmailNotConfirmed() => const FailureCopy(
+      message: 'Confirme seu e-mail antes de entrar',
+      hint: 'O link de confirmação foi enviado quando a conta foi criada.',
+      detail: 'EmailNotConfirmed',
+      canRetry: false,
+    ),
+    EmailAlreadyRegistered() => const FailureCopy(
+      message: 'Já existe uma conta com este e-mail',
+      hint: 'Entre com ela, ou recupere a senha.',
+      detail: 'EmailAlreadyRegistered',
+      canRetry: false,
+    ),
+    TooManyAttempts() => const FailureCopy(
+      message: 'Muitas tentativas seguidas',
+      hint: 'Aguarde um minuto e tente de novo.',
+      detail: 'TooManyAttempts',
+      canRetry: true,
+    ),
+    PasswordUnchanged() => const FailureCopy(
+      message: 'A nova senha precisa ser diferente da anterior',
+      hint: 'Escolha uma senha que você ainda não usou aqui.',
+      detail: 'PasswordUnchanged',
+      canRetry: false,
+    ),
     SessionExpired() => const FailureCopy(
       message: 'Sua sessão expirou',
       hint: 'Entre novamente para continuar.',

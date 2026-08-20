@@ -3,7 +3,10 @@ import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/url_strategy.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
+import 'package:financeiro_ai/data/fake_auth_repository.dart';
+import 'package:financeiro_ai/data/supabase_auth_repository.dart';
 import 'package:financeiro_ai/data/supabase_finance_repository.dart';
+import 'package:financeiro_ai/domain/auth_repository.dart';
 import 'package:financeiro_ai/presentation/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -21,17 +24,26 @@ Future<void> main() async {
   const useSupabase = bool.fromEnvironment('USE_SUPABASE');
 
   FinanceRepository repository = DemoFinanceRepository();
+  AuthRepository auth = FakeAuthRepository();
   if (useSupabase && supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty) {
     await Supabase.initialize(
       url: supabaseUrl,
       publishableKey: supabaseAnonKey,
     );
-    repository = SupabaseFinanceRepository(Supabase.instance.client);
+    // The client is read once, here, and handed to both repositories. Nothing
+    // below this line reaches for `Supabase.instance` — the sign-in screen used
+    // to, which is why none of it could be tested.
+    final client = Supabase.instance.client;
+    repository = SupabaseFinanceRepository(client);
+    auth = SupabaseAuthRepository(client);
   }
 
   runApp(
     ProviderScope(
-      overrides: [financeRepositoryProvider.overrideWithValue(repository)],
+      overrides: [
+        financeRepositoryProvider.overrideWithValue(repository),
+        authRepositoryProvider.overrideWithValue(auth),
+      ],
       child: FinanceiroApp(useSupabase: useSupabase),
     ),
   );
