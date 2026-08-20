@@ -371,3 +371,19 @@ recorded verbatim and is never summarized.
 **Context**: Construction / Code Generation — unidades 1 a 3 de 10. Branch `arch-audit`.
 
 ---
+
+## Construction — Code Generation (unidades 4 a 6)
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "[execução autônoma — 'Seguir direto até o fim'; retomada após limite de uso]"
+**AI Response**: "**Unidade 4 (`domain-purity`)**: três contaminações, uma causa — o domain carregava coisas das camadas dos dois lados. `IconData` e `Color` em duas entidades bastavam para prender a camada de regras ao Material e, pior, para **forçar os dois repositórios a importarem Material também**, porque construir uma entidade significava resolver um ícone: infraestrutura dependendo da tinta do framework. A entidade guarda as strings que o banco já armazena e uma extension na apresentação resolve, então todo ponto de uso continua lendo `category.icon`. Dez dos catorze `fromJson` viraram funções em `lib/data`; `InvoiceImportDocument` manteve o seu de propósito, porque aquilo é documento versionado do próprio app, não formato de linha. `package:excel` saiu para a infra; o leitor de texto delimitado ficou, porque detectar separador é Dart puro. **As 33 imagens de referência passaram inalteradas — essa é a prova de que tirar a tinta da entidade não mudou um pixel.** **Unidade 5 (`repository-split`)**: 31 métodos em nove áreas viraram seis contratos, e o contrato central saiu de `lib/application` — um arquivo que importava Riverpod — para `lib/domain`. As implementações continuam uma classe cada. **Unidade 6 (`state-migration`)**: recomendei contra e o dono escolheu; executei. Não corrigiu defeito nenhum — Riverpod já cumpria o papel. **O que ela expôs é real**: `WidgetRef` é seguro através de `await` e `BuildContext` não é, e a conversão mecânica produziu 25 pontos lendo colaborador depois de um await, que é classe de bug viva. Todos içados acima do primeiro await. As quatro telas de lista eram `FutureProvider` mais um `refreshX(ref)` escrito à mão, quatro vezes, idênticos exceto pelo provider invalidado — agora dividem um `ListCubit`. Três goldens do shell foram regerados, e **não porque algo ficou diferente**: o teste bombeava exatamente `Motion.count`, mas o repositório demo dorme antes de responder, então o anel de progresso nem tinha começado a varrer quando a imagem era tirada — a referência era um quadro de animação em curso. Os pixels que mudaram são a ponta antisserrilhada de um arco. De 632 para 633 testes; `flutter analyze --fatal-infos` limpo."
+**Context**: Construction / Code Generation — unidades 4 a 6 de 10.
+
+---
+
+## Workflow Planning — reordenação das unidades 7 e 8
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "[decisão minha durante execução autônoma]"
+**AI Response**: "Troquei a ordem de `import-usecase` e `modularization`. O plano os tinha como 7 e 8, com o argumento de que mover arquivos por último evita um diff que esconde as correções. Esse argumento valia contra as unidades 1 a 6, que eram o desacoplamento pesado, e elas estão feitas. Com elas prontas, criar o caso de uso de importação **antes** da mudança de pastas significa escrevê-lo em `lib/presentation` e movê-lo em seguida; criá-lo depois significa escrevê-lo direto em `features/imports/domain/usecases`, que é onde ele mora. Registro porque é desvio do plano aprovado, e a razão é evitar escrever duas vezes, não conveniência."
+**Context**: Workflow Planning — ajuste de sequência durante a execução.
+
+---
