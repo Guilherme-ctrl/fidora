@@ -1,7 +1,7 @@
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/statement_import.dart';
-import 'package:financeiro_ai/domain/statement_sheet.dart';
-import 'package:financeiro_ai/presentation/widgets/statement_context_sheet.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_import.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_sheet.dart';
+import 'package:financeiro_ai/features/imports/presenter/widgets/statement_context_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CreditCard _card({int closingDay = 20}) => CreditCard(

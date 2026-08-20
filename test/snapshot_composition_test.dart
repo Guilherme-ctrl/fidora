@@ -1,7 +1,7 @@
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/presentation/cubits/finance_cubit.dart';
-import 'package:financeiro_ai/presentation/states/finance_state.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/features/ledger/presenter/states/finance_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 

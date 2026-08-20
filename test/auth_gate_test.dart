@@ -1,8 +1,8 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/data/fake_auth_repository.dart';
-import 'package:financeiro_ai/domain/auth_repository.dart';
-import 'package:financeiro_ai/presentation/auth_gate.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/auth/infra/repositories/fake_auth_repository.dart';
+import 'package:financeiro_ai/features/auth/domain/repositories/auth_repository.dart';
+import 'package:financeiro_ai/features/auth/presenter/pages/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';

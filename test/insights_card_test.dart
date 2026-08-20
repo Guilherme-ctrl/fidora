@@ -1,7 +1,7 @@
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/presentation/widgets/insights_card.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/overview/presenter/widgets/insights_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';

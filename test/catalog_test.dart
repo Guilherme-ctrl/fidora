@@ -1,7 +1,7 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/presentation/category_visuals.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/catalog_drafts.dart';
+import 'package:financeiro_ai/features/catalog/presenter/category_visuals.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/catalog/domain/catalog_drafts.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

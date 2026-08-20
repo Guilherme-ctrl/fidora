@@ -1,5 +1,5 @@
-import 'package:financeiro_ai/domain/csv_export.dart';
-import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/features/imports/domain/csv_export.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 FinanceTransaction tx({

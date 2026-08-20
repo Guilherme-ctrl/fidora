@@ -1,5 +1,5 @@
-import 'package:financeiro_ai/domain/invoice_forecast.dart';
-import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/features/invoices/domain/invoice_forecast.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CreditCard _card({int closingDay = 20, String lastFour = '1234'}) => CreditCard(

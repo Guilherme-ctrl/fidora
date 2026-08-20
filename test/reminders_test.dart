@@ -1,5 +1,5 @@
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/reminders.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/reminders/domain/reminders.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CreditCard _card({String id = 'card-1', String name = 'Nubank'}) => CreditCard(

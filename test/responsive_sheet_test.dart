@@ -1,5 +1,5 @@
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

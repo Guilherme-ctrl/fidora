@@ -1,7 +1,7 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/data/supabase_failures.dart';
-import 'package:financeiro_ai/domain/auth_rules.dart';
-import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/features/ledger/infra/supabase_failures.dart';
+import 'package:financeiro_ai/features/auth/domain/auth_rules.dart';
+import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 

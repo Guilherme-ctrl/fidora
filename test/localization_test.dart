@@ -1,6 +1,6 @@
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';

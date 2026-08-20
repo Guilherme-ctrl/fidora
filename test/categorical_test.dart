@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/core/theme.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

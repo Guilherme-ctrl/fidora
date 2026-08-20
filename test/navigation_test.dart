@@ -1,9 +1,9 @@
-import 'package:financeiro_ai/core/breakpoints.dart';
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/presentation/app_shell.dart';
-import 'package:financeiro_ai/presentation/pages/today_page.dart';
-import 'package:financeiro_ai/presentation/widgets/navigation.dart';
+import 'package:financeiro_ai/core/theme/breakpoints.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/shell/presenter/pages/app_shell.dart';
+import 'package:financeiro_ai/features/overview/presenter/pages/today_page.dart';
+import 'package:financeiro_ai/core/design_system/navigation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

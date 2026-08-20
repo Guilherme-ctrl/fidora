@@ -1,9 +1,9 @@
-import 'package:financeiro_ai/data/row_mappers.dart';
+import 'package:financeiro_ai/features/ledger/infra/models/row_mappers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/finance_rules.dart';
-import 'package:financeiro_ai/domain/merchant_rule.dart';
-import 'package:financeiro_ai/domain/review_item.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/finance_rules.dart';
+import 'package:financeiro_ai/features/review/domain/merchant_rule.dart';
+import 'package:financeiro_ai/features/review/domain/review_item.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

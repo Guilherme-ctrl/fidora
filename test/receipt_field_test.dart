@@ -1,14 +1,14 @@
 import 'dart:typed_data';
 
-import 'package:financeiro_ai/application/receipt_recognizer.dart';
+import 'package:financeiro_ai/features/transactions/infra/receipt_recognizer.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/receipt_scan.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
-import 'package:financeiro_ai/presentation/widgets/receipt_field.dart';
-import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/transactions/domain/receipt_scan.dart';
+import 'package:financeiro_ai/features/transactions/domain/transaction_draft.dart';
+import 'package:financeiro_ai/features/transactions/presenter/widgets/receipt_field.dart';
+import 'package:financeiro_ai/features/transactions/presenter/widgets/transaction_form_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

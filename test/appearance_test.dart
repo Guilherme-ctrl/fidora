@@ -1,8 +1,8 @@
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/presentation/cubits/appearance_cubit.dart';
-import 'package:financeiro_ai/presentation/pages/more_page.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/settings/presenter/cubits/appearance_cubit.dart';
+import 'package:financeiro_ai/features/settings/presenter/pages/more_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';

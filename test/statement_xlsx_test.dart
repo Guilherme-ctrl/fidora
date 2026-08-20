@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
-import 'package:financeiro_ai/data/xlsx_reader.dart';
-import 'package:financeiro_ai/domain/statement_sheet.dart';
+import 'package:financeiro_ai/features/imports/infra/xlsx_reader.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Builds a real .xlsx in memory, so the reader is exercised against the actual

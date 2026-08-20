@@ -1,20 +1,20 @@
 @Tags(['golden'])
 library;
 
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_filter.dart';
-import 'package:financeiro_ai/presentation/pages/cards_page.dart';
-import 'package:financeiro_ai/presentation/pages/categories_page.dart';
-import 'package:financeiro_ai/presentation/pages/dashboard_page.dart';
-import 'package:financeiro_ai/presentation/pages/more_page.dart';
-import 'package:financeiro_ai/presentation/pages/projection_page.dart';
-import 'package:financeiro_ai/presentation/pages/review_queue_page.dart';
-import 'package:financeiro_ai/presentation/pages/today_page.dart';
-import 'package:financeiro_ai/presentation/pages/transactions_page.dart';
-import 'package:financeiro_ai/presentation/app_shell.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/transactions/domain/transaction_filter.dart';
+import 'package:financeiro_ai/features/invoices/presenter/pages/cards_page.dart';
+import 'package:financeiro_ai/features/catalog/presenter/pages/categories_page.dart';
+import 'package:financeiro_ai/features/overview/presenter/pages/dashboard_page.dart';
+import 'package:financeiro_ai/features/settings/presenter/pages/more_page.dart';
+import 'package:financeiro_ai/features/invoices/presenter/pages/projection_page.dart';
+import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
+import 'package:financeiro_ai/features/overview/presenter/pages/today_page.dart';
+import 'package:financeiro_ai/features/transactions/presenter/pages/transactions_page.dart';
+import 'package:financeiro_ai/features/shell/presenter/pages/app_shell.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

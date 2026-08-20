@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/domain/receipt_scan.dart';
+import 'package:financeiro_ai/features/transactions/domain/receipt_scan.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

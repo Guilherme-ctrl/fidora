@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/domain/finance_rules.dart';
+import 'package:financeiro_ai/features/ledger/domain/finance_rules.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

@@ -1,6 +1,6 @@
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/core/tokens.dart';
-import 'package:financeiro_ai/core/typography.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/core/theme/tokens.dart';
+import 'package:financeiro_ai/core/theme/typography.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

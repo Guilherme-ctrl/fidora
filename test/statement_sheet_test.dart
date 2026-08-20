@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/domain/statement_sheet.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 List<List<String>> _sheet(List<List<String>> rows) => rows;

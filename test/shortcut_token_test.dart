@@ -1,6 +1,6 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/domain/shortcut_token.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/settings/domain/shortcut_token.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

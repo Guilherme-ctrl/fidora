@@ -1,12 +1,12 @@
-import 'package:financeiro_ai/data/row_mappers.dart';
+import 'package:financeiro_ai/features/ledger/infra/models/row_mappers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/domain/invoice_status.dart';
-import 'package:financeiro_ai/data/demo_finance_repository.dart';
-import 'package:financeiro_ai/data/supabase_failures.dart';
-import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/features/invoices/domain/invoice_status.dart';
+import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/infra/supabase_failures.dart';
+import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:financeiro_ai/domain/comparison.dart';
-import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/features/overview/domain/comparison.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Invoice invoice({required String status, required DateTime dueDate}) => Invoice(

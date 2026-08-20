@@ -1,6 +1,6 @@
-import 'package:financeiro_ai/domain/invoice_import.dart';
-import 'package:financeiro_ai/domain/statement_import.dart';
-import 'package:financeiro_ai/domain/statement_sheet.dart';
+import 'package:financeiro_ai/features/imports/domain/invoice_import.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_import.dart';
+import 'package:financeiro_ai/features/imports/domain/statement_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 StatementContext _context() => StatementContext(

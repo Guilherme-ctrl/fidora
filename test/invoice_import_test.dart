@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:financeiro_ai/domain/invoice_import.dart';
+import 'package:financeiro_ai/features/imports/domain/invoice_import.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

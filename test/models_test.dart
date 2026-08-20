@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/data/row_mappers.dart';
+import 'package:financeiro_ai/features/ledger/infra/models/row_mappers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

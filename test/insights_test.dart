@@ -1,6 +1,6 @@
-import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/domain/insights.dart';
-import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/overview/domain/insights.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 FinanceTransaction charge(

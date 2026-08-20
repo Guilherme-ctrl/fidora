@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/domain/amount_input.dart';
+import 'package:financeiro_ai/features/transactions/domain/amount_input.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

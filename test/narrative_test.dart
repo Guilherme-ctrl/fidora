@@ -1,6 +1,6 @@
-import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/narrative.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/overview/domain/narrative.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 String _money(double value) =>

@@ -1,4 +1,4 @@
-import 'package:financeiro_ai/domain/merchant_identity.dart';
+import 'package:financeiro_ai/features/review/domain/merchant_identity.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Descriptions in the shapes Brazilian banks actually write them.

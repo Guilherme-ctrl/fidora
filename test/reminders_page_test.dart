@@ -1,7 +1,7 @@
-import 'package:financeiro_ai/application/reminder_service.dart';
-import 'package:financeiro_ai/core/theme.dart';
-import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/presentation/pages/reminders_page.dart';
+import 'package:financeiro_ai/features/reminders/infra/reminder_service.dart';
+import 'package:financeiro_ai/core/theme/theme.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
+import 'package:financeiro_ai/features/reminders/presenter/pages/reminders_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';

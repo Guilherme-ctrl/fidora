@@ -12,7 +12,7 @@
 
 import 'dart:io';
 
-import 'package:financeiro_ai/domain/merchant_identity.dart';
+import 'package:financeiro_ai/features/review/domain/merchant_identity.dart';
 
 void main(List<String> args) {
   final files = args.where((a) => !a.startsWith('--')).toList();
