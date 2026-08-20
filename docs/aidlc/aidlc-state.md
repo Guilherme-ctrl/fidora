@@ -607,7 +607,7 @@ Features:               0
 | Reverse engineering | Pulado | `docs/aidlc/00–04` já documentam o sistema |
 | Requirements analysis | Completo | Auditoria em doze eixos; violações em formato P0–P3 |
 | User stories | Pulado | Produto de dono único; nenhuma mudança de comportamento observável |
-| Workflow planning | **Aguardando aprovação** | Nove unidades sequenciadas; uma decisão pendente com o dono |
+| Workflow planning | Completo | Dez unidades; dono escolheu Bloc e execução sem portões |
 | Application design | Pendente | Depende da decisão sobre gerenciamento de estado |
 | Units generation | Completo | Nove unidades, em `docs/aidlc/plans/arch-remake.md` |
 
@@ -615,9 +615,9 @@ Features:               0
 
 | # | Unidade | Achados | Move arquivos? | Status |
 |---|---|---|---|---|
-| 1 | `failures` | P0.2, P1.4, P2.3 | não | Não iniciada |
-| 2 | `auth-boundary` | P0.1 | não | Não iniciada |
-| 3 | `platform-boundaries` | P1.3 | não | Não iniciada |
+| 1 | `failures` | P0.2, P1.4, P2.3 | não | **Completa** — 619 testes |
+| 2 | `auth-boundary` | P0.1 | não | **Completa** — 630 testes |
+| 3 | `platform-boundaries` | P1.3 | não | **Completa** — 632 testes |
 | 4 | `domain-purity` | P0.3, P2.4 | não | Não iniciada |
 | 5 | `repository-split` | P1.1 | não | Não iniciada |
 | 6 | `import-usecase` | P1.2 | não | Não iniciada |
@@ -634,10 +634,25 @@ desacopla nada por si só; as unidades 1 a 6 desacoplam sem mover um arquivo de
 lugar. Feita primeiro, a mudança de pastas produz um diff que esconde as
 correções que importam.
 
-### Decisão pendente com o dono
+### Decisão do dono sobre gerenciamento de estado
 
-**Riverpod ou Bloc.** O documento de referência diz "Utilizar Cubit/BLoC". O
-projeto usa Riverpod em toda parte e o caminho de leitura está bem resolvido.
-Migrar é reescrita ampla sem ganho arquitetural — o mesmo documento adverte
-contra dogmatismo —, mas ele nomeia Bloc explicitamente. Decisão do dono,
-registrada aqui antes de as unidades 6 e 8 serem escritas.
+**Bloc, contra a minha recomendação.** Eu recomendei manter Riverpod,
+argumentando que ele já cumpre o papel arquitetural do Cubit e que o que falta
+é a camada de escrita, não a biblioteca. O dono escolheu conformidade literal
+com o documento de referência. Registrado porque a divergência importa mais que
+a concordância, e executado por inteiro: entrou a unidade 6 `state-migration` e
+o plano foi de nove para dez unidades.
+
+### Descobertas das unidades 1 a 3
+
+**Duas regressões silenciosas que a tipagem de falhas revelou.** Row-level
+security e sessão expirada produziam a mesma frase, então um bug de posse de
+dados era indistinguível de um problema de login. E o caminho de leitura do
+repositório não capturava nada: `loadCatalog` e `loadLedger` deixavam
+`PostgrestException` escapar cru até a UI — origem real do classificador por
+substring que a auditoria apontou no domain.
+
+**A metade difícil já estava abstraída e a fácil não.** No campo de
+comprovante, o reconhecimento de texto tinha interface desde sempre, para o
+formulário rodar sem câmera; a escolha da foto não tinha, e isso sozinho
+deixava sem teste todo o caminho posterior a uma escolha bem-sucedida.

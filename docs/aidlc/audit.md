@@ -363,3 +363,11 @@ recorded verbatim and is never summarized.
 **Context**: Workflow Planning — aprovação do plano com duas alterações. Plano revisado para dez unidades.
 
 ---
+
+## Construction — Code Generation (unidades 1 a 3 do remake arquitetural)
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "[execução autônoma autorizada — 'Seguir direto até o fim']"
+**AI Response**: "Três unidades fechadas, cada uma com a suíte inteira verde antes do commit. **Unidade 1 (`failures`)**: o repositório escrevia as frases que o usuário lê — cinco `_friendly*Error` e 36 `throw` de string. Virou vocabulário selado em três famílias, e a apresentação passou a ser dona de toda sentença num arquivo só. Duas coisas que a separação expôs sozinha: RLS e sessão expirada eram a **mesma** mensagem, então um bug de posse de dados lia como problema de login; e o caminho de **leitura** não mapeava nada — `loadCatalog` e `loadLedger` deixavam `PostgrestException` passar cru, que é como a tela de carregamento acabou classificando erro por substring de `toString()`. Toda leitura passa por um ponto único agora. Os oito `catch (_)` registram a causa. **Unidade 2 (`auth-boundary`)**: `AuthRepository` com cliente injetado; nada acima de `lib/data` alcança `Supabase.instance`. `friendlyAuthMessage` saiu do domain — era a camada de regras casando substring do inglês de uma biblioteca. Oito testes que não podiam existir ontem, incluindo o ramo de recuperação de senha, que antes exigia clicar num e-mail real. **Unidade 3 (`platform-boundaries`)**: contratos para câmera, seletor de arquivo e compartilhamento. O caso mais nítido do projeto estava no campo de comprovante: o **reconhecimento** — a metade difícil, nativa — já estava atrás de interface justamente para o formulário rodar sem câmera, e a **escolha da foto**, a metade fácil, não estava; só isso bastava para deixar sem teste todo o caminho após uma escolha bem-sucedida. Tem dois testes agora. De 617 para 632 testes; 33 imagens de referência inalteradas nas três unidades."
+**Context**: Construction / Code Generation — unidades 1 a 3 de 10. Branch `arch-audit`.
+
+---
