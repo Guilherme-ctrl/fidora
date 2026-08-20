@@ -303,9 +303,11 @@ class _Progress extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // Aqui o anel cresce, porque aqui o progresso é o assunto da tela.
+              ProgressRing(value: ratio, size: 38, stroke: 4),
+              const SizedBox(width: Space.sm),
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0, end: settled.toDouble()),
                 duration: Motion.count,
@@ -330,13 +332,6 @@ class _Progress extends StatelessWidget {
                 style: context.type.meta.copyWith(color: palette.inkSubtle),
               ),
             ],
-          ),
-          const SizedBox(height: Space.xs),
-          TweenAnimationBuilder<double>(
-            tween: Tween(begin: 0, end: ratio.clamp(0.0, 1.0)),
-            duration: Motion.panel,
-            curve: Curves.easeOutCubic,
-            builder: (context, value, _) => RuleBar(value: value, height: 3),
           ),
         ],
       ),
@@ -393,7 +388,8 @@ class _Deck extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: palette.surface,
                           border: Border.all(color: palette.rule),
-                          borderRadius: BorderRadius.circular(Radii.md),
+                          borderRadius: BorderRadius.circular(Radii.lg),
+                          boxShadow: Depth.resting(palette.canvas),
                         ),
                       ),
                     ),
@@ -502,7 +498,10 @@ class _GroupCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: palette.surface,
           border: Border.all(color: palette.rule),
-          borderRadius: BorderRadius.circular(Radii.md),
+          borderRadius: BorderRadius.circular(Radii.lg),
+          // O baralho é a única coisa do app que se empilha de verdade, então
+          // é a única que ganha sombra de peso.
+          boxShadow: Depth.raised(palette.canvas),
         ),
         padding: const EdgeInsets.all(Space.lg),
         child: Column(

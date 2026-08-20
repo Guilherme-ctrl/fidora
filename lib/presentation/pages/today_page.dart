@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
@@ -25,6 +26,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 /// first, because they are the loop that teaches the product; then an invoice
 /// about to close, because that is money already spent; then a budget about to
 /// break, because that is money not yet spent.
+/// Quanto do período já correu. É o contexto que falta para saber se um gasto
+/// está adiantado ou não — metade do orçamento no dia cinco é outra coisa.
+double _monthProgress(FinancePeriod period) {
+  final total = period.endExclusive.difference(period.start).inSeconds;
+  if (total <= 0) return 0;
+  final passed = clock.now().difference(period.start).inSeconds;
+  return (passed / total).clamp(0.0, 1.0);
+}
+
 class TodayPage extends ConsumerWidget {
   const TodayPage({
     super.key,
@@ -64,6 +74,15 @@ class TodayPage extends ConsumerWidget {
           subtitle: quiet
               ? 'Nada exige sua atenção agora.'
               : 'O que precisa de você, em ordem.',
+          // Pequeno, ao lado do título: quanto do mês já passou. O anel só
+          // cresce na fila, onde progresso é o assunto da tela.
+          action: ProgressRing(
+            value: _monthProgress(period),
+            child: Text(
+              '${(_monthProgress(period) * 100).round()}',
+              style: context.type.labelCaps.copyWith(fontSize: 8),
+            ),
+          ),
         ),
         const SizedBox(height: Space.md),
         if (reviews > 0) _ReviewCallout(count: reviews, first: true),

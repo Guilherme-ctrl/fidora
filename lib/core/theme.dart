@@ -26,6 +26,18 @@ import 'package:flutter/material.dart';
 /// nothing for a real problem. [expense] is ink; [negative] means a negative
 /// balance, an overrun budget or a failed import.
 ///
+/// **And then the whole thing was too quiet.** The first palette read, in the
+/// owner's words, like a scientific article. Reading the computed styles off
+/// the sites of Organizze, S1NC, Nubank and Brim showed why, and it was not
+/// taste: all four fill with a saturated brand colour, and all four pick a side
+/// on the ground — warm off-white or deep dark. This one sat on neutral paper
+/// with the least saturated colour of the five, and never let it fill anything.
+///
+/// Fuchsia is the one hue none of them occupies here: green is Organizze's and
+/// the money cliché, aqua is S1NC's, purple in Brazil reads as Nubank, blue is
+/// Brim's. It **fills** — [action] is the brand now, not ink — and it carries
+/// dark text rather than white, because white on it measures 3.34:1 and fails.
+///
 /// **[pending] is the same ink-blue as [accent].** An entry waiting for review
 /// is a task, not a fault. Amber said "something is wrong" about the most
 /// ordinary state in the product.
@@ -129,62 +141,67 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
   Color get expense => ink;
 
   static const light = FinoraPalette(
-    ink: Color(0xFF0E1112),
-    inkMuted: Color(0xFF525A5B),
-    inkSubtle: Color(0xFF656D6E),
-    canvas: Color(0xFFFBFBF9),
+    ink: Color(0xFF140F14),
+    inkMuted: Color(0xFF5A525E),
+    inkSubtle: Color(0xFF6B6270),
+    // Branco-quente com viés de magenta, não papel neutro: nenhum dos quatro
+    // concorrentes ocupa o neutro, e foi ele que deu a sensação de impresso.
+    canvas: Color(0xFFFDFBFC),
     surface: Color(0xFFFFFFFF),
-    sunken: Color(0xFFF3F4F1),
-    rule: Color(0xFFE3E5E1),
-    ruleStrong: Color(0xFF767E7D),
-    ruleHeavy: Color(0xFF0E1112),
-    action: Color(0xFF0E1112),
-    onAction: Color(0xFFFBFBF9),
-    accent: Color(0xFF1D4E89),
-    accentSoft: Color(0xFFE8EEF7),
+    sunken: Color(0xFFF5F1F4),
+    rule: Color(0xFFEAE4E8),
+    ruleStrong: Color(0xFF7D7482),
+    ruleHeavy: Color(0xFF140F14),
+    // O preenchimento é o mesmo fúcsia nos dois temas — é a marca. O que muda
+    // é o fúcsia usado como *texto*, que precisa escurecer para passar em AA
+    // sobre branco.
+    action: Color(0xFFFF3D8A),
+    onAction: Color(0xFF14090E),
+    accent: Color(0xFFC2185B),
+    accentSoft: Color(0xFFFDE7F0),
     income: Color(0xFF0B6B4F),
-    negative: Color(0xFFA33A1F),
-    pending: Color(0xFF1D4E89),
-    ignored: Color(0xFF656D6E),
+    negative: Color(0xFFB03A18),
+    pending: Color(0xFFC2185B),
+    ignored: Color(0xFF6B6270),
     categorical: [
-      Color(0xFF06485B),
-      Color(0xFF8D2F36),
-      Color(0xFF695299),
-      Color(0xFF177B63),
-      Color(0xFF677B98),
-      Color(0xFF788E57),
+      Color(0xFF553858),
+      Color(0xFF7F3B3D),
+      Color(0xFF3D5AA9),
+      Color(0xFF5B7625),
+      Color(0xFF3082A2),
+      Color(0xFF5B9086),
     ],
-    cardGradient: [Color(0xFF14181A), Color(0xFF2F3A38)],
+    cardGradient: [Color(0xFF1A0F18), Color(0xFF3D1730)],
     onCard: Color(0xFFFFFFFF),
   );
 
   static const dark = FinoraPalette(
-    ink: Color(0xFFEDEFEC),
-    inkMuted: Color(0xFF9AA3A2),
-    inkSubtle: Color(0xFF8A9392),
-    canvas: Color(0xFF0E1112),
-    surface: Color(0xFF161A1B),
-    sunken: Color(0xFF0A0D0D),
-    rule: Color(0xFF232827),
-    ruleStrong: Color(0xFF666E6D),
-    ruleHeavy: Color(0xFFEDEFEC),
-    action: Color(0xFFEDEFEC),
-    onAction: Color(0xFF0E1112),
-    accent: Color(0xFF7FB0E8),
-    accentSoft: Color(0xFF121A24),
-    income: Color(0xFF5CC79B),
-    negative: Color(0xFFE5836A),
-    pending: Color(0xFF7FB0E8),
-    ignored: Color(0xFF8A9392),
+    ink: Color(0xFFF3EFF4),
+    inkMuted: Color(0xFFA8A0B0),
+    inkSubtle: Color(0xFF918A9B),
+    canvas: Color(0xFF0C0A0D),
+    surface: Color(0xFF151119),
+    sunken: Color(0xFF08070A),
+    rule: Color(0xFF241E2B),
+    ruleStrong: Color(0xFF6E6578),
+    ruleHeavy: Color(0xFFF3EFF4),
+    action: Color(0xFFFF3D8A),
+    onAction: Color(0xFF14090E),
+    accent: Color(0xFFFF3D8A),
+    accentSoft: Color(0xFF2A0F1D),
+    income: Color(0xFF3FD98A),
+    negative: Color(0xFFFF7A4D),
+    pending: Color(0xFFFF3D8A),
+    ignored: Color(0xFF918A9B),
     categorical: [
-      Color(0xFF4F8397),
-      Color(0xFFD67071),
-      Color(0xFFAE93E0),
-      Color(0xFF69C4A8),
-      Color(0xFFB4C8E8),
-      Color(0xFFCCE2A6),
+      Color(0xFFA280A4),
+      Color(0xFFD38785),
+      Color(0xFF93A6FE),
+      Color(0xFFAAC570),
+      Color(0xFF8CD6F9),
+      Color(0xFFB0E8DC),
     ],
-    cardGradient: [Color(0xFF0C0F10), Color(0xFF333D3A)],
+    cardGradient: [Color(0xFF1A0F18), Color(0xFF3D1730)],
     onCard: Color(0xFFFFFFFF),
   );
 
@@ -303,7 +320,7 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
     // without this line each of them would fall back to the platform's default
     // face — the product would ship three considered families and still not be
     // set in them.
-    fontFamily: 'Inter',
+    fontFamily: 'Archivo',
     fontFamilyFallback: const ['.SF UI Text', 'Segoe UI', 'Roboto'],
     colorScheme: scheme,
     scaffoldBackgroundColor: palette.canvas,

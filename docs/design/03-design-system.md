@@ -7,6 +7,14 @@
 > card branco flutuando. O que se preserva é o **método** (contraste medido,
 > tokens semânticos, `ThemeExtension`), não os valores.
 
+> **Quarta correção (20 ago 2026) — a virada fúcsia.** Avaliação do dono:
+> *"está parecendo um artigo científico no modo branco"*. Estava certo. As três
+> primeiras correções tiraram coisas — o bege, o latão, o amarelo — e o que
+> sobrou foi um sistema tecnicamente correto e sem temperatura nenhuma. Um app
+> que se abre todo dia precisa de uma cor que seja dele. As mudanças estruturais
+> desta virada estão marcadas ao longo do documento; o método não mudou, e é por
+> isso que cada valor novo aqui foi medido antes de ser publicado.
+
 Nome do sistema: **Ledger** — o livro-razão: denso, alinhado e legível por definição.
 
 ## O diagnóstico do "cara de Flutter"
@@ -17,9 +25,9 @@ framework:
 | Sintoma | Causa no código | O que o Ledger faz |
 |---|---|---|
 | Fundo bege com cards brancos boiando | `scaffoldBackgroundColor: canvas` + `cardTheme` | O fundo **é** a superfície. O que separa é pauta, não card |
-| Botão primário tonal na cor da marca | `ColorScheme.fromSeed` | **A ação primária é tinta**, não cor de marca |
-| Cantos de 22px em tudo | `cardTheme` radius 22 | Raio máximo do sistema: 10, e só em objeto de verdade |
-| Números iguais a texto | nenhuma fonte declarada no `pubspec.yaml` | Serifa no valor dominante, tabular na coluna, mono no metadado |
+| Botão primário tonal na cor da marca | `ColorScheme.fromSeed` | A ação preenche com **a** cor da marca — uma só, escolhida, não gerada |
+| Cantos de 22px em tudo | `cardTheme` radius 22 | Escala de raio própria (6 / 11 / 18 / 24), e superfície só em objeto de verdade |
+| Números iguais a texto | nenhuma fonte declarada no `pubspec.yaml` | Uma família variável no display e na interface, mono no metadado, tabular em toda coluna |
 | Barra e rail do Material | `NavigationBar` / `NavigationRail` | Componentes próprios |
 
 Os três widgets que sozinhos carregam a aparência Material são `Card`,
@@ -31,12 +39,17 @@ visual.
 1. **O que separa é a pauta.** Seção não é objeto. Superfície e raio existem
    apenas para o que é objeto de fato: o cartão, o item de revisão, uma opção
    escolhível.
-2. **A ação primária é tinta.** Preto sobre papel, branco sobre grafite. Cor de
-   marca em botão é a assinatura do tema gerado.
-3. **O número tem duas vozes.** O valor de manchete é impresso — serifa, corpo
-   grande. A coluna é máquina — tabular, alinhada à direita, atrás de uma pauta
-   vertical. Metadado é mono, versalete, espaçado.
-4. **A tinta de caneta é pauta e foco, não preenchimento.** Nenhum amarelo, ocre ou âmbar no sistema.
+2. **A ação primária é a marca.** Fúcsia `#FF3D8A`, cheia, com texto quase
+   preto por cima. Foi o inverso disto até a quarta correção — e o inverso
+   estava certo enquanto o sistema não tinha marca nenhuma para gastar. O que
+   continua valendo é a escassez: **uma** cor de ação, em **um** botão por tela.
+3. **O número tem duas vozes.** O valor de manchete é largo e pesado — a mesma
+   família, puxada nos eixos `wght` e `wdth`. A coluna é máquina — tabular,
+   alinhada à direita, atrás de uma pauta vertical. Metadado é mono, versalete,
+   espaçado.
+4. **O escuro é o padrão.** É onde o fúcsia tem o contraste que a marca precisa;
+   o claro existe porque o dono pediu e é mantido no mesmo rigor, não é um
+   descarte. Nenhum amarelo, ocre ou âmbar no sistema.
 5. **A cor categórica trabalha.** Ela identifica a categoria numa barra de 3px na
    marca do lançamento — em vez de ícone genérico ou emoji.
 6. **Acessível por padrão.** AA (4.5:1) em texto normal, 3:1 em componente, alvo
@@ -48,26 +61,38 @@ visual.
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `canvas` | `#FBFBF9` | `#0E1112` | o chão — papel neutro / grafite |
-| `surface` | `#FFFFFF` | `#161A1B` | **só** objeto discreto |
-| `sunken` | `#F3F4F1` | `#0A0D0D` | zebra de linha e tabela |
-| `ink/strong` | `#0E1112` | `#EDEFEC` | texto e ação primária |
-| `ink/muted` | `#525A5B` | `#9AA3A2` | secundário, ≥ 4.5:1 |
-| `ink/subtle` | `#6B7476` | `#7F8988` | metadado, ≥ 4.5:1 |
-| `rule` | `#E3E5E1` | `#232827` | a pauta comum |
-| `rule/2` | `#767E7D` | `#666E6D` | borda de componente — WCAG 1.4.11 pede 3:1 |
-| `rule/heavy` | `#0E1112` | `#EDEFEC` | pauta de cabeçalho, 2px |
+| `canvas` | `#FDFBFC` | `#0C0A0D` | o chão |
+| `surface` | `#FFFFFF` | `#151119` | **só** objeto discreto |
+| `sunken` | `#F5F1F4` | `#08070A` | zebra de linha e tabela |
+| `ink/strong` | `#140F14` | `#F3EFF4` | texto |
+| `ink/muted` | `#5A525E` | `#A8A0B0` | secundário, ≥ 4.5:1 |
+| `ink/subtle` | `#6B6270` | `#918A9B` | metadado, ≥ 4.5:1 |
+| `rule` | `#EAE4E8` | `#241E2B` | a pauta comum |
+| `rule/2` | `#7D7482` | `#6E6578` | borda de componente — WCAG 1.4.11 pede 3:1 |
+| `rule/heavy` | `#140F14` | `#F3EFF4` | pauta de cabeçalho, 2px |
 
-O bege sai. O papel novo é neutro (croma ≈ 0) e o grafite tem viés levemente
-frio — nenhum dos dois puxa para o creme.
+O neutro não é cinza puro: os dois lados carregam um viés mínimo de magenta, o
+suficiente para o fúcsia parecer que nasceu ali em vez de ter sido colado por
+cima. É o mesmo movimento do bege ao contrário — quente sai, o viés escolhido
+entra.
 
 ### Tinta de caneta
 
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `accent` | `#1D4E89` | `#7FB0E8` | pauta ativa, foco, item em revisão |
-| `accent/soft` | `#E8EEF7` | `#121A24` | linha sob o cursor |
-| `brand` (ação) | `#0E1112` | `#EDEFEC` | **botão primário = tinta** |
+| `action` | `#FF3D8A` | `#FF3D8A` | **o preenchimento do botão primário — igual nos dois temas** |
+| `on/action` | `#14090E` | `#14090E` | o que vai escrito em cima dele |
+| `accent` | `#C2185B` | `#FF3D8A` | pauta ativa, foco, item em revisão, linha do gráfico |
+| `accent/soft` | `#FDE7F0` | `#2A0F1D` | linha sob o cursor, pílula de sugestão |
+
+O `action` é o único token que **não** troca entre os temas: a marca é a mesma
+cor nos dois, e o que muda é o que está por baixo dela.
+
+> **O texto do botão é escuro, e isso é medida, não gosto.** `#FF3D8A` com
+> branco por cima dá **3,34:1** — reprova em AA. Com `#14090E` dá **5,85:1**.
+> O fúcsia é claro demais para carregar branco; quem publica botão rosa com
+> letra branca está publicando um contraste que não passa. Medido em
+> `test/theme_test.dart`, que falha se alguém inverter.
 
 > **Segunda correção (19 ago 2026).** A versão anterior usava latão
 > (`#8A6A18` / `#D9B860`). Avaliação do dono: *"esse bege/amarelo precisa
@@ -76,32 +101,48 @@ frio — nenhum dos dois puxa para o creme.
 > **Amarelo, ocre e âmbar saíram do sistema inteiro**, inclusive da paleta
 > categórica.
 
-O azul é o azul-caneta do livro-razão. Ele nunca preenche nada — aparece só onde
-há **ação**: pauta ativa, anel de foco, item aguardando revisão. Por isso
-`pending` deixou de ser uma cor de alarme e passou a ser a mesma tinta: um
-lançamento em revisão não é um problema, é uma tarefa. Vermelho fica reservado a
-problema de verdade.
+> **Quarta correção (20 ago 2026).** O azul-caneta saiu junto. Ele resolvia o
+> problema de temperatura sem resolver o de identidade — era correto e anônimo.
+> A referência de mercado é explícita: Organizze e S1NC vendem confiança em azul
+> e verde e por isso se parecem entre si; a Brim ocupa o extremo oposto com
+> magenta sobre preto e é reconhecível numa miniatura. Este app tem um usuário
+> só, então não precisa parecer um banco — precisa parecer o dele.
+
+O fúcsia aparece onde há **ação**: o botão, a pauta ativa, o anel de foco, o
+item aguardando revisão, a linha do gráfico. Por isso `pending` é a mesma cor:
+um lançamento em revisão não é um problema, é uma tarefa. Vermelho fica
+reservado a problema de verdade.
 
 ### Semântica de dinheiro
 
 | Token | Claro | Escuro | Regra |
 |---|---|---|---|
-| `income` | `#0B6B4F` | `#5CC79B` | **sempre** com prefixo `+` |
-| `expense` | `#0E1112` | `#EDEFEC` | saída normal é tinta, **não** vermelho |
-| `negative` | `#A33A1F` | `#E5836A` | só saldo negativo, meta estourada, falha |
-| `pending` | `#1D4E89` | `#7FB0E8` | não confirmado, em revisão — é ação, não alarme |
-| `ignored` | `#656D6E` | `#8A9392` | igual a `ink/subtle` — ver nota |
+| `income` | `#0B6B4F` | `#3FD98A` | **sempre** com prefixo `+` |
+| `expense` | `#140F14` | `#F3EFF4` | saída normal é tinta, **não** vermelho |
+| `negative` | `#B03A18` | `#FF7A4D` | só saldo negativo, meta estourada, falha |
+| `pending` | `#C2185B` | `#FF3D8A` | não confirmado, em revisão — é ação, não alarme |
+| `ignored` | `#6B6270` | `#918A9B` | igual a `ink/subtle` — ver nota |
+
+`negative` foi para o laranja-queimado: com um fúcsia no sistema, um vermelho
+puro ao lado dele vira briga de matiz vizinha e o alarme deixa de ler como
+alarme.
 
 ### Categórica — segura em deuteranopia e protanopia
 
 | # | Claro | Escuro |
 |---|---|---|
-| 1 | `#06485B` | `#4F8397` |
-| 2 | `#8D2F36` | `#D67071` |
-| 3 | `#695299` | `#AE93E0` |
-| 4 | `#177B63` | `#69C4A8` |
-| 5 | `#677B98` | `#B4C8E8` |
-| 6 | `#788E57` | `#CCE2A6` |
+| 1 | `#553858` | `#A280A4` |
+| 2 | `#7F3B3D` | `#D38785` |
+| 3 | `#3D5AA9` | `#93A6FE` |
+| 4 | `#5B7625` | `#AAC570` |
+| 5 | `#3082A2` | `#8CD6F9` |
+| 6 | `#5B9086` | `#B0E8DC` |
+
+> **Quarta correção (20 ago 2026).** A paleta foi buscada de novo, agora com a
+> faixa do fúcsia (matiz 330–352°) banida junto com a amarela: uma categoria na
+> cor da ação faria o gráfico prometer um clique que não existe. E a paleta
+> escrita de intuição para acompanhar o fúcsia **falhou medida pela terceira
+> vez** — daí a busca com as duas faixas vetadas e separação mínima de 28°.
 
 > **Terceira correção (19 ago 2026).** As duas paletas categóricas anteriores
 > deste documento foram escritas de intuição e **falharam quando medidas**:
@@ -119,9 +160,9 @@ Medido em `test/categorical_test.dart`, que roda a simulação a cada build:
 
 | | claro | escuro |
 |---|---|---|
-| ΔE mínimo sob visão normal, deuteranopia e protanopia | **19,5** | **21,6** |
-| ΔE mínimo sob tritanopia | 17,1 | 19,9 |
-| contraste mínimo com o fundo | 3,28:1 | 4,20:1 |
+| ΔE mínimo sob visão normal, deuteranopia e protanopia | **24,5** | **24,7** |
+| ΔE mínimo sob tritanopia | 15,0 | 15,3 |
+| contraste mínimo com o fundo | 3,53:1 | 5,78:1 |
 
 Deuteranopia e protanopia somam ~8% dos homens; tritanopia, ~0,01%. Por isso o
 par comum carrega a barra mais alta e a tritanopia um piso — otimizar as três
@@ -135,23 +176,34 @@ por hash. Acima de seis, agrupar em "Outros".
 
 | Papel | Família | Onde |
 |---|---|---|
-| **Display** | New York / Charter / Georgia (serifa de texto) | valor dominante: saldo, total de fatura, valor em revisão |
-| **Interface** | Inter com `fontFeatures: [FontFeature.tabularFigures()]` | corpo, títulos e **toda coluna numérica** |
-| **Metadado** | JetBrains Mono / SF Mono | rótulo em versalete, cartão, parcela, data, tag, atalho |
+| **Display** | Archivo variável, `wght` 640 + `wdth` 118 | valor dominante: saldo, total de fatura, valor em revisão |
+| **Interface** | Archivo com `fontFeatures: [FontFeature.tabularFigures()]` | corpo, títulos e **toda coluna numérica** |
+| **Metadado** | JetBrains Mono | rótulo em versalete, cartão, parcela, data, tag, atalho |
 
-| Token | Tamanho / linha | Peso | Família |
+> **Quarta correção (20 ago 2026).** A serifa saiu e a Inter saiu junto. A
+> serifa no valor dominante é exatamente o que faz a tela parecer publicação, e
+> a Inter é o default de todo produto do setor. Ficou **uma** família variável
+> nos dois papéis: o display não muda de família, muda de **eixo** — mais peso e
+> mais largura na mesma letra. É um recurso que a fonte variável dá de graça e
+> que duas famílias estáticas não conseguem imitar.
+
+| Token | Tamanho / linha | Eixos | Família |
 |---|---|---|---|
-| `display/hero` | 56 / 54 | 500 | serifa |
-| `display/metric` | 27 / 32 | 500 | serifa |
-| `title/lg` | 19 / 26 | 600 | interface |
-| `title/md` | 13 / 18 | 600 | interface |
-| `body/md` | 14 / 21 | 400 | interface |
-| `amount/column` | 14 / 20 | 500 tabular | interface |
-| `meta/mono` | 10.5 / 15, +0.02em | 500 | mono |
+| `display/hero` | 42 / 44 | `wght` 640, `wdth` 118 | Archivo |
+| `display/metric` | 26 / 30 | `wght` 640, `wdth` 118 | Archivo |
+| `title/lg` | 19 / 26 | `wght` 600 | Archivo |
+| `title/md` | 13 / 18 | `wght` 600 | Archivo |
+| `body/md` | 14 / 21 | `wght` 400 | Archivo |
+| `amount/column` | 14 / 20 | `wght` 500, tabular | Archivo |
+| `meta/mono` | 10.5 / 15, +0.02em | `wght` 500 | JetBrains Mono |
+
+As duas famílias vão no bundle com subset (latino + pontuação + símbolo de
+moeda): **392 KB no total**, contra 2,2 MB dos arquivos originais.
 | `label/caps` | 9.5 / 14, +0.16em, caixa alta | 600 | mono |
 
 Regras:
-- Serifa **nunca** em coluna — ela existe para o número único e grande.
+- Os eixos do display **nunca** em coluna — eles existem para o número único e
+  grande.
 - Nenhum texto financeiro abaixo de 13px; metadado mono pode ir a 10.5px porque
   é caixa alta e espaçado.
 - Centavos a ~42% do corpo e em `ink/subtle` **apenas** em `display/hero`.
@@ -162,26 +214,43 @@ Regras:
 
 | Raio | Valor | Uso |
 |---|---|---|
-| `radius/xs` | 2–3 | marca de lançamento, tag |
-| `radius/sm` | 5 | botão, campo, chip |
-| `radius/md` | 10 | objeto: cartão, item de revisão, opção |
+| `radius/xs` | 6 | marca de lançamento, tag |
+| `radius/sm` | 11 | botão, campo, chip |
+| `radius/md` | 18 | objeto: item de lista, opção, modal |
+| `radius/lg` | 24 | o que se empilha: a face do cartão, a carta da fila |
+| `radius/full` | 999 | pílula — a única forma redonda de propósito |
 
-Não existe raio acima de 10. **Elevação zero em todo o produto** — sombra só em
-menu suspenso e modal. O que dá profundidade é pauta e zebra.
+> **Quarta correção (20 ago 2026).** Os raios dobraram. O teto de 10 foi
+> escrito para impedir o `rounded-lg` em tudo, e impediu — mas junto impediu que
+> qualquer coisa parecesse um objeto que se pega. Não é o raio que faz o app
+> parecer genérico, é aplicá-lo sem escala. A escala continua sendo o contrato:
+> `test/theme_test.dart` falha se alguém escolher um canto fora dela.
+
+**Profundidade em três degraus**, no token `Depth`, e só onde há motivo:
+
+| Degrau | Onde |
+|---|---|
+| `resting` | as cartas de trás do baralho da fila |
+| `raised` | a carta da frente — a única coisa do app que se empilha de verdade |
+| `glow` | o botão primário, com a sombra na cor da própria ação |
+
+O resto do produto continua em elevação zero: o que separa uma seção da outra é
+pauta e zebra, não sombra.
 
 ## Componentes que substituem os do Material
 
 | Sai | Entra | Nota |
 |---|---|---|
 | `Card` | `RuledSection` | borda superior de 1px, sem fundo, sem raio |
-| `Card` (métrica) | `LedgerTile` | pauta de 2px no topo, valor serifado, rule vertical entre colunas |
+| `Card` (métrica) | `LedgerTile` | pauta de 2px no topo, valor no display, rule vertical entre colunas |
 | `ListTile` | `LedgerRow` | marca tipográfica com barra de categoria, zebra, **coluna de valor atrás de pauta vertical** |
 | `NavigationRail` | `LedgerSidebar` | seções separadas por pauta, item ativo com barra de tinta à esquerda |
 | `NavigationBar` | `LedgerTabBar` | indicador é pauta de tinta no topo, não pílula |
-| `Chip` | `MonoTag` | mono, caixa alta, borda de 1px, raio 2 |
-| `FilledButton` | `InkButton` | fundo `ink/strong`, raio 5 |
+| `Chip` | `MonoTag` | mono, caixa alta, borda de 1px, `radius/xs` |
+| `FilledButton` | `InkButton` | fundo `action`, texto `on/action`, brilho na cor da ação |
+| — | `ProgressRing` | anel aberto: 26pt ao lado de um título, 38pt onde o progresso é o assunto |
 | `showModalBottomSheet` | `ResponsiveSheet` | sheet < 600 · dialog 600–1239 · painel lateral ≥ 1240 |
-| `LinearProgressIndicator` | `RuleBar` | 4px, sem raio |
+| `LinearProgressIndicator` | `RuleBar` / `ProgressRing` | barra de 4px onde é medida; anel onde é conquista |
 
 Financeiros específicos: `AmountText` (sinal, tabular, cor semântica, largura de
 coluna fixa) · `CycleTimeline` (a competência da fatura desenhada em
@@ -221,7 +290,9 @@ manchete. `MediaQuery.disableAnimations` respeitado.
 
 - [ ] Contraste AA verificado nos dois temas, com o mesmo rigor da auditoria que
       produziu `inkMuted`/`inkSubtle` no tema atual
-- [ ] Tinta de caneta sobre papel: `#1D4E89` em `#FBFBF9` mede 8.0:1; `#7FB0E8` em `#0E1112` mede 8.5:1
+- [x] O fúcsia mede: `#C2185B` em `#FDFBFC` dá 5,70:1; `#FF3D8A` em `#0C0A0D` dá
+      5,90:1; e o botão só passa com texto escuro — 5,85:1 contra 3,34:1 com
+      branco
 - [ ] Todo alvo de toque ≥ 44×44
 - [ ] Estado nunca só por cor: sinal, borda ou texto junto
 - [ ] Ordem de foco lógica, anel visível no web

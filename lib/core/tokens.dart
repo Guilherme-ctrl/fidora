@@ -5,6 +5,8 @@
 /// used from a `const` constructor.
 library;
 
+import 'package:flutter/painting.dart';
+
 /// Spacing scale, base 4.
 ///
 /// The audit counted 165 literal `EdgeInsets` in `lib/presentation`, on values
@@ -28,18 +30,60 @@ abstract final class Space {
 /// Nothing in the product is rounder than [md]. The 22 the card theme used is
 /// the radius of a consumer app; 10 reads as a tool. A section is not an
 /// object at all and carries no radius — it is separated by a rule.
+/// Corner radius.
+///
+/// These doubled. A maximum of 10 reads as a form, and the product is opened
+/// every day for pleasure as much as for accounting — the owner's word for the
+/// old system was that it looked like a scientific article, and hard corners
+/// were part of why.
 abstract final class Radii {
   /// Transaction mark, tag.
-  static const xs = 3.0;
+  static const xs = 6.0;
 
   /// Button, field, chip.
-  static const sm = 5.0;
+  static const sm = 11.0;
 
-  /// The only radius an object gets: card face, review item, selectable option.
-  static const md = 10.0;
+  /// A discrete object: card face, review item, selectable option.
+  static const md = 18.0;
 
-  /// Avatar, pill.
+  /// A surface that owns its screen — the hero panel, a sheet.
+  static const lg = 24.0;
+
+  /// Avatar, pill, the progress ring.
   static const full = 999.0;
+}
+
+/// Depth.
+///
+/// The system had elevation zero everywhere, which is correct for a ledger and
+/// wrong for something that should feel alive. These are soft and dark rather
+/// than grey: on a near-black ground a grey shadow reads as fog.
+abstract final class Depth {
+  static List<BoxShadow> resting(Color ink) => [
+    BoxShadow(
+      color: ink.withValues(alpha: .22),
+      blurRadius: 18,
+      offset: const Offset(0, 6),
+    ),
+  ];
+
+  /// For the one surface a screen is about.
+  static List<BoxShadow> raised(Color ink) => [
+    BoxShadow(
+      color: ink.withValues(alpha: .3),
+      blurRadius: 34,
+      offset: const Offset(0, 14),
+    ),
+  ];
+
+  /// A press or a hover on something that fills.
+  static List<BoxShadow> glow(Color accent) => [
+    BoxShadow(
+      color: accent.withValues(alpha: .34),
+      blurRadius: 22,
+      offset: const Offset(0, 8),
+    ),
+  ];
 }
 
 /// Stroke widths. A rule is the product's unit of separation, so its weight

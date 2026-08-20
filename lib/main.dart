@@ -73,6 +73,9 @@ class _FinanceiroAppState extends ConsumerState<FinanceiroApp> {
     ],
     theme: buildAppTheme(),
     darkTheme: buildAppTheme(brightness: Brightness.dark),
+    // O escuro é o padrão. O claro continua inteiro e escolhível em Ajustes,
+    // mas deixou de ser o rosto do produto: é no escuro que a cor tem energia
+    // e é no escuro que este app é aberto à noite.
     themeMode: ref.watch(appearanceProvider),
     routerConfig: _router,
   );

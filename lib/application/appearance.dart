@@ -13,7 +13,10 @@ class AppearanceController extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _restore();
-    return ThemeMode.system;
+    // Escuro, não `system`. A paleta foi desenhada no escuro e é lá que ela
+    // funciona; seguir o sistema entregava metade dos aparelhos ao tema que o
+    // dono descreveu como artigo científico.
+    return ThemeMode.dark;
   }
 
   Future<void> _restore() async {

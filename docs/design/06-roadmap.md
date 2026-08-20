@@ -9,7 +9,7 @@ Muda a sensação do produto sem mexer em nenhuma tela.
 
 - [ ] `core/tokens.dart` — cor, espaço, raio, tipografia como escalas
 - [ ] `core/breakpoints.dart` — a escala única; remover os 11 valores mágicos
-- [ ] Fonte Inter com `tnum`; `AmountText` e `Money` como único caminho para
+- [ ] Fonte Archivo com `tnum`; `AmountText` e `Money` como único caminho para
       renderizar valor
 - [ ] `money/income` e `money/expense`; **saída deixa de ser vermelha**
 - [ ] Raio de card 22 → 16

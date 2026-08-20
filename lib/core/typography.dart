@@ -46,15 +46,20 @@ class LedgerText extends ThemeExtension<LedgerText> {
   /// Section label.
   final TextStyle labelCaps;
 
-  /// The three families are bundled. The fallbacks stay for the case where an
-  /// asset fails to load, so the product degrades to a platform face rather
-  /// than to blank boxes.
-  static const _serifFallback = <String>[
-    'New York',
-    'Iowan Old Style',
-    'Charter',
-    'Georgia',
-    'serif',
+  /// Two families, and the display voice stopped being a serif.
+  ///
+  /// The serif was the most "printed page" thing in the system, and a printed
+  /// page is exactly what the owner said this felt like. Archivo replaces both
+  /// it and Inter: one family with a **width axis**, so the headline figure can
+  /// be set wide and heavy while the interface stays at normal width. Same
+  /// voice, two postures, one file.
+  ///
+  /// JetBrains Mono stays for metadata — it was never the problem.
+  static const _sansFallback = <String>[
+    '.SF UI Text',
+    'Segoe UI',
+    'Roboto',
+    'sans-serif',
   ];
 
   static const _monoFallback = <String>[
@@ -64,78 +69,66 @@ class LedgerText extends ThemeExtension<LedgerText> {
     'monospace',
   ];
 
-  static const _sansFallback = <String>[
-    '.SF UI Text',
-    'Segoe UI',
-    'Roboto',
-    'sans-serif',
-  ];
-
   static const _tabular = <FontFeature>[FontFeature.tabularFigures()];
 
-  /// Variable fonts: one file carries every weight, and the axis is selected
-  /// with `fontVariations` rather than by bundling a file per weight.
-  ///
-  /// `opsz` is the optical size axis. A face drawn for 14pt and set at 44pt
-  /// looks loose; asking the serif for its display cut is the difference
-  /// between a big number and a headline.
+  /// Wide and heavy: the posture of a number that is the point of the screen.
+  static const _display = <FontVariation>[
+    FontVariation('wght', 640),
+    FontVariation('wdth', 118),
+  ];
 
   static const standard = LedgerText(
     displayHero: TextStyle(
-      fontFamily: 'Source Serif 4',
-      fontFamilyFallback: _serifFallback,
-      fontVariations: [FontVariation('wght', 500), FontVariation('opsz', 44)],
-      fontSize: 44,
-      height: 1.05,
-      fontWeight: FontWeight.w500,
-      letterSpacing: -0.9,
+      fontFamily: 'Archivo',
+      fontFamilyFallback: _sansFallback,
+      fontVariations: _display,
+      fontSize: 42,
+      height: 1.02,
+      letterSpacing: -1.4,
       fontFeatures: _tabular,
     ),
     displayMetric: TextStyle(
-      fontFamily: 'Source Serif 4',
-      fontFamilyFallback: _serifFallback,
-      fontVariations: [FontVariation('wght', 500), FontVariation('opsz', 28)],
-      fontSize: 27,
-      height: 1.15,
-      fontWeight: FontWeight.w500,
-      letterSpacing: -0.3,
+      fontFamily: 'Archivo',
+      fontFamilyFallback: _sansFallback,
+      fontVariations: _display,
+      fontSize: 26,
+      height: 1.12,
+      letterSpacing: -0.6,
       fontFeatures: _tabular,
     ),
     titleLg: TextStyle(
-      fontFamily: 'Inter',
+      fontFamily: 'Archivo',
       fontFamilyFallback: _sansFallback,
-      fontVariations: [FontVariation('wght', 600)],
+      fontVariations: [FontVariation('wght', 620)],
       fontSize: 19,
-      height: 1.3,
-      fontWeight: FontWeight.w600,
-      letterSpacing: -0.1,
+      height: 1.28,
+      letterSpacing: -0.3,
     ),
     titleMd: TextStyle(
-      fontFamily: 'Inter',
+      fontFamily: 'Archivo',
       fontFamilyFallback: _sansFallback,
-      fontVariations: [FontVariation('wght', 600)],
-      fontSize: 13,
+      fontVariations: [FontVariation('wght', 620)],
+      fontSize: 13.5,
       height: 1.35,
+      letterSpacing: -0.05,
       fontWeight: FontWeight.w600,
     ),
     bodyMd: TextStyle(
-      fontFamily: 'Inter',
+      fontFamily: 'Archivo',
       fontFamilyFallback: _sansFallback,
       fontSize: 14,
       height: 1.45,
     ),
     bodySm: TextStyle(
-      fontFamily: 'Inter',
+      fontFamily: 'Archivo',
       fontFamilyFallback: _sansFallback,
       fontSize: 13,
       height: 1.4,
     ),
     amount: TextStyle(
-      // Inter is the only one of the three that kept a `tnum` feature through
-      // subsetting, and it is the one that matters: the column lives here.
-      fontFamily: 'Inter',
+      fontFamily: 'Archivo',
       fontFamilyFallback: _sansFallback,
-      fontVariations: [FontVariation('wght', 500)],
+      fontVariations: [FontVariation('wght', 560)],
       fontSize: 14,
       height: 1.4,
       fontWeight: FontWeight.w500,

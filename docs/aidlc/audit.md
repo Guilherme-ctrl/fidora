@@ -305,3 +305,53 @@ recorded verbatim and is never summarized.
 **Context**: Construction — correção de defeito reportado pelo dono em dispositivo real.
 
 ---
+
+## Construction — a virada fúcsia
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "Eu to achando ainda estranho o Design System, esta melhor, mas pode melhorar ainda mais. Talvez trazer o tom mais gameficado pro app todo. Está parecende um artigo cientifico no modo branco. Pode mudar o nome também e logo"
+**AI Response**: "Montei três direções lado a lado para o dono escolher, em vez de eu decidir sozinho de novo o que 'com alma' significa."
+**Context**: Construction — terceira rodada de avaliação visual do dono.
+
+---
+
+## Construction — benchmark de cor
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "Gosto do anel de progresso, mas sem muita evidencia nele. Mas as cores não gostei de nenhum, como os players de mercado atuam com as cores? Oragnizze, Brim, S1NC, etc"
+**AI Response**: "Organizze e S1NC operam em azul e verde, as cores institucionais de banco, e por isso se parecem entre si. A Brim vai ao extremo oposto: magenta sobre preto, reconhecível numa miniatura. Este app tem um usuário só — não precisa parecer um banco."
+**Context**: Construction — pesquisa de mercado sobre cor, a pedido do dono.
+
+---
+
+## Construction — Code Generation (fúcsia sobre escuro, fonte nova)
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "Fúcsia sobre escuro e talvez mudar a fonte também, pode implementar"
+**AI Response**: "Implementado, e a primeira coisa que a medição fez foi mudar o desenho: `#FF3D8A` com branco dá 3,34:1 e reprova em AA; com `#14090E` dá 5,85:1. Então **o botão fúcsia carrega letra escura** — e escrevi um teste que exige que branco sobre a ação reprove, porque essa é a inversão que alguém vai tentar fazer depois. Todos os tokens dos dois temas passam AA. A paleta categórica escrita de intuição falhou medida pela terceira vez neste projeto; só passou com a busca vetando duas faixas de matiz, a amarela e agora a do próprio fúcsia — categoria na cor da ação promete um clique que não existe. Na tipografia tirei a serifa e a Inter: a serifa no valor dominante é justamente o que faz a tela parecer publicação, e a Inter é o default do setor inteiro. Ficou uma família variável, Archivo, nos dois papéis — o display não troca de família, troca de eixo (`wght` 640, `wdth` 118), que é o que fonte variável dá de graça. O bundle caiu de 582 KB para 392 KB. O anel entrou como o dono pediu: 26pt discreto ao lado de um título, 38pt só na fila, onde progresso é o assunto. Reescrevi dois testes que afirmavam o contrário do produto atual em vez de contorná-los — 'a ação primária é tinta' e 'nada é mais redondo que 10'; o teto de raio existia para impedir `rounded-lg` em tudo, e o que precisa ser garantido é que exista uma escala, não que ela seja pequena. Duas coisas as imagens de referência cobraram de mim: a face do cartão era **a única superfície do app rodando na fonte do sistema**, porque um `TextStyle` cru não herda a família do tema — invisível enquanto o ambiente de teste desenhava retângulos, e invisível no iPhone porque a fonte da Apple é próxima o bastante; e o brilho do botão era `shadowColor` com `elevation: 0`, ou seja, existia no código e não na tela. 617 testes passam, 33 imagens regeradas. **Não mexi no nome nem no logo** — foi levantado uma vez e não veio na instrução seguinte."
+**Context**: Construction / Code Generation — quarta correção do design system.
+
+---
+
+## Requirements Analysis — auditoria de arquitetura (documento de referência)
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "Numa nova branch preciso que voce verifique se o projeto segue essa arch:
+
+[Documento completo de arquitetura de referência — Flutter, Clean Architecture modular com raiz `core/` + `features/`. Registrado na íntegra em `docs/aidlc/reference-architecture.md`, que passa a ser o padrão arquitetural do projeto. O documento especifica: as duas raízes permitidas; a proibição de `shared/`, `common/`, `services/`, `repositories/`, `screens/` na raiz; o conteúdo do Core; a organização por feature com `domain/`, `infra/`, `presenter/`; pureza do Domain; responsabilidades do Presenter; gerenciamento de estado com Cubit/BLoC; widgets compartilhados dentro de `features/`; injeção de dependência em ponto único; comunicação externa com fronteira explícita; tratamento de erros separando Business/Technical/Unexpected Failure; direção de dependência entre camadas; comunicação entre features; os princípios esperados e a advertência contra dogmatismo. O documento também especifica o roteiro da auditoria em doze eixos (estrutura, core, features, domain, presenter, infra, estado, DI, integrações externas, widgets compartilhados, erros, testabilidade), o formato obrigatório de cada violação, a escala de avaliação final em onze notas e o plano de correção em P0–P3.]"
+**AI Response**: "Auditoria completa na branch `arch-audit`, sem alterar código. Relatório em `docs/arquitetura-auditoria.md` (804 linhas). Veredito: o projeto **não** segue a arquitetura de referência — `lib/` tem cinco raízes por tipo técnico e zero features. Mas a distância é menor do que a estrutura sugere: as camadas existem, são intencionais e as setas de dependência apontam quase todas para o lado certo. Nota geral 5/10, com Estrutura Core/Features em 2/10, Organização por feature em 1/10 e Testabilidade em 7/10 — esta última a área mais forte, com 48 arquivos de teste e domínio de funções puras. Os três acoplamentos que realmente custam: autenticação sem camada nenhuma (`Supabase.instance.client.auth` chamado de dentro de widgets em quatro pontos, `AuthException` capturada na UI, intestável); a infraestrutura escrevendo copy de interface (cinco tradutores `_friendly*Error` e 36 `throw FinanceWriteException('texto em português')`); e o Domain contaminado por três lados (`IconData`/`Color` em `FinanceCategory`, `package:excel` em `statement_import.dart`, 14 `fromJson` mapeando colunas do Postgres — o que força os dois repositórios a importarem Material via `core/category_visuals.dart`). **Coloquei a reorganização em `core/` + `features/` como P2, não P0, e isso é uma discordância deliberada com o caminho óbvio**: mover 71 arquivos não reduz acoplamento — os P0/P1 reduzem —, e feita primeiro a mudança de pastas vira um diff que esconde as correções que importam. A ordem recomendada faz sete passos de desacoplamento sem mover um arquivo de lugar, e só então move tudo."
+**Context**: Requirements Analysis — auditoria brownfield contra padrão arquitetural externo fornecido pelo dono. Branch `arch-audit`.
+
+---
+
+## Requirements Analysis — pergunta sobre roteamento
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "E estamos usando oq para gerenciar as rotas dos apps?"
+**AI Response**: "go_router 16.2.4, com `presentation/router.dart` e `presentation/routes.dart`. As sete rotas principais são um loop sobre `Routes.inOrder`, todas construindo o mesmo `AppShell` sob a mesma `ValueKey('shell')` — decisão deliberada: com uma chave só o elemento sobrevive à troca de rota e o `IndexedStack` preserva o scroll. Estado de tela vive na query string com codecs testáveis fora de widget (`PeriodCodec`, `FilterCodec`), então mês, busca e fatia do extrato viram link. Isso está acima da média. **O problema é que só 7 das 16 páginas têm endereço**: `context.go` aparece 2 vezes no projeto inteiro e `MaterialPageRoute` aparece 10, nove delas em `more_page.dart`. Contas, Titulares, Regras de comerciante, Lembretes, Tokens do Atalho, Assinaturas, Dados, Fila de revisão e Nova senha não têm URL, não sobrevivem a F5 e não podem ser linkadas. A fila de revisão é o caso mais visível — é um ritual diário sem endereço. Não incluí isso no relatório como violação arquitetural porque é dívida de produto, e ofereci acrescentar como P3."
+**Context**: Requirements Analysis — esclarecimento sobre a camada de roteamento durante a auditoria.
+
+---
+
+## Workflow Planning — remake arquitetural
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "Então precisamos transformar em um app modular de verdade e consertar toda a arch, além de registrar tudo no AIDLC"
+**AI Response**: "[registrado abaixo, após o planejamento]"
+**Context**: Workflow Planning — o dono aprova o remake arquitetural completo e pede registro no AIDLC. Entrada em fase de planejamento.
+
+---

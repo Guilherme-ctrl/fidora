@@ -83,11 +83,13 @@ void main() {
   testWidgets('choosing one changes the app-wide mode', (tester) async {
     await withGoldenClock(() async {
       final container = await pumpMore(tester, const Size(390, 900));
-      expect(container.read(appearanceProvider), ThemeMode.system);
-
-      await tester.tap(find.text('Escuro'));
-      await tester.pump(const Duration(milliseconds: 100));
+      // O padrão é escuro: é o modo em que a marca foi desenhada, e o modo
+      // claro existe porque o dono pediu, não porque é o ponto de partida.
       expect(container.read(appearanceProvider), ThemeMode.dark);
+
+      await tester.tap(find.text('Sistema'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(container.read(appearanceProvider), ThemeMode.system);
 
       await tester.tap(find.text('Claro'));
       await tester.pump(const Duration(milliseconds: 100));

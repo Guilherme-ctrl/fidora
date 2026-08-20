@@ -1,6 +1,7 @@
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/tokens.dart';
+import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
@@ -170,7 +171,11 @@ class _CreditCardView extends StatelessWidget {
           ],
         ),
         child: DefaultTextStyle(
-          style: const TextStyle(color: Colors.white),
+          // A face do cartão era a única superfície do app com a fonte do
+          // sistema: um `TextStyle` cru não herda a família do tema, e a
+          // diferença só apareceu quando as fontes passaram a ser desenhadas
+          // nas imagens de referência.
+          style: context.type.bodyMd.copyWith(color: context.palette.onCard),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

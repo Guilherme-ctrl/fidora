@@ -126,7 +126,11 @@ Ficou de fora, e por quê:
       estimativa deste plano dizia 250–350 KB e estava otimista. Com elas
       carregadas em `flutter_test_config.dart`, as imagens de referência passaram
       a registrar as letras, e a primeira coisa que fizeram foi reprovar a face
-      do cartão a 2,0x.
+      do cartão a 2,0x. **Superado em 20 ago 2026**: a virada fúcsia tirou a
+      serifa e a Inter, e o bundle ficou em 392 KB com Archivo + JetBrains Mono.
+      As letras nas imagens de referência cobraram de novo — desta vez mostraram
+      que a face do cartão era a única superfície do app rodando na fonte do
+      sistema, porque um `TextStyle` cru não herda a família do tema.
 - [ ] `categoryColors` em `category_visuals.dart` ainda tem o ocre `#8D6414` e
       as 12 cores do seletor não passaram por medição. São **dado gravado** —
       `categories.color` no banco — então mexer nelas é migração, não tema. Fica

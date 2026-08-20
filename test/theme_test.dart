@@ -107,8 +107,27 @@ void main() {
         expect(palette.expense, isNot(palette.negative));
       });
 
-      test('$name: the primary action is ink, not a hue', () {
-        expect(palette.action, palette.ink);
+      test('$name: the primary action fills, and fills with the brand', () {
+        // This asserted the opposite until the palette changed. Ink was the
+        // right answer while the system was a ledger and the wrong one once it
+        // had to feel like something you open every day: all four competitors
+        // fill with a saturated brand colour and none of them uses ink.
+        expect(palette.action, isNot(palette.ink));
+        expect(palette.action, const Color(0xFFFF3D8A));
+      });
+
+      test('$name: the action carries dark text, because white fails on it', () {
+        // White on #FF3D8A measures 3.34:1. The button keeps the bright colour
+        // and darkens the label instead of darkening the brand.
+        expect(
+          contrast(palette.onAction, palette.action),
+          greaterThanOrEqualTo(aa),
+        );
+        expect(
+          contrast(Colors.white, palette.action),
+          lessThan(aa),
+          reason: 'se um dia passar, o rótulo branco volta a ser opção',
+        );
       });
 
       test('$name: awaiting review reads as action, not as a fault', () {
@@ -153,11 +172,17 @@ void main() {
       }
     });
 
-    test('nothing in the system is rounder than 10', () {
+    test('the corner scale is the app scale, and it stops at lg', () {
+      // Os raios dobraram junto com a virada fúcsia: o objeto agora é um
+      // cartão, não uma linha de razão. O que continua valendo é que existe
+      // uma escala — nada escolhe um canto fora dela, e nada passa de lg
+      // exceto a pílula, que é redonda de propósito.
       final shape = buildAppTheme().cardTheme.shape! as RoundedRectangleBorder;
       final radius = shape.borderRadius.resolve(TextDirection.ltr).topLeft.x;
       expect(radius, Radii.md);
-      expect(radius, lessThanOrEqualTo(10));
+      expect(<double>[Radii.xs, Radii.sm, Radii.md, Radii.lg], isNotEmpty);
+      expect(radius, lessThanOrEqualTo(Radii.lg));
+      expect(Radii.full, greaterThan(Radii.lg));
     });
 
     test('the field outline is the 3:1 rule, not the decorative one', () {

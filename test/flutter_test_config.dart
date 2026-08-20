@@ -16,8 +16,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const families = {
-    'Inter': 'assets/fonts/Inter.ttf',
-    'Source Serif 4': 'assets/fonts/SourceSerif4.ttf',
+    'Archivo': 'assets/fonts/Archivo.ttf',
     'JetBrains Mono': 'assets/fonts/JetBrainsMono.ttf',
   };
 

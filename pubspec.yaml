@@ -96,12 +96,9 @@ flutter:
   # `LedgerText` selects with `fontVariations` rather than bundling a file per
   # weight.
   fonts:
-    - family: Inter
+    - family: Archivo
       fonts:
-        - asset: assets/fonts/Inter.ttf
-    - family: Source Serif 4
-      fonts:
-        - asset: assets/fonts/SourceSerif4.ttf
+        - asset: assets/fonts/Archivo.ttf
     - family: JetBrains Mono
       fonts:
         - asset: assets/fonts/JetBrainsMono.ttf

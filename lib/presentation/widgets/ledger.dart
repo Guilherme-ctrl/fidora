@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/tokens.dart';
@@ -160,6 +162,10 @@ class SectionLabel extends StatelessWidget {
 
 /// A block of content, separated from the next by a rule rather than lifted
 /// onto a card.
+///
+/// The rule stays — it is what keeps a list of sections readable — but the
+/// objects inside now sit on a surface with depth. A ledger has no layers; a
+/// thing you open every day should.
 class RuledSection extends StatelessWidget {
   const RuledSection({
     super.key,
@@ -647,7 +653,13 @@ class InkButton extends StatelessWidget {
       side: secondary
           ? WidgetStatePropertyAll(BorderSide(color: palette.ruleStrong))
           : null,
-      elevation: const WidgetStatePropertyAll(0),
+      // A ação preenche e brilha. Elevação zero com `shadowColor` não desenha
+      // nada — a sombra só existe se houver elevação para projetá-la.
+      elevation: WidgetStatePropertyAll(secondary ? 0 : 8),
+      shadowColor: WidgetStatePropertyAll(palette.action),
+      overlayColor: WidgetStatePropertyAll(
+        secondary ? palette.accentSoft : palette.onAction.withValues(alpha: .1),
+      ),
     );
 
     final child = icon == null
@@ -1008,4 +1020,95 @@ class SheetHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The ring.
+///
+/// The owner picked it out of three directions and asked for it small — so the
+/// default is 26pt, the size it takes beside a title, and it only grows where
+/// progress is the subject. It is also the shape the product's icon wants:
+/// Brim, the app this one was modelled on, uses exactly an open ring.
+class ProgressRing extends StatelessWidget {
+  const ProgressRing({
+    super.key,
+    required this.value,
+    this.size = 26,
+    this.stroke = 3.4,
+    this.color,
+    this.child,
+  });
+
+  final double value;
+  final double size;
+  final double stroke;
+  final Color? color;
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: value.clamp(0.0, 1.0)),
+        duration: Motion.count,
+        curve: Curves.easeOutCubic,
+        builder: (context, animated, _) => CustomPaint(
+          painter: _RingPainter(
+            value: animated,
+            stroke: stroke,
+            track: palette.rule,
+            fill: color ?? palette.accent,
+          ),
+          child: child == null ? null : Center(child: child),
+        ),
+      ),
+    );
+  }
+}
+
+class _RingPainter extends CustomPainter {
+  const _RingPainter({
+    required this.value,
+    required this.stroke,
+    required this.track,
+    required this.fill,
+  });
+
+  final double value;
+  final double stroke;
+  final Color track;
+  final Color fill;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final centre = rect.center;
+    final radius = (size.shortestSide - stroke) / 2;
+
+    final base = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..color = track;
+    canvas.drawCircle(centre, radius, base);
+
+    if (value <= 0) return;
+    final arc = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round
+      ..color = fill;
+    canvas.drawArc(
+      Rect.fromCircle(center: centre, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * value,
+      false,
+      arc,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_RingPainter old) =>
+      old.value != value || old.fill != fill || old.track != track;
 }

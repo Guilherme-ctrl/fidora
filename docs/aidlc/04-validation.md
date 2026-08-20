@@ -1324,3 +1324,75 @@ delegates saírem.
 **Por que nenhum teste pegou:** 615 testes e nenhum abria um seletor de data. Os
 widget tests montam `MaterialApp` próprio, não o do `main.dart`, então a
 configuração que faltava não estava sob teste em lugar nenhum.
+
+---
+
+# Fase 8 — a virada fúcsia (20 ago 2026)
+
+Avaliação do dono, com o app já rodando no telefone dele:
+
+> *"Eu tô achando ainda estranho o Design System, está melhor, mas pode melhorar
+> ainda mais. Talvez trazer o tom mais gamificado pro app todo. Está parecendo
+> um artigo científico no modo branco."*
+
+E, depois de ver três direções lado a lado:
+
+> *"Gosto do anel de progresso, mas sem muita evidência nele. Mas as cores não
+> gostei de nenhum, como os players de mercado atuam com as cores?"* →
+> **"Fúcsia sobre escuro e talvez mudar a fonte também, pode implementar."**
+
+## O que o benchmark de cor mostrou
+
+Organizze e S1NC operam em azul e verde — as cores institucionais de banco — e
+por isso se parecem entre si. A Brim ocupa o extremo oposto: magenta saturado
+sobre preto, reconhecível numa miniatura. As três primeiras correções deste
+projeto tinham tirado coisas (o bege, o latão, o amarelo) e o que sobrou era
+correto e anônimo. Este app tem **um** usuário; não precisa parecer um banco.
+
+## O que foi medido antes de publicar
+
+| Verificação | Resultado |
+|---|---|
+| `#FF3D8A` com branco | **3,34:1 — reprova em AA** |
+| `#FF3D8A` com `#14090E` | **5,85:1** — por isso o botão tem letra escura |
+| `accent` sobre o fundo | 5,70:1 claro · 5,90:1 escuro |
+| `inkSubtle` sobre o fundo | 5,65:1 claro · 5,93:1 escuro |
+| `ruleStrong` (regra dos 3:1) | 4,34:1 claro · 3,56:1 escuro |
+| ΔE categórico — normal, deuteranopia, protanopia | 24,5 claro · 24,7 escuro |
+| ΔE categórico — tritanopia | 15,0 claro · 15,3 escuro |
+
+A paleta categórica escrita de intuição **falhou medida pela terceira vez neste
+projeto**. Só passou depois de uma busca com duas faixas de matiz vetadas — a
+amarela (30–118°), que já estava banida, e agora a do próprio fúcsia (330–352°),
+porque uma categoria na cor da ação promete um clique que não existe.
+
+## O que as imagens de referência cobraram
+
+As fontes carregadas nos goldens continuam sendo o instrumento mais barato deste
+projeto. Desta vez mostraram que **a face do cartão era a única superfície do app
+rodando na fonte do sistema**: um `TextStyle` cru dentro de um `DefaultTextStyle`
+não herda `ThemeData.fontFamily`, e a diferença era invisível enquanto o ambiente
+de teste desenhava todo glifo como retângulo. Ninguém tinha reparado no telefone
+porque a fonte do sistema do iOS é próxima o bastante para passar despercebida.
+
+Também cobraram um `shadowColor` inerte: a primeira versão do botão declarava a
+sombra na cor da ação com `elevation: 0`. Sombra sem elevação não desenha nada —
+o brilho existia no código e não existia na tela.
+
+## O que mudou de invariante
+
+Dois testes deste projeto afirmavam o contrário do que o produto agora faz, e
+foram reescritos em vez de contornados:
+
+- *"a ação primária é tinta, não uma matiz"* → **a ação preenche, e preenche com
+  a marca**, mais um teste novo que exige que branco sobre a ação **reprove**.
+  Se alguém publicar botão rosa com letra branca, o teste cai.
+- *"nada no sistema é mais redondo que 10"* → **a escala de canto é a escala do
+  app e para em `lg`**. O teto existia para impedir `rounded-lg` em tudo; o que
+  precisa ser garantido é que exista uma escala, não que ela seja pequena.
+
+O modo escuro passou a ser o padrão do app. O claro continua sob o mesmo rigor
+de medição — não é descarte, é escolha.
+
+**Não mudou:** o nome e o logo. O dono levantou a possibilidade e não pediu na
+instrução seguinte; ficam como estão até ele decidir.
