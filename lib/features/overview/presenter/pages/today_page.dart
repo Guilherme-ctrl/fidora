@@ -8,10 +8,11 @@ import 'package:financeiro_ai/features/overview/domain/insights.dart';
 import 'package:financeiro_ai/features/invoices/domain/invoice_forecast.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/overview/domain/narrative.dart';
-import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
+import 'package:financeiro_ai/core/routing/routes.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -169,9 +170,7 @@ class _ReviewCallout extends StatelessWidget {
           InkButton(
             label: 'Abrir a fila',
             icon: Icons.arrow_forward_rounded,
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(builder: (_) => const ReviewQueuePage()),
-            ),
+            onPressed: () => context.go(Routes.review),
           ),
         ],
       ),

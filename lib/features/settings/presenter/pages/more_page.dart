@@ -4,21 +4,14 @@ import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/core/theme/tokens.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
-import 'package:financeiro_ai/features/review/presenter/pages/merchant_rules_page.dart';
-import 'package:financeiro_ai/features/invoices/presenter/pages/projection_page.dart';
-import 'package:financeiro_ai/features/reminders/presenter/pages/reminders_page.dart';
-import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
-import 'package:financeiro_ai/features/catalog/presenter/pages/accounts_page.dart';
-import 'package:financeiro_ai/features/imports/presenter/pages/data_page.dart';
-import 'package:financeiro_ai/features/catalog/presenter/pages/holders_page.dart';
-import 'package:financeiro_ai/features/settings/presenter/pages/shortcut_tokens_page.dart';
-import 'package:financeiro_ai/features/invoices/presenter/pages/subscriptions_page.dart';
 import 'package:financeiro_ai/features/catalog/presenter/widgets/goal_form_sheet.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:financeiro_ai/features/settings/presenter/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/core/theme/typography.dart';
 import 'package:financeiro_ai/features/imports/presenter/import_flow.dart';
+import 'package:financeiro_ai/core/routing/routes.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -153,18 +146,7 @@ class MorePage extends StatelessWidget {
                 title: 'Projeção',
                 subtitle: 'Faturas, parcelas e conta nos próximos seis meses',
                 tooltip: 'Abrir a projeção financeira',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => Scaffold(
-                      appBar: AppBar(title: const Text('Projeção')),
-                      body: ProjectionPage(
-                        snapshot: snapshot,
-                        period: period,
-                        onPeriodChanged: (_) {},
-                      ),
-                    ),
-                  ),
-                ),
+                onTap: () => context.go(Routes.projectionDetail),
               ),
               _OperationTile(
                 icon: Icons.account_balance_rounded,
@@ -174,11 +156,7 @@ class MorePage extends StatelessWidget {
                     ? 'Onde o dinheiro fica fora do cartão'
                     : '${snapshot.accounts.length} cadastradas',
                 tooltip: 'Gerenciar contas e ver saldos',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => AccountsPage(snapshot: snapshot),
-                  ),
-                ),
+                onTap: () => context.go(Routes.accounts),
               ),
               _OperationTile(
                 icon: Icons.subscriptions_rounded,
@@ -186,11 +164,7 @@ class MorePage extends StatelessWidget {
                 title: 'Assinaturas',
                 subtitle: 'Quanto por mês em cobranças que se repetem',
                 tooltip: 'Ver cobranças recorrentes detectadas no histórico',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => SubscriptionsPage(snapshot: snapshot),
-                  ),
-                ),
+                onTap: () => context.go(Routes.subscriptions),
               ),
               _OperationTile(
                 icon: Icons.rule_folder_rounded,
@@ -200,11 +174,7 @@ class MorePage extends StatelessWidget {
                     ? 'Nada aguardando sua confirmação'
                     : '${snapshot.pendingReviews} ${snapshot.pendingReviews == 1 ? 'transação precisa' : 'transações precisam'} de confirmação',
                 tooltip: 'Abrir a fila de revisões pendentes',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ReviewQueuePage(),
-                  ),
-                ),
+                onTap: () => context.go(Routes.review),
               ),
               _OperationTile(
                 icon: Icons.upload_file_rounded,
@@ -231,11 +201,7 @@ class MorePage extends StatelessWidget {
                 title: 'Seus dados',
                 subtitle: 'Exportar CSV e ver o histórico de importações',
                 tooltip: 'Exportar seus lançamentos e revisar importações',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => DataPage(snapshot: snapshot),
-                  ),
-                ),
+                onTap: () => context.go(Routes.data),
               ),
               _OperationTile(
                 icon: Icons.people_alt_rounded,
@@ -245,11 +211,7 @@ class MorePage extends StatelessWidget {
                     ? 'Defina quais gastos entram nas suas finanças'
                     : '${snapshot.holders.length} cadastrados',
                 tooltip: 'Gerenciar titulares e cartões adicionais',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => HoldersPage(snapshot: snapshot),
-                  ),
-                ),
+                onTap: () => context.go(Routes.holders),
               ),
               _OperationTile(
                 icon: Icons.notifications_active_rounded,
@@ -257,11 +219,7 @@ class MorePage extends StatelessWidget {
                 title: 'Lembretes',
                 subtitle: 'Avisar antes de a fatura vencer',
                 tooltip: 'Configurar notificações de vencimento',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => RemindersPage(snapshot: snapshot),
-                  ),
-                ),
+                onTap: () => context.go(Routes.reminders),
               ),
               _OperationTile(
                 icon: Icons.psychology_alt_rounded,
@@ -269,11 +227,7 @@ class MorePage extends StatelessWidget {
                 title: 'Regras de estabelecimento',
                 subtitle: 'Categorize compras recorrentes automaticamente',
                 tooltip: 'Ver e editar regras de categorização',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const MerchantRulesPage(),
-                  ),
-                ),
+                onTap: () => context.go(Routes.merchantRules),
               ),
             ],
           ),
@@ -341,11 +295,7 @@ class _AutomationCard extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const ShortcutTokensPage(),
-                    ),
-                  ),
+                  onPressed: () => context.go(Routes.shortcutTokens),
                   icon: const Icon(Icons.key_rounded),
                   label: const Text('Gerenciar tokens'),
                 ),

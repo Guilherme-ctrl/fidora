@@ -23,6 +23,40 @@ abstract final class Routes {
   /// One transaction, by id. Opens on top of the history.
   static String transaction(String id) => '$transactions/$id';
 
+  /// The screens that open on top of the shell.
+  ///
+  /// Nine of the sixteen screens had no address at all: they were reached with
+  /// `Navigator.push` and a `MaterialPageRoute`, so they could not be linked,
+  /// did not survive a reload, and the browser's Back button left the app
+  /// instead of leaving them. The review queue is the worst of the nine — it
+  /// is a daily ritual with no URL.
+  ///
+  /// They hang off `/mais` because that is where all but one are reached from,
+  /// except the queue: it is also reached from Hoje and is a destination in its
+  /// own right.
+  static const review = '/revisao';
+  static const accounts = '/mais/contas';
+  static const holders = '/mais/titulares';
+  static const subscriptions = '/mais/assinaturas';
+  static const merchantRules = '/mais/regras';
+  static const reminders = '/mais/lembretes';
+  static const shortcutTokens = '/mais/tokens';
+  static const data = '/mais/dados';
+  static const projectionDetail = '/mais/projecao';
+
+  /// Addresses that render over the shell rather than inside it.
+  static const overlays = [
+    review,
+    accounts,
+    holders,
+    subscriptions,
+    merchantRules,
+    reminders,
+    shortcutTokens,
+    data,
+    projectionDetail,
+  ];
+
   /// In the order the navigation shows them, so an index and a path are two
   /// views of the same thing.
   static const inOrder = [

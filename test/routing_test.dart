@@ -5,6 +5,15 @@ import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/transactions/domain/transaction_filter.dart';
 import 'package:financeiro_ai/core/routing/router.dart';
 import 'package:financeiro_ai/core/routing/routes.dart';
+import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
+import 'package:financeiro_ai/features/catalog/presenter/pages/accounts_page.dart';
+import 'package:financeiro_ai/features/catalog/presenter/pages/holders_page.dart';
+import 'package:financeiro_ai/features/invoices/presenter/pages/subscriptions_page.dart';
+import 'package:financeiro_ai/features/invoices/presenter/pages/projection_page.dart';
+import 'package:financeiro_ai/features/review/presenter/pages/merchant_rules_page.dart';
+import 'package:financeiro_ai/features/reminders/presenter/pages/reminders_page.dart';
+import 'package:financeiro_ai/features/settings/presenter/pages/shortcut_tokens_page.dart';
+import 'package:financeiro_ai/features/imports/presenter/pages/data_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -156,6 +165,46 @@ void main() {
 
     String where(GoRouter router) =>
         router.routerDelegate.currentConfiguration.uri.toString();
+
+    /// Nine screens had no address at all.
+    ///
+    /// They were `Navigator.push` with a `MaterialPageRoute`, so none could be
+    /// linked, none survived a reload, and the browser's Back button left the
+    /// app rather than leaving them. The review queue was the worst of the
+    /// nine: a daily ritual with no URL.
+    for (final entry in {
+      Routes.review: ReviewQueuePage,
+      Routes.accounts: AccountsPage,
+      Routes.holders: HoldersPage,
+      Routes.subscriptions: SubscriptionsPage,
+      Routes.merchantRules: MerchantRulesPage,
+      Routes.reminders: RemindersPage,
+      Routes.shortcutTokens: ShortcutTokensPage,
+      Routes.data: DataPage,
+      Routes.projectionDetail: ProjectionPage,
+    }.entries) {
+      testWidgets('${entry.key} opens ${entry.value} directly', (tester) async {
+        // Landing on the address is what a reload and a pasted link both do.
+        final router = await pump(tester, at: entry.key);
+
+        expect(where(router), entry.key);
+        expect(find.byType(entry.value), findsOneWidget);
+      });
+    }
+
+    testWidgets('every overlay address is routed', (tester) async {
+      // A guard against adding a constant and forgetting the route: an
+      // unrouted address falls through to the error screen.
+      for (final path in Routes.overlays) {
+        final router = await pump(tester, at: path);
+        expect(
+          find.textContaining('não existe no Finora'),
+          findsNothing,
+          reason: path,
+        );
+        expect(where(router), path);
+      }
+    });
 
     testWidgets('opening a destination changes the address', (tester) async {
       await withGoldenClock(() async {
