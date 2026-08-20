@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 
-import 'package:file_selector/file_selector.dart';
+import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';
@@ -293,16 +293,17 @@ class MorePage extends ConsumerWidget {
 
   Future<void> _pickInvoice(BuildContext context, WidgetRef ref) async {
     try {
-      const jsonType = XTypeGroup(
+      const jsonType = FileTypeFilter(
         label: 'JSON do Finora',
         extensions: ['json'],
         mimeTypes: ['application/json'],
         uniformTypeIdentifiers: ['public.json'],
       );
-      final picked = await openFile(acceptedTypeGroups: const [jsonType]);
+      final picked = await ref
+          .read(filePickerProvider)
+          .pickFile(accept: const [jsonType]);
       if (picked == null || !context.mounted) return;
-      final bytes = await picked.readAsBytes();
-      final document = InvoiceImportDocument.decode(utf8.decode(bytes));
+      final document = InvoiceImportDocument.decode(utf8.decode(picked.bytes));
       if (!context.mounted) return;
       await _runImport(context, ref, document);
     } on InvoiceImportException catch (error) {
@@ -318,14 +319,16 @@ class MorePage extends ConsumerWidget {
   /// JSON produced outside the app.
   Future<void> _pickStatement(BuildContext context, WidgetRef ref) async {
     try {
-      const sheetType = XTypeGroup(
+      const sheetType = FileTypeFilter(
         label: 'Extrato (CSV ou XLSX)',
         extensions: ['csv', 'txt', 'xlsx'],
       );
-      final picked = await openFile(acceptedTypeGroups: const [sheetType]);
+      final picked = await ref
+          .read(filePickerProvider)
+          .pickFile(accept: const [sheetType]);
       if (picked == null || !context.mounted) return;
 
-      final bytes = await picked.readAsBytes();
+      final bytes = picked.bytes;
       final isXlsx = picked.name.toLowerCase().endsWith('.xlsx');
       final cells = isXlsx
           ? readXlsxCells(bytes)

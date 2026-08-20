@@ -9,7 +9,6 @@ import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Export and import history in one place: both answer "what is in here, and
 /// how do I get it out".
@@ -60,7 +59,7 @@ class DataPage extends ConsumerWidget {
                     FilledButton.icon(
                       onPressed: snapshot.transactions.isEmpty
                           ? null
-                          : () => _export(context),
+                          : () => _export(context, ref),
                       icon: const Icon(Icons.ios_share_rounded),
                       label: const Text('Exportar CSV'),
                     ),
@@ -122,16 +121,13 @@ class DataPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _export(BuildContext context) async {
+  Future<void> _export(BuildContext context, WidgetRef ref) async {
     final csv = buildTransactionsCsv(snapshot, snapshot.transactions);
-    final file = XFile.fromData(
-      utf8.encode(csv),
-      mimeType: 'text/csv',
-      name: csvFileName(clock.now()),
-    );
     try {
-      await SharePlus.instance.share(
-        ShareParams(files: [file], fileNameOverrides: [file.name]),
+      await ref.read(shareServiceProvider).shareFile(
+        bytes: utf8.encode(csv),
+        name: csvFileName(clock.now()),
+        mimeType: 'text/csv',
       );
     } catch (error, stack) {
       appLogger.error('shareCsv', error, stack);

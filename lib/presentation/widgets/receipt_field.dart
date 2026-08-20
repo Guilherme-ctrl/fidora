@@ -8,7 +8,7 @@ import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:financeiro_ai/core/platform/file_access.dart';
 
 /// A receipt picked but not yet stored.
 class PendingReceipt {
@@ -114,12 +114,12 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
           runSpacing: 8,
           children: [
             OutlinedButton.icon(
-              onPressed: _busy ? null : () => _pick(ImageSource.camera),
+              onPressed: _busy ? null : () => _pick(ImageOrigin.camera),
               icon: const Icon(Icons.photo_camera_outlined, size: 18),
               label: const Text('Fotografar'),
             ),
             OutlinedButton.icon(
-              onPressed: _busy ? null : () => _pick(ImageSource.gallery),
+              onPressed: _busy ? null : () => _pick(ImageOrigin.gallery),
               icon: const Icon(Icons.image_outlined, size: 18),
               label: const Text('Escolher imagem'),
             ),
@@ -152,27 +152,22 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
     );
   }
 
-  Future<void> _pick(ImageSource source) async {
+  Future<void> _pick(ImageOrigin origin) async {
     setState(() {
       _busy = true;
       _failure = null;
     });
 
     try {
-      final picked = await ImagePicker().pickImage(
-        source: source,
-        // Capped before the bytes are ever read: a full-resolution phone photo
-        // is several times the bucket's limit, and downscaling here costs
-        // nothing that text recognition needs.
-        maxWidth: 2000,
-        imageQuality: 85,
-      );
+      // Downscaling is the contract's default rather than an argument spelled
+      // out here: it is a property of what a receipt needs, not of this widget.
+      final picked = await ref.read(imageCaptureProvider).pick(origin);
       if (picked == null) {
         if (mounted) setState(() => _busy = false);
         return;
       }
 
-      final bytes = await picked.readAsBytes();
+      final bytes = picked.bytes;
       final recognizer = ref.read(receiptRecognizerProvider);
       ReceiptScan? scan;
       if (recognizer.isSupported) {

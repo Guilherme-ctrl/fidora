@@ -1,3 +1,5 @@
+import 'package:financeiro_ai/core/platform/file_access.dart';
+import 'package:financeiro_ai/core/platform/platform_services.dart';
 import 'package:financeiro_ai/domain/auth_repository.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
@@ -105,6 +107,18 @@ final authRepositoryProvider = Provider<AuthRepository>(
   (ref) => throw UnimplementedError(
     'AuthRepository must be overridden at startup.',
   ),
+);
+
+/// The three platform services, overridable in a test the same way the
+/// repositories are.
+final filePickerProvider = Provider<FilePicker>(
+  (ref) => const SystemFilePicker(),
+);
+final imageCaptureProvider = Provider<ImageCapture>(
+  (ref) => const SystemImageCapture(),
+);
+final shareServiceProvider = Provider<ShareService>(
+  (ref) => const SystemShareService(),
 );
 
 final financeCatalogProvider = FutureProvider<FinanceCatalog>(

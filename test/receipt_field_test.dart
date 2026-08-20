@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/receipt_recognizer.dart';
+import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -13,6 +14,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
+/// Hands back a fixed image instead of opening a camera.
+///
+/// `ImagePicker()` used to be constructed inside the widget, so no test could
+/// reach the branch that follows a successful pick — the one that reads the
+/// bytes, runs recognition and reports the attachment upward.
+class _FakeCapture implements ImageCapture {
+  _FakeCapture(this.result);
+
+  final PickedFile? result;
+  final origins = <ImageOrigin>[];
+
+  @override
+  bool supports(ImageOrigin origin) => true;
+
+  @override
+  Future<PickedFile?> pick(
+    ImageOrigin origin, {
+    int maxWidth = 2000,
+    int quality = 85,
+  }) async {
+    origins.add(origin);
+    return result;
+  }
+}
 
 /// Reports itself as available so the form takes the recognizing path, without
 /// touching a camera or a native model.
@@ -48,8 +74,10 @@ Future<void> _pumpField(
   PendingReceipt? pending,
   String? existingPath,
   ReceiptRecognizer? recognizer,
+  ImageCapture? capture,
   ValueChanged<ReceiptScan>? onApply,
   VoidCallback? onCleared,
+  ValueChanged<PendingReceipt>? onPicked,
 }) async {
   await tester.pumpWidget(
     ProviderScope(
@@ -58,6 +86,7 @@ Future<void> _pumpField(
         receiptRecognizerProvider.overrideWithValue(
           recognizer ?? const UnavailableReceiptRecognizer(),
         ),
+        if (capture != null) imageCaptureProvider.overrideWithValue(capture),
       ],
       child: MaterialApp(
         theme: buildAppTheme(brightness: Brightness.light),
@@ -66,7 +95,7 @@ Future<void> _pumpField(
             child: ReceiptField(
               existingPath: existingPath,
               pending: pending,
-              onPicked: (_) {},
+              onPicked: onPicked ?? (_) {},
               onCleared: onCleared ?? () {},
               onApplyScan: onApply ?? (_) {},
             ),
@@ -120,6 +149,44 @@ void main() {
       await _pumpField(tester, recognizer: _FakeRecognizer());
 
       expect(find.textContaining('Fotografe a nota'), findsOneWidget);
+    });
+
+    testWidgets('a chosen photograph reaches the form', (tester) async {
+      // Unreachable before: the widget built its own ImagePicker, so the whole
+      // path after a successful pick had no test at all.
+      final capture = _FakeCapture(
+        PickedFile(name: 'nota.png', bytes: _png, mimeType: 'image/png'),
+      );
+      PendingReceipt? picked;
+      await _pumpField(
+        tester,
+        capture: capture,
+        onPicked: (receipt) => picked = receipt,
+      );
+
+      await tester.tap(find.text('Fotografar'));
+      await tester.pumpAndSettle();
+
+      expect(capture.origins, [ImageOrigin.camera]);
+      expect(picked?.fileName, 'nota.png');
+      expect(picked?.contentType, 'image/png');
+    });
+
+    testWidgets('cancelling the picker is not a failure', (tester) async {
+      final capture = _FakeCapture(null);
+      PendingReceipt? picked;
+      await _pumpField(
+        tester,
+        capture: capture,
+        onPicked: (receipt) => picked = receipt,
+      );
+
+      await tester.tap(find.text('Escolher imagem'));
+      await tester.pumpAndSettle();
+
+      expect(capture.origins, [ImageOrigin.gallery]);
+      expect(picked, isNull);
+      expect(find.textContaining('Não foi possível'), findsNothing);
     });
 
     testWidgets('shows what was read and offers to apply it', (tester) async {
