@@ -11,7 +11,8 @@ import 'package:financeiro_ai/presentation/widgets/invoice_forecast_card.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/application/providers.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -497,11 +498,11 @@ Future<void> _setPaid(
         ),
       );
     }
-  } on FinanceWriteException catch (error) {
+  } on Failure catch (failure) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(error.message),
+          content: Text(FailureCopy.of(failure).short),
           backgroundColor: context.palette.negative,
         ),
       );

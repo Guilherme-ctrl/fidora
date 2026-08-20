@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/application/receipt_recognizer.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
@@ -162,8 +163,10 @@ void main() {
     await pumpForm(
       tester,
       snapshot: snapshot,
-      onSave: (_) async =>
-          throw const FinanceWriteException('Sua sessão expirou.'),
+      // A typed failure, not a sentence: this now also proves the copy layer
+      // resolves it. Before, the test handed the widget the finished text and
+      // could not have caught the copy going missing.
+      onSave: (_) async => throw const SessionExpired(),
     );
 
     await tester.enterText(
@@ -177,7 +180,7 @@ void main() {
     await tester.pumpAndSettle();
     await tapSave(tester);
 
-    expect(find.text('Sua sessão expirou.'), findsOneWidget);
+    expect(find.text('Sua sessão expirou'), findsOneWidget);
     expect(find.text('Salvar transação'), findsOneWidget);
   });
 

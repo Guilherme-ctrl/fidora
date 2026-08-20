@@ -148,12 +148,3 @@ class TransactionDraft {
     notes: notes ?? this.notes,
   );
 }
-
-/// Raised when a write cannot be completed. Carries a message already written
-/// for the person using the app, the same contract as `InvoiceImportException`.
-class FinanceWriteException implements Exception {
-  const FinanceWriteException(this.message);
-  final String message;
-  @override
-  String toString() => message;
-}

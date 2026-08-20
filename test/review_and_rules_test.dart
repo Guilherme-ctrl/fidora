@@ -1,8 +1,8 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -206,7 +206,7 @@ void main() {
         repository.saveMerchantRule(
           const MerchantRuleDraft(pattern: 'ifood', categoryId: '1'),
         ),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<DuplicateMerchantRule>()),
       );
       expect(await repository.loadMerchantRules(), hasLength(3));
     });
@@ -233,7 +233,7 @@ void main() {
         repository.saveMerchantRule(
           const MerchantRuleDraft(pattern: 'AB', categoryId: '1'),
         ),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<ValidationFailure>()),
       );
       expect(await repository.loadMerchantRules(), hasLength(3));
     });

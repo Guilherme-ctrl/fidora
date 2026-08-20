@@ -6,6 +6,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/csv_export.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -132,7 +133,8 @@ class DataPage extends ConsumerWidget {
       await SharePlus.instance.share(
         ShareParams(files: [file], fileNameOverrides: [file.name]),
       );
-    } catch (_) {
+    } catch (error, stack) {
+      appLogger.error('shareCsv', error, stack);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

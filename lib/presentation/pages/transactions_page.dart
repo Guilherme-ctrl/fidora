@@ -5,7 +5,6 @@ import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/pages/merchant_rules_page.dart';
 import 'package:financeiro_ai/presentation/widgets/filter_sheet.dart';
@@ -14,6 +13,8 @@ import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'dart:async';
 
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -316,11 +317,11 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
           ),
         );
       }
-    } on FinanceWriteException catch (error) {
+    } on Failure catch (failure) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.message),
+            content: Text(FailureCopy.of(failure).short),
             backgroundColor: context.palette.negative,
           ),
         );
@@ -405,11 +406,11 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
                 ),
         ),
       );
-    } on FinanceWriteException catch (error) {
+    } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.message),
+            content: Text(FailureCopy.of(failure).short),
             backgroundColor: context.palette.negative,
           ),
         );

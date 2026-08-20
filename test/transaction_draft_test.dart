@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
@@ -134,7 +135,7 @@ void main() {
       final before = (await repository.loadSnapshot()).transactions.length;
       await expectLater(
         repository.saveTransaction(draft(amount: -10)),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<ValidationFailure>()),
       );
       expect((await repository.loadSnapshot()).transactions.length, before);
     });

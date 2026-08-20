@@ -1,6 +1,6 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -71,7 +71,7 @@ void main() {
       final repository = DemoFinanceRepository();
       await expectLater(
         repository.createShortcutToken('x'),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<ValidationFailure>()),
       );
       expect(await repository.loadShortcutTokens(), isEmpty);
     });
@@ -89,7 +89,7 @@ void main() {
     test('revoking an unknown id is refused', () async {
       await expectLater(
         DemoFinanceRepository().revokeShortcutToken('nope'),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<RecordNotFound>()),
       );
     });
   });

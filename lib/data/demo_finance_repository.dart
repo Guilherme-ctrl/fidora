@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -217,15 +218,13 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<void> saveTransaction(TransactionDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) {
-      throw FinanceWriteException(errors.firstMessage!);
+      throw ValidationFailure(errors.firstMessage!);
     }
     final category = _categories
         .where((item) => item.id == draft.categoryId)
         .firstOrNull;
     if (category == null) {
-      throw const FinanceWriteException(
-        'A categoria escolhida não existe mais.',
-      );
+      throw const RecordNotFound(RecordKind.category);
     }
     final card = _cards.where((item) => item.id == draft.cardId).firstOrNull;
     final saved = FinanceTransaction(
@@ -267,9 +266,7 @@ class DemoFinanceRepository implements FinanceRepository {
         .where((item) => item.id == categoryId)
         .firstOrNull;
     if (category == null) {
-      throw const FinanceWriteException(
-        'A categoria escolhida não existe mais.',
-      );
+      throw const RecordNotFound(RecordKind.category);
     }
     for (final id in ids) {
       final index = _transactions.indexWhere((item) => item.id == id);
@@ -320,7 +317,7 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<void> setInvoicePaid(String invoiceId, {required bool paid}) async {
     final index = _invoices.indexWhere((item) => item.id == invoiceId);
     if (index == -1) {
-      throw const FinanceWriteException('Fatura não encontrada.');
+      throw const RecordNotFound(RecordKind.invoice);
     }
     final invoice = _invoices[index];
     _invoices[index] = Invoice(
@@ -339,12 +336,12 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> saveCard(CardDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final clash = _cards.any(
       (item) => item.id != draft.id && item.lastFour == draft.lastFour.trim(),
     );
     if (clash) {
-      throw const FinanceWriteException('Já existe um cartão com esse final.');
+      throw const DuplicateCard();
     }
     final saved = CreditCard(
       id: draft.id ?? _uuid.v4(),
@@ -375,16 +372,14 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> saveCategory(CategoryDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final clash = _categories.any(
       (item) =>
           item.id != draft.id &&
           item.name.toLowerCase() == draft.name.trim().toLowerCase(),
     );
     if (clash) {
-      throw const FinanceWriteException(
-        'Já existe uma categoria com esse nome.',
-      );
+      throw const DuplicateCategory();
     }
     final saved = FinanceCategory(
       id: draft.id ?? _uuid.v4(),
@@ -409,7 +404,7 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> saveGoal(GoalDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final saved = Goal(
       id: draft.id ?? _uuid.v4(),
       name: draft.name.trim(),
@@ -433,14 +428,14 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> saveAccount(AccountDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final clash = _accounts.any(
       (item) =>
           item.id != draft.id &&
           item.name.toLowerCase() == draft.name.trim().toLowerCase(),
     );
     if (clash) {
-      throw const FinanceWriteException('Já existe uma conta com esse nome.');
+      throw const DuplicateAccount();
     }
     final saved = Account(
       id: draft.id ?? _uuid.v4(),
@@ -466,14 +461,14 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<void> saveHolder(HolderDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final clash = _holders.any(
       (item) =>
           item.id != draft.id &&
           item.name.toLowerCase() == draft.name.trim().toLowerCase(),
     );
     if (clash) {
-      throw const FinanceWriteException('Já existe um portador com esse nome.');
+      throw const DuplicateHolder();
     }
     final saved = Holder(
       id: draft.id ?? _uuid.v4(),
@@ -513,7 +508,7 @@ class DemoFinanceRepository implements FinanceRepository {
   @override
   Future<IssuedShortcutToken> createShortcutToken(String name) async {
     final errors = validateTokenName(name);
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final secret = generateShortcutSecret();
     final token = ShortcutToken(
       id: _uuid.v4(),
@@ -528,7 +523,7 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<void> revokeShortcutToken(String id) async {
     final index = _tokens.indexWhere((item) => item.id == id);
     if (index == -1) {
-      throw const FinanceWriteException('Token não encontrado.');
+      throw const RecordNotFound(RecordKind.token);
     }
     final token = _tokens[index];
     _tokens[index] = ShortcutToken(
@@ -549,15 +544,13 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<void> saveMerchantRule(MerchantRuleDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) {
-      throw FinanceWriteException(errors.firstMessage!);
+      throw ValidationFailure(errors.firstMessage!);
     }
     final category = _categories
         .where((item) => item.id == draft.categoryId)
         .firstOrNull;
     if (category == null) {
-      throw const FinanceWriteException(
-        'A categoria escolhida não existe mais.',
-      );
+      throw const RecordNotFound(RecordKind.category);
     }
     final pattern = draft.pattern.trim();
     final clash = _rules.any(
@@ -566,9 +559,7 @@ class DemoFinanceRepository implements FinanceRepository {
           item.pattern.toLowerCase() == pattern.toLowerCase(),
     );
     if (clash) {
-      throw const FinanceWriteException(
-        'Já existe uma regra para esse trecho.',
-      );
+      throw const DuplicateMerchantRule();
     }
     final saved = MerchantRule(
       id: draft.id ?? _uuid.v4(),
@@ -609,7 +600,7 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<String> receiptUrl(String path) async {
     final url = _receipts[path];
     if (url == null) {
-      throw const FinanceWriteException('Comprovante não encontrado.');
+      throw const RecordNotFound(RecordKind.receipt);
     }
     return url;
   }

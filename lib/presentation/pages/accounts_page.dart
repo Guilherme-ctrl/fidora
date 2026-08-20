@@ -4,9 +4,11 @@ import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/core/logging/logger.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -117,11 +119,11 @@ class AccountsPage extends ConsumerWidget {
           ),
         );
       }
-    } on FinanceWriteException catch (error) {
+    } on Failure catch (failure) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(error.message),
+            content: Text(FailureCopy.of(failure).short),
             backgroundColor: context.palette.negative,
           ),
         );
@@ -354,17 +356,18 @@ class _AccountFormState extends State<_AccountForm> {
     try {
       await widget.onSave(draft);
       if (mounted) Navigator.of(context).pop(true);
-    } on FinanceWriteException catch (error) {
+    } on Failure catch (failure) {
       if (mounted) {
         setState(() {
-          _failure = error.message;
+          _failure = FailureCopy.of(failure).short;
           _saving = false;
         });
       }
-    } catch (_) {
+    } catch (error, stack) {
+      appLogger.error('saveAccount', error, stack);
       if (mounted) {
         setState(() {
-          _failure = 'Não foi possível salvar. Verifique sua conexão.';
+          _failure = FailureCopy.from(error, stack).short;
           _saving = false;
         });
       }

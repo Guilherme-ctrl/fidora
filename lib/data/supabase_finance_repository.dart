@@ -1,4 +1,6 @@
 import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/data/supabase_failures.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -47,13 +49,11 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> saveTransaction(TransactionDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) {
-      throw FinanceWriteException(errors.firstMessage!);
+      throw ValidationFailure(errors.firstMessage!);
     }
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const FinanceWriteException(
-        'Entre na sua conta para salvar lançamentos.',
-      );
+      throw const SessionExpired();
     }
 
     final card = draft.cardId == null ? null : await _loadCard(draft.cardId!);
@@ -105,8 +105,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
         payload['dedup_key'] = 'manual:${_uuid.v4()}';
         await _client.from('transactions').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -114,8 +114,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> deleteTransaction(String id) async {
     try {
       await _client.from('transactions').delete().eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -136,13 +136,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
             'updated_at': DateTime.now().toUtc().toIso8601String(),
           })
           .inFilter('id', ids);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
-  Future<List<ReviewItem>> loadReviewQueue() async {
+  Future<List<ReviewItem>> loadReviewQueue() => _mapped(_loadReviewQueue);
+
+  Future<List<ReviewItem>> _loadReviewQueue() async {
     final rows = await _client
         .from('review_queue')
         .select()
@@ -164,8 +166,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
             'resolved_at': DateTime.now().toUtc().toIso8601String(),
           })
           .eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -181,15 +183,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
             'paid_at': paid ? DateTime.now().toUtc().toIso8601String() : null,
           })
           .eq('id', invoiceId);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
   Future<void> saveCard(CardDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final userId = _requireUser();
     final payload = {
       'user_id': userId,
@@ -210,8 +212,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('cards').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyCardError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -219,15 +221,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> setCardActive(String id, {required bool active}) async {
     try {
       await _client.from('cards').update({'active': active}).eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
   Future<void> saveCategory(CategoryDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final userId = _requireUser();
     final payload = {
       'user_id': userId,
@@ -244,8 +246,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('categories').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyCategoryError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -253,42 +255,25 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> setCategoryActive(String id, {required bool active}) async {
     try {
       await _client.from('categories').update({'active': active}).eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   String _requireUser() {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const FinanceWriteException('Entre na sua conta para salvar.');
+      throw const SessionExpired();
     }
     return userId;
   }
 
-  String _friendlyCardError(PostgrestException error) {
-    final text = '${error.code} ${error.message}';
-    if (text.contains('cards_user_id_last_four_key')) {
-      return 'Já existe um cartão com esse final.';
-    }
-    if (text.contains('last_four_check')) {
-      return 'O final precisa ter exatamente 4 dígitos.';
-    }
-    if (text.contains('closing_day_check') || text.contains('due_day_check')) {
-      return 'Os dias de fechamento e vencimento vão de 1 a 31.';
-    }
-    return _friendlyWriteError(error);
-  }
 
-  String _friendlyCategoryError(PostgrestException error) =>
-      '${error.code} ${error.message}'.contains('categories_user_id_name_key')
-      ? 'Já existe uma categoria com esse nome.'
-      : _friendlyWriteError(error);
 
   @override
   Future<void> saveGoal(GoalDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final payload = {
       'user_id': _requireUser(),
       'name': draft.name.trim(),
@@ -305,8 +290,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('goals').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -314,15 +299,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> setGoalActive(String id, {required bool active}) async {
     try {
       await _client.from('goals').update({'active': active}).eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
   Future<void> saveAccount(AccountDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final payload = {
       'user_id': _requireUser(),
       'name': draft.name.trim(),
@@ -338,12 +323,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('accounts').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(
-        '${error.code} ${error.message}'.contains('accounts_user_id_name_key')
-            ? 'Já existe uma conta com esse nome.'
-            : _friendlyWriteError(error),
-      );
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -351,15 +332,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> setAccountActive(String id, {required bool active}) async {
     try {
       await _client.from('accounts').update({'active': active}).eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
   Future<void> saveHolder(HolderDraft draft) async {
     final errors = draft.validate();
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final payload = {
       'user_id': _requireUser(),
       'name': draft.name.trim(),
@@ -371,12 +352,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('holders').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(
-        '${error.code} ${error.message}'.contains('holders_user_id_name_key')
-            ? 'Já existe um portador com esse nome.'
-            : _friendlyWriteError(error),
-      );
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -385,13 +362,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
     try {
       // Cards keep working: the foreign key is `on delete set null`.
       await _client.from('holders').delete().eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
-  Future<List<ImportBatch>> loadImportBatches() async {
+  Future<List<ImportBatch>> loadImportBatches() => _mapped(_loadImportBatches);
+
+  Future<List<ImportBatch>> _loadImportBatches() async {
     final rows = await _client
         .from('import_batches')
         .select()
@@ -403,7 +382,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<List<ShortcutToken>> loadShortcutTokens() async {
+  Future<List<ShortcutToken>> loadShortcutTokens() => _mapped(_loadShortcutTokens);
+
+  Future<List<ShortcutToken>> _loadShortcutTokens() async {
     final rows = await _client
         .from('shortcut_tokens')
         .select()
@@ -416,12 +397,10 @@ class SupabaseFinanceRepository implements FinanceRepository {
   @override
   Future<IssuedShortcutToken> createShortcutToken(String name) async {
     final errors = validateTokenName(name);
-    if (!errors.isEmpty) throw FinanceWriteException(errors.firstMessage!);
+    if (!errors.isEmpty) throw ValidationFailure(errors.firstMessage!);
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const FinanceWriteException(
-        'Entre na sua conta para gerar tokens.',
-      );
+      throw const SessionExpired();
     }
     final secret = generateShortcutSecret();
     try {
@@ -439,8 +418,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
         secret: secret,
         token: ShortcutToken.fromJson(row),
       );
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -451,13 +430,15 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .from('shortcut_tokens')
           .update({'revoked_at': DateTime.now().toUtc().toIso8601String()})
           .eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
-  Future<List<MerchantRule>> loadMerchantRules() async {
+  Future<List<MerchantRule>> loadMerchantRules() => _mapped(_loadMerchantRules);
+
+  Future<List<MerchantRule>> _loadMerchantRules() async {
     final rows = await _client
         .from('merchant_rules')
         .select('*, categories(name)')
@@ -472,13 +453,11 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> saveMerchantRule(MerchantRuleDraft draft) async {
     final errors = draft.validate();
     if (!errors.isEmpty) {
-      throw FinanceWriteException(errors.firstMessage!);
+      throw ValidationFailure(errors.firstMessage!);
     }
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const FinanceWriteException(
-        'Entre na sua conta para salvar regras.',
-      );
+      throw const SessionExpired();
     }
     final payload = {
       'user_id': userId,
@@ -497,8 +476,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       } else {
         await _client.from('merchant_rules').insert(payload);
       }
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyRuleError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -506,8 +485,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> deleteMerchantRule(String id) async {
     try {
       await _client.from('merchant_rules').delete().eq('id', id);
-    } on PostgrestException catch (error) {
-      throw FinanceWriteException(_friendlyWriteError(error));
+    } on PostgrestException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -519,7 +498,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
-      throw const FinanceWriteException('Entre na sua conta para anexar.');
+      throw const SessionExpired();
     }
     // The owner id is the first path segment because that is exactly what the
     // storage policies match on. Any other shape uploads fine and then fails
@@ -534,13 +513,16 @@ class SupabaseFinanceRepository implements FinanceRepository {
             fileOptions: FileOptions(contentType: contentType, upsert: false),
           );
       return path;
-    } on StorageException catch (error) {
-      throw FinanceWriteException(_friendlyStorageError(error));
+    } on StorageException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
   @override
-  Future<String> receiptUrl(String path) async {
+  Future<String> receiptUrl(String path) =>
+      _mapped(() => _receiptUrl(path));
+
+  Future<String> _receiptUrl(String path) async {
     try {
       // Short-lived on purpose: the bucket is private, and a long-lived link
       // would be a permanent public address for a document that shows a
@@ -548,8 +530,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       return await _client.storage
           .from('receipts')
           .createSignedUrl(path, 60 * 10);
-    } on StorageException catch (error) {
-      throw FinanceWriteException(_friendlyStorageError(error));
+    } on StorageException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
@@ -557,30 +539,12 @@ class SupabaseFinanceRepository implements FinanceRepository {
   Future<void> deleteReceipt(String path) async {
     try {
       await _client.storage.from('receipts').remove([path]);
-    } on StorageException catch (error) {
-      throw FinanceWriteException(_friendlyStorageError(error));
+    } on StorageException catch (error, stack) {
+      throw error.toFailure(stack);
     }
   }
 
-  String _friendlyStorageError(StorageException error) {
-    final text = '${error.statusCode} ${error.message}';
-    if (text.contains('413') || text.toLowerCase().contains('too large')) {
-      return 'A imagem passa de 10 MB. Tire a foto em resolução menor.';
-    }
-    if (text.contains('403') || text.contains('401')) {
-      return 'Sem permissão para guardar o comprovante.';
-    }
-    return 'Não foi possível guardar o comprovante. Tente de novo.';
-  }
 
-  String _friendlyRuleError(PostgrestException error) {
-    if ('${error.code} ${error.message}'.contains(
-      'merchant_rules_user_id_pattern_key',
-    )) {
-      return 'Já existe uma regra para esse trecho.';
-    }
-    return _friendlyWriteError(error);
-  }
 
   Future<Map<String, dynamic>> _loadCard(String cardId) async {
     final card = await _client
@@ -589,9 +553,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .eq('id', cardId)
         .maybeSingle();
     if (card == null) {
-      throw const FinanceWriteException(
-        'O cartão escolhido não está mais disponível.',
-      );
+      throw const RecordNotFound(RecordKind.card);
     }
     return card;
   }
@@ -629,18 +591,20 @@ class SupabaseFinanceRepository implements FinanceRepository {
     return created['id'] as String;
   }
 
-  String _friendlyWriteError(PostgrestException error) {
-    final text = '${error.code} ${error.message}';
-    if (text.contains('transactions_user_id_dedup_key_key')) {
-      return 'Este lançamento já existe no seu histórico.';
+
+  /// Every read passes through here.
+  ///
+  /// The write path maps at each `on PostgrestException` because it needs the
+  /// constraint name to tell a duplicate from a refusal. Reads have no such
+  /// branch and were simply letting the exception through — which is how a
+  /// `PostgrestException` used to reach a `Text` widget, and how the loading
+  /// screen ended up classifying errors by substring of `toString()`.
+  Future<T> _mapped<T>(Future<T> Function() body) async {
+    try {
+      return await body();
+    } catch (error, stack) {
+      throw supabaseFailure(error, stack);
     }
-    if (text.contains('amount_check')) {
-      return 'O valor precisa ser maior que zero.';
-    }
-    if (error.code == '42501' || text.contains('row-level security')) {
-      return 'Sua sessão expirou. Entre novamente para salvar.';
-    }
-    return 'Não foi possível salvar o lançamento. Tente novamente.';
   }
 
   static String _isoDate(DateTime date) =>
@@ -660,7 +624,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<FinanceCatalog> loadCatalog() async {
+  Future<FinanceCatalog> loadCatalog() => _mapped(_loadCatalog);
+
+  Future<FinanceCatalog> _loadCatalog() async {
     final results = await Future.wait([
       _client
           .from('categories')
@@ -717,7 +683,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
   static const _maxTransactions = 50000;
 
   @override
-  Future<FinanceLedger> loadLedger() async {
+  Future<FinanceLedger> loadLedger() => _mapped(_loadLedger);
+
+  Future<FinanceLedger> _loadLedger() async {
     final rows = <Map<String, dynamic>>[];
     var truncated = false;
 

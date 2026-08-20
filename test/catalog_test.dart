@@ -1,7 +1,7 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -123,7 +123,7 @@ void main() {
       final existing = (await repository.loadSnapshot()).cards.first;
       await expectLater(
         repository.saveCard(cardDraft(lastFour: existing.lastFour)),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<DuplicateCard>()),
       );
     });
 
@@ -180,7 +180,7 @@ void main() {
             iconName: 'restaurant',
           ),
         ),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<DuplicateCategory>()),
       );
     });
   });

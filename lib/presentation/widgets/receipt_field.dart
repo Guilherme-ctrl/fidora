@@ -5,6 +5,7 @@ import 'package:financeiro_ai/application/receipt_recognizer.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/receipt_scan.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -179,7 +180,11 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
         // useful on its own, and recognition is the bonus.
         try {
           scan = await recognizer.scan(picked.path);
-        } catch (_) {
+        } catch (error, stack) {
+          // The photograph survives a failed reading on purpose — the
+          // attachment is useful alone and recognition is the bonus — but the
+          // cause is no longer thrown away with it.
+          appLogger.error('receiptRecognizer.scan', error, stack);
           scan = null;
         }
       }
@@ -194,7 +199,8 @@ class _ReceiptFieldState extends ConsumerState<ReceiptField> {
           scan: scan,
         ),
       );
-    } catch (_) {
+    } catch (error, stack) {
+      appLogger.error('receiptField.pick', error, stack);
       if (mounted) {
         setState(() {
           _busy = false;

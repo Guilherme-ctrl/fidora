@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/insights.dart';
@@ -178,7 +179,7 @@ void main() {
       final repository = DemoFinanceRepository();
       await expectLater(
         repository.saveAccount(const AccountDraft(name: 'conta corrente')),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<DuplicateAccount>()),
       );
     });
 

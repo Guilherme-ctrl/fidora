@@ -1,9 +1,11 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
-import 'package:financeiro_ai/domain/load_failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
+import 'package:financeiro_ai/data/supabase_failures.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:financeiro_ai/domain/comparison.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Invoice invoice({required String status, required DateTime dueDate}) => Invoice(
@@ -89,9 +91,9 @@ void main() {
     });
   });
 
-  group('LoadFailure', () {
+  group('Classificação de falhas', () {
     test('recognises a dropped connection', () {
-      final failure = LoadFailure.from(
+      final failure = FailureCopy.from(
         Exception('SocketException: Failed host lookup'),
       );
       expect(failure.message, 'Sem conexão com o servidor');
@@ -100,35 +102,64 @@ void main() {
 
     test('recognises a timeout', () {
       expect(
-        LoadFailure.from(Exception('Connection timed out')).message,
+        FailureCopy.from(Exception('Connection timed out')).message,
         'O servidor demorou para responder',
       );
     });
 
     test('an expired session is not offered a retry', () {
-      final failure = LoadFailure.from(Exception('JWT expired'));
+      final failure = FailureCopy.from(Exception('JWT expired'));
       expect(failure.message, 'Sua sessão expirou');
       expect(failure.canRetry, isFalse);
     });
 
-    test('recognises a policy rejection', () {
-      expect(
-        LoadFailure.from(
-          Exception('new row violates row-level security policy'),
-        ).message,
-        'Sem permissão para ler estes dados',
-      );
-    });
-
     test('an unknown error still gets a readable message', () {
-      final failure = LoadFailure.from(Exception('weird backend explosion'));
-      expect(failure.message, 'Não foi possível carregar seus dados');
+      final failure = FailureCopy.from(Exception('weird backend explosion'));
+      expect(failure.message, 'Não foi possível concluir a operação');
       expect(failure.canRetry, isTrue);
     });
 
     test('the raw text is preserved for debugging', () {
-      final failure = LoadFailure.from(Exception('PostgrestException(42P01)'));
+      final failure = FailureCopy.from(Exception('PostgrestException(42P01)'));
       expect(failure.detail, contains('42P01'));
+    });
+
+    test('a policy rejection is not an expired session', () {
+      // These were the same message before, so an ownership bug read as a
+      // login problem. The session is valid; it just does not own the row.
+      final failure = supabaseFailure(
+        PostgrestException(message: 'row-level security', code: '42501'),
+        StackTrace.current,
+      );
+      expect(failure, isA<PermissionDenied>());
+      expect(
+        FailureCopy.of(failure).message,
+        'Sem permissão para acessar estes dados',
+      );
+    });
+
+    test('a constraint violation is business, not technical', () {
+      final failure = supabaseFailure(
+        PostgrestException(
+          message: 'duplicate key value violates unique constraint '
+              '"transactions_user_id_dedup_key_key"',
+          code: '23505',
+        ),
+        StackTrace.current,
+      );
+      // The screen can now offer to open the existing row, which it could not
+      // do when this arrived as a sentence.
+      expect(failure, isA<DuplicateTransaction>());
+      expect(failure, isA<BusinessFailure>());
+    });
+
+    test('an unrecognised cause keeps its stack', () {
+      final failure = supabaseFailure(
+        StateError('nothing matches this'),
+        StackTrace.current,
+      );
+      expect(failure, isA<UnexpectedFailure>());
+      expect((failure as UnexpectedFailure).cause, isA<StateError>());
     });
   });
 
@@ -204,7 +235,7 @@ void main() {
     test('an unknown invoice is refused rather than ignored', () async {
       await expectLater(
         DemoFinanceRepository().setInvoicePaid('nope', paid: true),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<RecordNotFound>()),
       );
     });
 

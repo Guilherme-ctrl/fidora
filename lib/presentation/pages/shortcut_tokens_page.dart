@@ -1,8 +1,9 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -100,8 +101,8 @@ class ShortcutTokensPage extends ConsumerWidget {
           .createShortcutToken(name);
       await refreshShortcutTokens(ref);
       if (context.mounted) await _showSecret(context, issued);
-    } on FinanceWriteException catch (error) {
-      if (context.mounted) _toast(context, error.message, error: true);
+    } on Failure catch (failure) {
+      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
     }
   }
 
@@ -195,8 +196,8 @@ class ShortcutTokensPage extends ConsumerWidget {
       await ref.read(financeRepositoryProvider).revokeShortcutToken(token.id);
       await refreshShortcutTokens(ref);
       if (context.mounted) _toast(context, 'Token revogado.');
-    } on FinanceWriteException catch (error) {
-      if (context.mounted) _toast(context, error.message, error: true);
+    } on Failure catch (failure) {
+      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
     }
   }
 

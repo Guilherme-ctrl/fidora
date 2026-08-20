@@ -1,8 +1,8 @@
+import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 FinanceTransaction onCard(String id, String lastFour, double amount) =>
@@ -202,7 +202,7 @@ void main() {
       final repository = DemoFinanceRepository();
       await expectLater(
         repository.saveHolder(const HolderDraft(name: 'guilherme')),
-        throwsA(isA<FinanceWriteException>()),
+        throwsA(isA<DuplicateHolder>()),
       );
     });
 

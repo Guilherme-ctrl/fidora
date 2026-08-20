@@ -7,7 +7,7 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/core/tokens.dart';
 import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
-import 'package:financeiro_ai/domain/load_failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/pages/cards_page.dart';
@@ -195,7 +195,7 @@ class _AppShellState extends ConsumerState<AppShell> {
 
     Widget content() => switch ((snapshot, state.hasError)) {
       (null, true) => _ErrorState(
-        failure: LoadFailure.from(state.error!),
+        failure: FailureCopy.from(state.error!, state.stackTrace),
         onRetry: () => ref.invalidate(financeSnapshotProvider),
       ),
       (null, false) => const _SnapshotSkeleton(),
@@ -561,7 +561,7 @@ class _Brand extends StatelessWidget {
 
 class _ErrorState extends StatelessWidget {
   const _ErrorState({required this.failure, required this.onRetry});
-  final LoadFailure failure;
+  final FailureCopy failure;
   final VoidCallback onRetry;
 
   @override

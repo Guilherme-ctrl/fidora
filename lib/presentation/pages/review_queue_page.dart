@@ -3,7 +3,6 @@ import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/merchant_identity.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/tokens.dart';
@@ -11,6 +10,8 @@ import 'package:financeiro_ai/core/typography.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:flutter/services.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -129,11 +130,11 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
       });
       await refreshReviewQueue(ref);
       ref.invalidate(financeSnapshotProvider);
-    } on FinanceWriteException catch (error) {
+    } on Failure catch (failure) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(error.message)));
+        ).showSnackBar(SnackBar(content: Text(FailureCopy.of(failure).short)));
       }
     }
   }

@@ -2,8 +2,9 @@ import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/presentation/failure_copy.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -126,8 +127,8 @@ class HoldersPage extends ConsumerWidget {
       await ref.read(financeRepositoryProvider).saveHolder(draft);
       await refreshFinanceSnapshot(ref);
       if (context.mounted) _toast(context, 'Portador salvo.');
-    } on FinanceWriteException catch (error) {
-      if (context.mounted) _toast(context, error.message, error: true);
+    } on Failure catch (failure) {
+      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
     }
   }
 
@@ -164,8 +165,8 @@ class HoldersPage extends ConsumerWidget {
       await ref.read(financeRepositoryProvider).deleteHolder(holder.id);
       await refreshFinanceSnapshot(ref);
       if (context.mounted) _toast(context, 'Portador excluído.');
-    } on FinanceWriteException catch (error) {
-      if (context.mounted) _toast(context, error.message, error: true);
+    } on Failure catch (failure) {
+      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
     }
   }
 
