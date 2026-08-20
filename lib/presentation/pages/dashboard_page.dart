@@ -12,6 +12,7 @@ import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/presentation/widgets/insights_card.dart';
 import 'package:financeiro_ai/presentation/widgets/transaction_form_sheet.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';

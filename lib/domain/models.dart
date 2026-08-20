@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:flutter/material.dart';
 
 enum TransactionStatus { confirmed, pending, ignored }
 
@@ -96,51 +95,32 @@ class FinanceTransaction {
 
   bool get affectsExpenses => expenseImpact != 0;
 
-  factory FinanceTransaction.fromJson(Map<String, dynamic> json) =>
-      FinanceTransaction(
-        id: json['id'] as String,
-        date: DateTime.parse(json['purchased_at'] as String).toLocal(),
-        merchant:
-            (json['merchant_normalized'] ?? json['merchant_original'])
-                as String,
-        amount: (json['amount'] as num).toDouble(),
-        category: (json['categories']?['name'] ?? 'Sem categoria') as String,
-        cardLastFour: (json['cards']?['last_four'] ?? '----') as String,
-        competence: json['competence'] == null
-            ? null
-            : DateTime.parse(json['competence'] as String),
-        movementType: (json['movement_type'] ?? 'purchase') as String,
-        rawModality: json['raw_modality'] as String?,
-        installmentCurrent: json['installment_current'] as int?,
-        installmentTotal: json['installment_total'] as int?,
-        source: (json['source'] ?? 'manual') as String,
-        holderId: json['holder_id'] as String?,
-        personalAmount: (json['personal_amount'] as num?)?.toDouble(),
-        accountId: json['account_id'] as String?,
-        receiptPath: json['receipt_path'] as String?,
-        sourceFile: json['source_file'] as String?,
-        confidence: json['confidence'] as String?,
-        dedupKey: json['dedup_key'] as String?,
-        status: switch (json['status']) {
-          'pending' => TransactionStatus.pending,
-          'ignored' => TransactionStatus.ignored,
-          _ => TransactionStatus.confirmed,
-        },
-      );
 }
 
 class FinanceCategory {
   const FinanceCategory({
     required this.id,
     required this.name,
-    required this.icon,
-    required this.color,
+    required this.iconName,
+    required this.colorHex,
     this.monthlyBudget,
   });
   final String id;
   final String name;
-  final IconData icon;
-  final Color color;
+
+  /// The stored icon key, exactly as `categories.icon` holds it.
+  ///
+  /// A name rather than an `IconData`, and a hex string rather than a `Color`,
+  /// because those are Flutter types and this is the rules layer. Two fields
+  /// were enough to make the whole domain depend on the framework — and to
+  /// force `lib/data` to import Material just to build a category.
+  ///
+  /// `presentation/category_visuals.dart` resolves both.
+  final String iconName;
+
+  /// `#RRGGBB`, as `categories.color` holds it.
+  final String colorHex;
+
   final double? monthlyBudget;
 }
 
@@ -171,18 +151,6 @@ class CreditCard {
   /// its holder — see `cardCountsInTotals`.
   final bool includeInTotals;
 
-  factory CreditCard.fromJson(Map<String, dynamic> json) => CreditCard(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    bank: json['bank'] as String,
-    lastFour: json['last_four'] as String,
-    limit: (json['credit_limit'] as num?)?.toDouble() ?? 0,
-    closingDay: json['closing_day'] as int,
-    dueDay: json['due_day'] as int,
-    holder: (json['holder_name'] ?? '') as String,
-    holderId: json['holder_id'] as String?,
-    includeInTotals: (json['include_in_totals'] ?? true) as bool,
-  );
 }
 
 class Invoice {
@@ -205,27 +173,8 @@ class Invoice {
   /// When the invoice was settled; null while it is not.
   final DateTime? paidAt;
 
-  factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
-    id: json['id'] as String,
-    cardId: json['card_id'] as String,
-    referenceMonth: _parseReferenceMonth(json['reference_month'] as String),
-    total: (json['total'] as num).toDouble(),
-    dueDate: DateTime.parse(json['due_date'] as String),
-    status: json['status'] as String,
-    paidAt: json['paid_at'] == null
-        ? null
-        : DateTime.parse(json['paid_at'] as String).toLocal(),
-  );
 }
 
-DateTime _parseReferenceMonth(String value) {
-  // PostgreSQL `date` values arrive as YYYY-MM-DD. Keeping support for the
-  // earlier YYYY-MM contract makes cached/demo payloads safe as well.
-  final normalized = RegExp(r'^\d{4}-\d{2}$').hasMatch(value)
-      ? '$value-01'
-      : value;
-  return DateTime.parse(normalized);
-}
 
 class Goal {
   const Goal({
@@ -252,15 +201,6 @@ class Goal {
 
   bool get isLate => (daysLeft ?? 1) < 0 && progress < 1;
 
-  factory Goal.fromJson(Map<String, dynamic> json) => Goal(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    current: (json['current_amount'] as num).toDouble(),
-    target: (json['target_amount'] as num).toDouble(),
-    targetDate: json['target_date'] == null
-        ? null
-        : DateTime.parse(json['target_date'] as String),
-  );
 }
 
 /// One statement import: what came in, and what it produced.
@@ -285,16 +225,6 @@ class ImportBatch {
   final int rowsDuplicated;
   final int rowsToReview;
 
-  factory ImportBatch.fromJson(Map<String, dynamic> json) => ImportBatch(
-    id: json['id'] as String,
-    fileName: json['file_name'] as String,
-    createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-    rowsRead: (json['rows_read'] as num?)?.toInt() ?? 0,
-    rowsCreated: (json['rows_created'] as num?)?.toInt() ?? 0,
-    rowsUpdated: (json['rows_updated'] as num?)?.toInt() ?? 0,
-    rowsDuplicated: (json['rows_duplicated'] as num?)?.toInt() ?? 0,
-    rowsToReview: (json['rows_to_review'] as num?)?.toInt() ?? 0,
-  );
 }
 
 /// A place money sits: checking, savings, a wallet.
@@ -328,14 +258,6 @@ class Account {
     _ => 'Conta corrente',
   };
 
-  factory Account.fromJson(Map<String, dynamic> json) => Account(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    bank: (json['bank'] ?? '') as String,
-    type: (json['account_type'] ?? 'checking') as String,
-    openingBalance: (json['opening_balance'] as num?)?.toDouble() ?? 0,
-    includeInTotals: (json['include_in_totals'] ?? true) as bool,
-  );
 }
 
 /// A person whose card spending may or may not belong to your own finances.
@@ -349,11 +271,6 @@ class Holder {
   final String name;
   final bool includeInTotals;
 
-  factory Holder.fromJson(Map<String, dynamic> json) => Holder(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    includeInTotals: (json['include_in_totals'] ?? true) as bool,
-  );
 }
 
 /// The parts of the ledger that change rarely.

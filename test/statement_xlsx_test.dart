@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:excel/excel.dart';
-import 'package:financeiro_ai/domain/statement_import.dart';
+import 'package:financeiro_ai/data/xlsx_reader.dart';
 import 'package:financeiro_ai/domain/statement_sheet.dart';
 import 'package:flutter_test/flutter_test.dart';
 

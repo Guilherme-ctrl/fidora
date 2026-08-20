@@ -59,8 +59,8 @@ FinanceSnapshot _snapshot() => const FinanceSnapshot(
     FinanceCategory(
       id: 'c1',
       name: 'Alimentação',
-      icon: Icons.restaurant,
-      color: Color(0xFFB23F22),
+      iconName: 'category',
+      colorHex: '#B23F22',
     ),
   ],
   cards: [],

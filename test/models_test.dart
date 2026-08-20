@@ -1,10 +1,10 @@
-import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/data/row_mappers.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('Invoice.fromJson', () {
+  group('invoiceFromRow', () {
     test('parses the PostgreSQL date returned by Supabase', () {
-      final invoice = Invoice.fromJson({
+      final invoice = invoiceFromRow({
         'id': 'invoice-id',
         'card_id': 'card-id',
         'reference_month': '2026-08-01',
@@ -18,7 +18,7 @@ void main() {
     });
 
     test('keeps compatibility with a YYYY-MM payload', () {
-      final invoice = Invoice.fromJson({
+      final invoice = invoiceFromRow({
         'id': 'invoice-id',
         'card_id': 'card-id',
         'reference_month': '2026-08',

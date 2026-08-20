@@ -31,16 +31,4 @@ class ReviewItem {
     _ => reason,
   };
 
-  factory ReviewItem.fromJson(Map<String, dynamic> json) => ReviewItem(
-    id: json['id'] as String,
-    reason: (json['reason'] ?? 'Revisão pendente') as String,
-    status: (json['status'] ?? 'pending') as String,
-    transactionId: json['transaction_id'] as String?,
-    itemType: json['item_type'] as String?,
-    description: json['description'] as String?,
-    suggestedAction: json['suggested_action'] as String?,
-    createdAt: json['created_at'] == null
-        ? null
-        : DateTime.parse(json['created_at'] as String).toLocal(),
-  );
 }

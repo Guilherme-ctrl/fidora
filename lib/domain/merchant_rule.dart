@@ -21,16 +21,6 @@ class MerchantRule {
   final int priority;
   final bool active;
 
-  factory MerchantRule.fromJson(Map<String, dynamic> json) => MerchantRule(
-    id: json['id'] as String,
-    pattern: json['pattern'] as String,
-    categoryId: json['category_id'] as String,
-    categoryName: (json['categories']?['name'] ?? 'Sem categoria') as String,
-    subcategory: json['subcategory'] as String?,
-    priority: (json['priority'] as num?)?.toInt() ?? 100,
-    active: (json['active'] ?? true) as bool,
-  );
-
   /// Case- and accent-insensitive substring match.
   ///
   /// Mirrors `matchesPattern` in the capture Edge Function on purpose: the

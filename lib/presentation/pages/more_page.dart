@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:financeiro_ai/core/platform/file_access.dart';
+import 'package:financeiro_ai/data/xlsx_reader.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/breakpoints.dart';
 import 'package:financeiro_ai/core/theme.dart';

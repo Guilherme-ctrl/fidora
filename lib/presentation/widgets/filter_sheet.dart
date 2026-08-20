@@ -3,6 +3,7 @@ import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/domain/transaction_filter.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
 
 /// Returns the edited filter, or null when the sheet was dismissed.

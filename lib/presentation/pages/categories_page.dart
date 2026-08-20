@@ -7,6 +7,7 @@ import 'package:financeiro_ai/domain/models.dart';
 import 'package:financeiro_ai/presentation/widgets/category_form_sheet.dart';
 import 'package:financeiro_ai/presentation/widgets/common.dart';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

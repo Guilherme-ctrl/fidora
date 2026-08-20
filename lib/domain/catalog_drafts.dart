@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-
 /// Inputs for the catalogue screens — cards and categories — with the same
 /// per-field validation shape the transaction form already uses, so the
 /// widgets bind errors directly instead of re-deriving the rules.
+library;
 
 class CardDraftErrors {
   const CardDraftErrors({
@@ -197,7 +196,7 @@ class CategoryDraftErrors {
 class CategoryDraft {
   const CategoryDraft({
     required this.name,
-    required this.color,
+    required this.colorHex,
     required this.iconName,
     this.id,
     this.monthlyBudget,
@@ -207,7 +206,9 @@ class CategoryDraft {
 
   final String? id;
   final String name;
-  final Color color;
+
+  /// `#RRGGBB`. See [FinanceCategory.colorHex].
+  final String colorHex;
   final String iconName;
 
   /// Null means the category has no budget, which is different from zero.

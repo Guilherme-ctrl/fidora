@@ -1,6 +1,13 @@
+import 'package:financeiro_ai/domain/models.dart';
+import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:flutter/material.dart';
 
 /// Icon and colour handling for categories.
+///
+/// This lived in `core/` and did not belong there: it is the presentation of
+/// one feature, not global visual infrastructure, and its presence in `core`
+/// was what made both repositories import Material in order to construct an
+/// entity — infrastructure depending on the framework's paint.
 ///
 /// `categories.color` and `categories.icon` have existed in the schema since
 /// the first migration and were never read: the app assigned a colour by list
@@ -94,4 +101,20 @@ String categoryColorHex(Color color) {
       ((value * 255).round() & 0xFF).toRadixString(16).padLeft(2, '0');
   return '#${channel(color.r)}${channel(color.g)}${channel(color.b)}'
       .toUpperCase();
+}
+
+
+/// Resolves a stored category into the two Flutter types it draws as.
+///
+/// An extension rather than fields on the entity, so every call site keeps
+/// reading `category.icon` and `category.color` while the rules layer holds
+/// nothing but strings.
+extension CategoryVisuals on FinanceCategory {
+  IconData get icon => categoryIconFor(iconName);
+  Color get color => parseCategoryColor(colorHex);
+}
+
+extension CategoryDraftVisuals on CategoryDraft {
+  Color get color => parseCategoryColor(colorHex);
+  IconData get icon => categoryIconFor(iconName);
 }

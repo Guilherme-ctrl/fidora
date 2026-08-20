@@ -27,17 +27,6 @@ class ShortcutToken {
   bool get isActive => revokedAt == null;
   bool get everUsed => lastUsedAt != null;
 
-  factory ShortcutToken.fromJson(Map<String, dynamic> json) => ShortcutToken(
-    id: json['id'] as String,
-    name: json['name'] as String,
-    createdAt: DateTime.parse(json['created_at'] as String).toLocal(),
-    lastUsedAt: json['last_used_at'] == null
-        ? null
-        : DateTime.parse(json['last_used_at'] as String).toLocal(),
-    revokedAt: json['revoked_at'] == null
-        ? null
-        : DateTime.parse(json['revoked_at'] as String).toLocal(),
-  );
 }
 
 /// A freshly issued token: the secret to show once, and the row that was saved.

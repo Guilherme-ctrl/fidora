@@ -1,5 +1,5 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:flutter/material.dart';
@@ -86,7 +86,7 @@ void main() {
     CategoryDraft draft({String name = 'Mercado', double? budget}) =>
         CategoryDraft(
           name: name,
-          color: categoryColors.first,
+          colorHex: '#06485B',
           iconName: 'cart',
           monthlyBudget: budget,
         );
@@ -157,7 +157,7 @@ void main() {
       await repository.saveCategory(
         CategoryDraft(
           name: 'Pets',
-          color: categoryColors[4],
+          colorHex: '#677B98',
           iconName: 'pets',
           monthlyBudget: 300,
         ),
@@ -165,7 +165,12 @@ void main() {
       final saved = (await repository.loadSnapshot()).categories.firstWhere(
         (item) => item.name == 'Pets',
       );
+      // The stored form round-trips untouched, and still resolves to the
+      // colour that was picked. Before, the entity carried a Color and the
+      // hex existed only inside the repository.
+      expect(saved.colorHex, '#677B98');
       expect(saved.color, categoryColors[4]);
+      expect(saved.iconName, 'pets');
       expect(saved.icon, categoryIcons['pets']);
       expect(saved.monthlyBudget, 300);
     });
@@ -176,7 +181,7 @@ void main() {
         repository.saveCategory(
           CategoryDraft(
             name: 'alimentação',
-            color: categoryColors.first,
+            colorHex: '#06485B',
             iconName: 'restaurant',
           ),
         ),

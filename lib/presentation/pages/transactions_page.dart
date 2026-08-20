@@ -15,6 +15,7 @@ import 'dart:async';
 import 'package:financeiro_ai/presentation/widgets/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/presentation/failure_copy.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 

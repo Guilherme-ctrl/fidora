@@ -1,8 +1,6 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
-import 'package:excel/excel.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/statement_sheet.dart';
@@ -71,40 +69,6 @@ String _detectSeparator(String text) {
   if (semicolons >= commas && semicolons >= tabs && semicolons > 0) return ';';
   if (tabs > commas && tabs > 0) return '\t';
   return ',';
-}
-
-/// Reads the first worksheet of an XLSX file into cells.
-List<List<String>> readXlsxCells(Uint8List bytes) {
-  final Excel book;
-  try {
-    book = Excel.decodeBytes(bytes);
-  } catch (_) {
-    throw const StatementParseException(
-      'Não consegui abrir a planilha. Confira se o arquivo é um .xlsx válido.',
-    );
-  }
-
-  final sheetName = book.tables.keys.firstOrNull;
-  if (sheetName == null) {
-    throw const StatementParseException('A planilha não tem nenhuma aba.');
-  }
-
-  return book.tables[sheetName]!.rows
-      .map(
-        (row) => row.map((cell) {
-          final value = cell?.value;
-          if (value == null) return '';
-          // Dates arrive typed from XLSX, and turning them back into a string
-          // the date parser understands beats asking it to guess a locale.
-          if (value is DateCellValue) {
-            return '${value.year.toString().padLeft(4, '0')}-'
-                '${value.month.toString().padLeft(2, '0')}-'
-                '${value.day.toString().padLeft(2, '0')}';
-          }
-          return value.toString();
-        }).toList(),
-      )
-      .toList();
 }
 
 /// Everything the sheet cannot tell us and the import needs.

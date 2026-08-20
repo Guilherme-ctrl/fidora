@@ -1,6 +1,5 @@
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -57,8 +56,8 @@ void main() {
       FinanceCategory(
         id: 'food',
         name: 'Alimentação',
-        icon: Icons.restaurant,
-        color: Colors.green,
+        iconName: 'category',
+        colorHex: '#06485B',
         monthlyBudget: 1000,
       ),
     ],

@@ -1,4 +1,3 @@
-import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/domain/analytics.dart';
 import 'package:financeiro_ai/domain/insights.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -27,8 +26,8 @@ FinanceTransaction charge(
 FinanceCategory category(String name, {double? budget}) => FinanceCategory(
   id: name,
   name: name,
-  icon: categoryIconFor('category'),
-  color: categoryColors.first,
+  iconName: 'category',
+  colorHex: '#06485B',
   monthlyBudget: budget,
 );
 

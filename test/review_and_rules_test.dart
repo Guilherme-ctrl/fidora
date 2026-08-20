@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/data/row_mappers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
@@ -28,7 +29,7 @@ void main() {
     });
 
     test('parses a row with no linked transaction', () {
-      final item = ReviewItem.fromJson({
+      final item = reviewItemFromRow({
         'id': 'r9',
         'reason': 'Sem transação correspondente',
         'status': 'pending',

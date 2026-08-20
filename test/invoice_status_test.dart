@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/data/row_mappers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/domain/invoice_status.dart';
 import 'package:financeiro_ai/data/demo_finance_repository.dart';
@@ -240,7 +241,7 @@ void main() {
     });
 
     test('fromJson reads paid_at', () {
-      final invoice = Invoice.fromJson({
+      final invoice = invoiceFromRow({
         'id': '1',
         'card_id': 'c1',
         'reference_month': '2026-08-01',

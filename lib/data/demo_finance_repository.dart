@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
-import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
@@ -13,7 +12,6 @@ import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
 import 'package:financeiro_ai/domain/transaction_draft.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 /// In-memory repository backing the demo mode. Writes are kept for the lifetime
@@ -384,8 +382,8 @@ class DemoFinanceRepository implements FinanceRepository {
     final saved = FinanceCategory(
       id: draft.id ?? _uuid.v4(),
       name: draft.name.trim(),
-      icon: categoryIconFor(draft.iconName),
-      color: draft.color,
+      iconName: draft.iconName,
+      colorHex: draft.colorHex,
       monthlyBudget: draft.monthlyBudget,
     );
     final index = _categories.indexWhere((item) => item.id == saved.id);
@@ -880,81 +878,81 @@ class DemoFinanceRepository implements FinanceRepository {
     FinanceCategory(
       id: '1',
       name: 'Alimentação',
-      icon: Icons.restaurant_rounded,
-      color: Color(0xFF8D2F36),
+      iconName: 'restaurant',
+      colorHex: '#8D2F36',
       monthlyBudget: 1200,
     ),
     FinanceCategory(
       id: '2',
       name: 'Transporte',
-      icon: Icons.directions_car_rounded,
-      color: Color(0xFF377D71),
+      iconName: 'car',
+      colorHex: '#377D71',
       monthlyBudget: 600,
     ),
     FinanceCategory(
       id: '3',
       name: 'Moradia',
-      icon: Icons.home_rounded,
-      color: Color(0xFF5D65A8),
+      iconName: 'home',
+      colorHex: '#5D65A8',
       monthlyBudget: 2200,
     ),
     FinanceCategory(
       id: '4',
       name: 'Saúde',
-      icon: Icons.favorite_rounded,
-      color: Color(0xFFBF5C7A),
+      iconName: 'health',
+      colorHex: '#BF5C7A',
       monthlyBudget: 500,
     ),
     FinanceCategory(
       id: '5',
       name: 'Educação',
-      icon: Icons.school_rounded,
-      color: Color(0xFF7D63A8),
+      iconName: 'school',
+      colorHex: '#7D63A8',
     ),
     FinanceCategory(
       id: '6',
       name: 'Lazer',
-      icon: Icons.sports_soccer_rounded,
-      color: Color(0xFF788E57),
+      iconName: 'sports',
+      colorHex: '#788E57',
       monthlyBudget: 700,
     ),
     FinanceCategory(
       id: '7',
       name: 'Viagem',
-      icon: Icons.flight_rounded,
-      color: Color(0xFF477D9B),
+      iconName: 'flight',
+      colorHex: '#477D9B',
     ),
     FinanceCategory(
       id: '8',
       name: 'Compras',
-      icon: Icons.shopping_bag_rounded,
-      color: Color(0xFF98734E),
+      iconName: 'bag',
+      colorHex: '#98734E',
       monthlyBudget: 900,
     ),
     FinanceCategory(
       id: '9',
       name: 'Assinaturas',
-      icon: Icons.subscriptions_rounded,
-      color: Color(0xFF6B7B58),
+      iconName: 'subscriptions',
+      colorHex: '#6B7B58',
       monthlyBudget: 250,
     ),
     FinanceCategory(
       id: '10',
       name: 'Financeiro',
-      icon: Icons.account_balance_rounded,
-      color: Color(0xFF4B6473),
+      iconName: 'bank',
+      colorHex: '#4B6473',
     ),
     FinanceCategory(
       id: '11',
       name: 'Transferências',
-      icon: Icons.swap_horiz_rounded,
-      color: Color(0xFF718096),
+      iconName: 'transfer',
+      colorHex: '#718096',
     ),
     FinanceCategory(
       id: '12',
       name: 'Outros',
-      icon: Icons.more_horiz_rounded,
-      color: Color(0xFF8A8178),
+      iconName: 'more',
+      colorHex: '#8A8178',
     ),
   ];
 

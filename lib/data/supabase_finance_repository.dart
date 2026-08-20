@@ -1,8 +1,8 @@
 import 'package:financeiro_ai/application/providers.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
+import 'package:financeiro_ai/data/row_mappers.dart';
 import 'package:financeiro_ai/data/supabase_failures.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
-import 'package:financeiro_ai/core/category_visuals.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
@@ -152,7 +152,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .order('created_at', ascending: false)
         .limit(500);
     return (rows as List)
-        .map((json) => ReviewItem.fromJson(json as Map<String, dynamic>))
+        .map((json) => reviewItemFromRow(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -234,7 +234,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
     final payload = {
       'user_id': userId,
       'name': draft.name.trim(),
-      'color': categoryColorHex(draft.color),
+      'color': draft.colorHex,
       'icon': draft.iconName,
       'monthly_budget': draft.monthlyBudget,
       'sort_order': draft.sortOrder,
@@ -377,7 +377,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .order('created_at', ascending: false)
         .limit(200);
     return (rows as List)
-        .map((json) => ImportBatch.fromJson(json as Map<String, dynamic>))
+        .map((json) => importBatchFromRow(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -390,7 +390,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .select()
         .order('created_at', ascending: false);
     return (rows as List)
-        .map((json) => ShortcutToken.fromJson(json as Map<String, dynamic>))
+        .map((json) => shortcutTokenFromRow(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -416,7 +416,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
           .single();
       return IssuedShortcutToken(
         secret: secret,
-        token: ShortcutToken.fromJson(row),
+        token: shortcutTokenFromRow(row),
       );
     } on PostgrestException catch (error, stack) {
       throw error.toFailure(stack);
@@ -445,7 +445,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .order('priority')
         .limit(500);
     return (rows as List)
-        .map((json) => MerchantRule.fromJson(json as Map<String, dynamic>))
+        .map((json) => merchantRuleFromRow(json as Map<String, dynamic>))
         .toList();
   }
 
@@ -649,8 +649,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
       return FinanceCategory(
         id: json['id'] as String,
         name: json['name'] as String,
-        icon: categoryIconFor(json['icon'] as String?),
-        color: parseCategoryColor(json['color'] as String?),
+        iconName: json['icon'] as String? ?? 'category',
+        colorHex: json['color'] as String? ?? '#06485B',
         monthlyBudget: (json['monthly_budget'] as num?)?.toDouble(),
       );
     }).toList();
@@ -660,16 +660,16 @@ class SupabaseFinanceRepository implements FinanceRepository {
     return FinanceCatalog(
       categories: categories,
       cards: (results[1] as List)
-          .map((json) => CreditCard.fromJson(json as Map<String, dynamic>))
+          .map((json) => cardFromRow(json as Map<String, dynamic>))
           .toList(),
       goals: (results[2] as List)
-          .map((json) => Goal.fromJson(json as Map<String, dynamic>))
+          .map((json) => goalFromRow(json as Map<String, dynamic>))
           .toList(),
       holders: (results[3] as List)
-          .map((json) => Holder.fromJson(json as Map<String, dynamic>))
+          .map((json) => holderFromRow(json as Map<String, dynamic>))
           .toList(),
       accounts: (results[4] as List)
-          .map((json) => Account.fromJson(json as Map<String, dynamic>))
+          .map((json) => accountFromRow(json as Map<String, dynamic>))
           .toList(),
       currencyCode: (profile?['currency'] as String?) ?? 'BRL',
     );
@@ -718,9 +718,9 @@ class SupabaseFinanceRepository implements FinanceRepository {
     ]);
 
     return FinanceLedger(
-      transactions: rows.map(FinanceTransaction.fromJson).toList(),
+      transactions: rows.map(transactionFromRow).toList(),
       invoices: (rest[0] as List)
-          .map((json) => Invoice.fromJson(json as Map<String, dynamic>))
+          .map((json) => invoiceFromRow(json as Map<String, dynamic>))
           .toList(),
       pendingReviews: (rest[1] as List).length,
       truncated: truncated,

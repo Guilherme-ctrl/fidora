@@ -1,5 +1,5 @@
 import 'package:financeiro_ai/application/providers.dart';
-import 'package:financeiro_ai/core/category_visuals.dart';
+import 'package:financeiro_ai/presentation/category_visuals.dart';
 import 'package:financeiro_ai/core/theme.dart';
 import 'package:financeiro_ai/domain/amount_input.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';
@@ -82,7 +82,7 @@ class _CategoryFormState extends State<_CategoryForm> {
   CategoryDraft _buildDraft() => CategoryDraft(
     id: widget.existing?.id,
     name: _name.text,
-    color: _color,
+    colorHex: categoryColorHex(_color),
     iconName: _iconName,
     // No budget is not the same as a budget of zero: zero would report every
     // purchase as over budget.
