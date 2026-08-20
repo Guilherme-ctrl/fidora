@@ -13,11 +13,42 @@ Apple Pay transaction
 
 ## Boundaries
 
-- Presentation: responsive Flutter pages.
-- Application: providers and use-case orchestration.
-- Domain: financial entities and deterministic rules.
-- Data: repository implementations.
+Two roots, since the architecture remake of 20 Aug 2026 — see
+`reference-architecture.md` for the standard and `../arquitetura-auditoria.md`
+for the audit that measured against it.
+
+```text
+lib/
+├── core/      config, DI, errors, logging, platform, routing, theme,
+│              design system — transversal, no feature owns it
+└── features/  auth, ledger, overview, transactions, invoices, catalog,
+               imports, review, reminders, settings, shell, shared
+```
+
+Inside a feature: `domain/` (entities, contracts, rules, use cases), `infra/`
+(repository implementations, row mappers, external SDKs), `presenter/` (pages,
+cubits, states, widgets). Not every feature has all three, and none is created
+empty to satisfy the pattern.
+
+- Domain defines contracts and depends on no framework: `lib/features/*/domain`
+  imports `dart:`, `clock`, `crypto` and `intl`, nothing else.
+- Infra implements them and is the only place that knows Supabase, ML Kit or a
+  spreadsheet decoder.
+- Presenter consumes the domain through Cubits and owns every user-facing
+  sentence.
 - Ingestion: Edge Functions; never expose privileged keys to clients.
+
+### AD-006 — Failures are a sealed vocabulary
+
+Business, technical and unexpected. Infra maps its own exceptions at its
+boundary; presentation chooses the words. No layer below the screen writes what
+the person reads.
+
+### AD-007 — Bloc, by owner decision
+
+`flutter_bloc` replaced Riverpod on 20 Aug 2026 for conformance with the
+reference architecture, not to fix a defect. Recorded in `audit.md` with the
+recommendation it overrode.
 
 ## Key decisions
 

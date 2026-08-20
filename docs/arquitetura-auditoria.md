@@ -804,3 +804,88 @@ quatro raízes e por arquivos de 700-1.100 linhas.
 
 Os passos 1-7 reduzem acoplamento e risco sem mover um único arquivo de lugar.
 O passo 8 move tudo, e a essa altura só formaliza fronteiras que já existirão.
+
+---
+
+# Fechamento — 20 Ago 2026
+
+As dez unidades do plano foram executadas. Esta seção mede o resultado contra
+a mesma régua da auditoria e nomeia o que **continua** fora do padrão.
+
+## Antes e depois
+
+| | Antes | Depois |
+|---|---|---|
+| Raízes em `lib/` | 5 (por tipo técnico) | **2** (`core`, `features`) |
+| Features | 0 | **12** |
+| Testes | 617 | **654** |
+| Imagens de referência | 33 | 33 |
+| Domain importando Flutter | sim | **não** |
+| Domain importando lib de infra | `package:excel` | **não** |
+| `fromJson` no domain | 14 | **1** (documento próprio do app) |
+| Infra importando Material | 2 arquivos | **não** |
+| Copy escrita pela infra | 5 tradutores, 36 `throw` | **não** |
+| Modelos de erro | 4 incompatíveis | **1** selado, 3 famílias |
+| Causas descartadas (`catch (_)`) | 8 | **0** |
+| SDKs concretos na apresentação | 4 | **0** |
+| Contrato de dados | 1 interface, 31 métodos | **6** por área |
+| Telas com endereço | 7 de 16 | **16 de 16** |
+| `MaterialPageRoute` | 10 | **0** |
+| `setState` | 105 | 96 |
+
+O domínio hoje importa apenas `dart:`, `clock`, `crypto` e `intl`.
+
+## Notas revisadas
+
+```text
+Arquitetura geral:              8/10   (era 5)
+
+Estrutura Core / Features:      9/10   (era 2)
+Separação de camadas:           9/10   (era 6)
+Organização por feature:        7/10   (era 1)
+Domain:                         9/10   (era 5)
+Presenter:                      7/10   (era 4)
+Infra:                          8/10   (era 5)
+Gerenciamento de estado:        7/10   (era 4)
+Injeção de dependência:         9/10   (era 6)
+Tratamento de erros:            9/10   (era 4)
+Testabilidade:                  9/10   (era 7)
+Manutenibilidade:               8/10   (era 5)
+```
+
+## O que continua fora do padrão
+
+Três coisas, e nenhuma delas é pequena o bastante para omitir.
+
+**Acoplamento entre features — 32 arestas.** É a razão de "Organização por
+feature" ser 7 e não 9. Parte é legítima: `shell` compõe todas as páginas por
+definição, e `ledger` guarda as entidades e os seis contratos que todo mundo
+lê. Parte não é: `catalog → settings`, `imports → transactions` e
+`transactions → review` são dependências diretas que deveriam passar por
+abstração ou não existir. O documento de referência pede exatamente essa
+avaliação e ela ainda não foi feita arquivo a arquivo.
+
+**A feature `ledger` é um hub.** Toda outra feature depende dela. Isso foi
+decisão consciente — todas leem o mesmo `FinanceSnapshot`, e dividir as
+entidades por feature significaria duplicá-las ou inventar dependência entre
+features para compartilhá-las. Mas é um ponto único de acoplamento e merece ser
+revisitado se o produto crescer.
+
+**96 `setState` e `more_page` com 534 linhas.** A camada de estado de escrita
+foi aplicada a três formulários, onde a duplicação era literal. Os outros
+continuam com estado local, e isso foi deliberado: o documento adverte contra
+camada sem benefício concreto, e um formulário cujo envio é uma chamada não
+ganha nada em ser embrulhado. Mas a conta de `setState` caiu pouco, e vale
+dizer isso em vez de apresentar 96 como vitória.
+
+## O que foi decidido contra a recomendação
+
+**Bloc.** Recomendei manter Riverpod; o dono escolheu conformidade literal com
+o documento. Executado por inteiro. A migração não corrigiu defeito nenhum, e
+custou: `WidgetRef` é seguro através de `await` e `BuildContext` não é, então a
+conversão produziu 25 pontos lendo colaborador depois de um await — classe de
+bug viva, toda corrigida. O ganho é conformidade, e está registrado como tal.
+
+**Execução sem portões.** As dez unidades correram seguidas. A mitigação
+funcionou: os 654 testes e as 33 imagens rodaram ao fim de cada uma, e nenhuma
+reduziu a contagem.

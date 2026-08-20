@@ -5,7 +5,7 @@ application code lives at the workspace root.
 
 **Project type**: brownfield (existing Flutter + Supabase codebase)
 **Current phase**: Construction
-**Current unit**: `arch-remake` (unidades 1 a 9)
+**Current unit**: `arch-remake` — **concluída** (10 unidades)
 
 ## Inception
 
