@@ -5,7 +5,7 @@ application code lives at the workspace root.
 
 **Project type**: brownfield (existing Flutter + Supabase codebase)
 **Current phase**: Construction
-**Current unit**: `last-three-findings`
+**Current unit**: `arch-remake` (unidades 1 a 9)
 
 ## Inception
 
@@ -13,7 +13,7 @@ application code lives at the workspace root.
 |---|---|---|
 | Workspace detection | Complete | Brownfield confirmed; reverse-engineering artifacts already present |
 | Reverse engineering | Skipped | `docs/aidlc/00–04` already document the system |
-| Requirements analysis | Complete | Published audit, 18 Aug 2026 — thirteen findings and a three-wave roadmap |
+| Requirements analysis | Complete | Auditoria de 18 Ago 2026 (treze achados); **reaberta em 20 Ago 2026** contra padrão arquitetural externo — `docs/arquitetura-auditoria.md`, nota 5/10 |
 | User stories | Skipped | Single-owner product; acceptance criteria carried directly in `03-specification.md` |
 | Workflow planning | Complete | Five-step sequence agreed with the owner; step 1 approved to start |
 | Application design | Skipped | No new components; extends the existing repository contract |
@@ -564,3 +564,80 @@ Recategorização em lote, recuperação de senha e o estado da grade de categor
 constavam como adiadas e estavam implementadas. **Em nenhum caso a documentação
 estava à frente do código; sempre atrás.** Vale como sinal de processo: a lista
 de pendências não estava sendo revisada quando o trabalho era concluído.
+
+## Construction — unidade `arch-remake` (unidades 1 a 9)
+
+**Origem**: `docs/arquitetura-auditoria.md`, auditoria de 20 Ago 2026 contra
+`docs/aidlc/reference-architecture.md` (padrão fornecido pelo dono).
+**Plano**: `docs/aidlc/plans/arch-remake.md`.
+
+### Linha de base medida antes de começar
+
+```text
+Testes (sem golden):  617 passam    exit 0
+Imagens de referência: 33 passam    exit 0
+Arquivos Dart:         71
+Linhas em lib/:    21.816
+Raízes atuais:          5  (application, core, data, domain, presentation)
+Features:               0
+```
+
+### Notas da auditoria
+
+| Eixo | Nota |
+|---|---|
+| Arquitetura geral | 5/10 |
+| Estrutura Core / Features | 2/10 |
+| Separação de camadas | 6/10 |
+| Organização por feature | 1/10 |
+| Domain | 5/10 |
+| Presenter | 4/10 |
+| Infra | 5/10 |
+| Gerenciamento de estado | 4/10 |
+| Injeção de dependência | 6/10 |
+| Tratamento de erros | 4/10 |
+| Testabilidade | 7/10 |
+| Manutenibilidade | 5/10 |
+
+### Estágios
+
+| Stage | Status | Notas |
+|---|---|---|
+| Workspace detection | Completo | Brownfield; artefatos de engenharia reversa já presentes |
+| Reverse engineering | Pulado | `docs/aidlc/00–04` já documentam o sistema |
+| Requirements analysis | Completo | Auditoria em doze eixos; violações em formato P0–P3 |
+| User stories | Pulado | Produto de dono único; nenhuma mudança de comportamento observável |
+| Workflow planning | **Aguardando aprovação** | Nove unidades sequenciadas; uma decisão pendente com o dono |
+| Application design | Pendente | Depende da decisão sobre gerenciamento de estado |
+| Units generation | Completo | Nove unidades, em `docs/aidlc/plans/arch-remake.md` |
+
+### Unidades
+
+| # | Unidade | Achados | Move arquivos? | Status |
+|---|---|---|---|---|
+| 1 | `failures` | P0.2, P1.4, P2.3 | não | Não iniciada |
+| 2 | `auth-boundary` | P0.1 | não | Não iniciada |
+| 3 | `platform-boundaries` | P1.3 | não | Não iniciada |
+| 4 | `domain-purity` | P0.3, P2.4 | não | Não iniciada |
+| 5 | `repository-split` | P1.1 | não | Não iniciada |
+| 6 | `import-usecase` | P1.2 | não | Não iniciada |
+| 7 | `modularization` | P2.1 | **sim, tudo** | Não iniciada |
+| 8 | `write-state` | P2.2 | não | Não iniciada |
+| 9 | `routing-completion` | P3 | não | Não iniciada |
+
+### Decisão de plano tomada nesta unidade
+
+**A reorganização em `core/` + `features/` é a unidade 7, não a 1.** É a
+divergência estrutural principal contra a arquitetura de referência, e mesmo
+assim vai por último entre as mudanças de acoplamento. Mover 71 arquivos não
+desacopla nada por si só; as unidades 1 a 6 desacoplam sem mover um arquivo de
+lugar. Feita primeiro, a mudança de pastas produz um diff que esconde as
+correções que importam.
+
+### Decisão pendente com o dono
+
+**Riverpod ou Bloc.** O documento de referência diz "Utilizar Cubit/BLoC". O
+projeto usa Riverpod em toda parte e o caminho de leitura está bem resolvido.
+Migrar é reescrita ampla sem ganho arquitetural — o mesmo documento adverte
+contra dogmatismo —, mas ele nomeia Bloc explicitamente. Decisão do dono,
+registrada aqui antes de as unidades 6 e 8 serem escritas.

@@ -355,3 +355,11 @@ recorded verbatim and is never summarized.
 **Context**: Workflow Planning — o dono aprova o remake arquitetural completo e pede registro no AIDLC. Entrada em fase de planejamento.
 
 ---
+
+## Workflow Planning — decisões do dono
+**Timestamp**: 2026-08-20T00:00:00Z
+**User Input**: "[Gerenciamento de estado]: Migrar para flutter_bloc. [Portões]: Seguir direto até o fim"
+**AI Response**: "Duas decisões tomadas contra a minha recomendação, e registro isso porque a divergência importa mais do que a concordância. **Bloc**: eu recomendei manter Riverpod, argumentando que ele já cumpre o papel arquitetural do Cubit e que o que falta é a camada de escrita, não a biblioteca. O dono escolheu conformidade literal com o documento de referência. Executo por inteiro: `flutter_bloc` entra como dependência, os 12 providers e os 105 `setState` viram Cubits e States, e as unidades de caso de uso e estado de escrita passam a ser escritas em Bloc desde o início em vez de Notifier reescrito depois. Isso acrescenta a unidade `state-migration` e leva o plano de nove para dez unidades. **Sem portões**: executo as dez seguidas e só volto no fim ou se travar. Registro o risco que isso carrega — o dono vai ver o resultado com o `lib/` inteiro já reorganizado — e a mitigação: 617 testes e 33 imagens de referência rodam ao fim de cada unidade, e nenhuma unidade tem permissão de reduzir a contagem."
+**Context**: Workflow Planning — aprovação do plano com duas alterações. Plano revisado para dez unidades.
+
+---
