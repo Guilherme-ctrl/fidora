@@ -26,7 +26,7 @@ Future<void> _pumpShell(WidgetTester tester, Size size) async {
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+        ...financeOverrides(DemoFinanceRepository()),
       ],
       child: MaterialApp(
         theme: buildAppTheme(),

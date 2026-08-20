@@ -82,7 +82,7 @@ Future<void> _pumpField(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+        ...financeOverrides(DemoFinanceRepository()),
         receiptRecognizerProvider.overrideWithValue(
           recognizer ?? const UnavailableReceiptRecognizer(),
         ),
@@ -245,9 +245,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            financeRepositoryProvider.overrideWithValue(
-              DemoFinanceRepository(),
-            ),
+            ...financeOverrides(DemoFinanceRepository()),
             receiptRecognizerProvider.overrideWithValue(_FakeRecognizer()),
           ],
           child: MaterialApp(

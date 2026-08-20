@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
-import 'package:financeiro_ai/application/providers.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/domain/finance_rules.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/domain/catalog_drafts.dart';

@@ -116,7 +116,7 @@ class MerchantRulesPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(financeRepositoryProvider).deleteMerchantRule(rule.id);
+      await ref.read(reviewRepositoryProvider).deleteMerchantRule(rule.id);
       await refreshMerchantRules(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -285,7 +285,7 @@ Future<void> editRule(
       existing: existing,
       suggestedPattern: suggestedPattern,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveMerchantRule(draft);
+        await ref.read(reviewRepositoryProvider).saveMerchantRule(draft);
         await refreshMerchantRules(ref);
       },
     ),

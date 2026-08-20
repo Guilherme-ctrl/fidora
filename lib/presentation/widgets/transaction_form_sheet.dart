@@ -164,7 +164,7 @@ class _TransactionFormState extends ConsumerState<_TransactionForm> {
       final pending = _pendingReceipt;
       if (pending != null) {
         path = await ref
-            .read(financeRepositoryProvider)
+            .read(receiptStorageProvider)
             .uploadReceipt(
               bytes: pending.bytes,
               fileName: pending.fileName,
@@ -634,7 +634,7 @@ Future<void> createTransaction(
     snapshot: snapshot,
     existing: existing,
     onSave: (draft) async {
-      await ref.read(financeRepositoryProvider).saveTransaction(draft);
+      await ref.read(transactionRepositoryProvider).saveTransaction(draft);
       await refreshLedger(ref);
     },
   );

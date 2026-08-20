@@ -21,7 +21,7 @@ Future<void> editCategory(
     builder: (context) => _CategoryForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveCategory(draft);
+        await ref.read(catalogRepositoryProvider).saveCategory(draft);
         await refreshFinanceSnapshot(ref);
       },
     ),

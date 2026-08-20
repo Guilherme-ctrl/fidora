@@ -336,5 +336,5 @@ class _StoredReceipt extends ConsumerWidget {
 /// A signed URL for one stored receipt. Family-keyed so two receipts on screen
 /// do not share one request, and auto-disposed because the link is short-lived.
 final receiptUrlProvider = FutureProvider.autoDispose.family<String, String>(
-  (ref, path) => ref.watch(financeRepositoryProvider).receiptUrl(path),
+  (ref, path) => ref.watch(receiptStorageProvider).receiptUrl(path),
 );

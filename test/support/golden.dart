@@ -55,7 +55,7 @@ Future<void> pumpGolden(
   await tester.pumpWidget(
     ProviderScope(
       overrides: [
-        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+        ...financeOverrides(DemoFinanceRepository()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

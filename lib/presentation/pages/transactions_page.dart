@@ -308,7 +308,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
     if (confirmed != true) return;
 
     try {
-      await ref.read(financeRepositoryProvider).deleteTransaction(item.id);
+      await ref.read(transactionRepositoryProvider).deleteTransaction(item.id);
       await refreshLedger(ref);
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -381,7 +381,7 @@ class _TransactionsPageState extends ConsumerState<TransactionsPage> {
         .firstOrNull;
     try {
       await ref
-          .read(financeRepositoryProvider)
+          .read(transactionRepositoryProvider)
           .recategorizeTransactions(ids, category.id);
       await refreshLedger(ref);
       if (!mounted) return;

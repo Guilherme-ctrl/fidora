@@ -22,7 +22,7 @@ Future<void> editGoal(
     builder: (context) => _GoalForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveGoal(draft);
+        await ref.read(catalogRepositoryProvider).saveGoal(draft);
         await refreshFinanceSnapshot(ref);
       },
     ),

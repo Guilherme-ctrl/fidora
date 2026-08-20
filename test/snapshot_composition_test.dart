@@ -60,7 +60,7 @@ Future<WidgetRef> _pump(WidgetTester tester, _CountingRepository repo) async {
   late WidgetRef captured;
   await tester.pumpWidget(
     ProviderScope(
-      overrides: [financeRepositoryProvider.overrideWithValue(repo)],
+      overrides: [...financeOverrides(repo)],
       child: _Probe(onRef: (ref) => captured = ref),
     ),
   );

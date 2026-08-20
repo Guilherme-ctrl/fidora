@@ -108,7 +108,7 @@ class AccountsPage extends ConsumerWidget {
     if (confirmed != true) return;
     try {
       await ref
-          .read(financeRepositoryProvider)
+          .read(catalogRepositoryProvider)
           .setAccountActive(item.account.id, active: false);
       await refreshFinanceSnapshot(ref);
       if (context.mounted) {
@@ -278,7 +278,7 @@ Future<void> editAccount(
     builder: (context) => _AccountForm(
       existing: existing,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveAccount(draft);
+        await ref.read(catalogRepositoryProvider).saveAccount(draft);
         await refreshFinanceSnapshot(ref);
       },
     ),

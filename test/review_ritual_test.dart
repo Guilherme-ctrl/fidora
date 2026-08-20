@@ -22,7 +22,7 @@ Future<ProviderContainer> _pump(WidgetTester tester, Size size) async {
 
   final container = ProviderContainer(
     overrides: [
-      financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+      ...financeOverrides(DemoFinanceRepository()),
     ],
   );
   addTearDown(container.dispose);

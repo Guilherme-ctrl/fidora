@@ -22,7 +22,7 @@ Future<void> pumpForm(
     // about the form, and the real one would reach for a camera.
     ProviderScope(
       overrides: [
-        financeRepositoryProvider.overrideWithValue(DemoFinanceRepository()),
+        ...financeOverrides(DemoFinanceRepository()),
         receiptRecognizerProvider.overrideWithValue(
           const UnavailableReceiptRecognizer(),
         ),

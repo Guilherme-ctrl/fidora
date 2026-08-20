@@ -1,105 +1,40 @@
 import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/core/platform/platform_services.dart';
 import 'package:financeiro_ai/domain/auth_repository.dart';
-import 'package:financeiro_ai/domain/catalog_drafts.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/domain/merchant_rule.dart';
 import 'package:financeiro_ai/domain/models.dart';
-import 'package:financeiro_ai/domain/invoice_import.dart';
 import 'package:financeiro_ai/domain/review_item.dart';
 import 'package:financeiro_ai/domain/shortcut_token.dart';
-import 'package:financeiro_ai/domain/transaction_draft.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-abstract class FinanceRepository {
-  Future<FinanceSnapshot> loadSnapshot();
 
-  /// The rarely-changing half: categories, cards, goals, holders, accounts and
-  /// the currency. Loaded separately so a captured purchase does not refetch
-  /// all of it.
-  Future<FinanceCatalog> loadCatalog();
+/// One registration per contract.
+///
+/// Start-up hands the same object to all six, because the two implementations
+/// satisfy all six. What changed is what a consumer can ask for: a screen that
+/// edits categories now depends on [CatalogRepository] and cannot reach the
+/// shortcut tokens.
+Never _mustOverride() =>
+    throw UnimplementedError('Repositories must be overridden at startup.');
 
-  /// The half that changes on every write. Pages through the whole ledger
-  /// rather than stopping at a fixed count.
-  Future<FinanceLedger> loadLedger();
-  Future<InvoiceImportPreview> previewInvoiceImport(
-    InvoiceImportDocument document,
-  );
-  Future<InvoiceImportResult> importInvoice(InvoiceImportDocument document);
-
-  /// Creates the transaction when [draft] has no id, updates it otherwise.
-  Future<void> saveTransaction(TransactionDraft draft);
-  Future<void> deleteTransaction(String id);
-
-  /// Recategorizes many rows at once. One call rather than one per row, so
-  /// correcting an import does not mean a round trip per transaction.
-  Future<void> recategorizeTransactions(List<String> ids, String categoryId);
-
-  Future<List<ReviewItem>> loadReviewQueue();
-
-  /// [status] is `resolved` when the entry was handled and `dismissed` when the
-  /// person decided it needed no change.
-  Future<void> settleReview(String id, {required String status});
-
-  /// Settles an invoice or reopens it. Paying releases the committed limit,
-  /// because [cardUsage] only counts invoices that are not paid.
-  Future<void> setInvoicePaid(String invoiceId, {required bool paid});
-
-  Future<void> saveCard(CardDraft draft);
-
-  /// Cards are deactivated, never deleted: transactions point at them and the
-  /// history would lose its card once the row went away.
-  Future<void> setCardActive(String id, {required bool active});
-
-  Future<void> saveCategory(CategoryDraft draft);
-  Future<void> setCategoryActive(String id, {required bool active});
-
-  Future<void> saveGoal(GoalDraft draft);
-  Future<void> setGoalActive(String id, {required bool active});
-
-  Future<void> saveAccount(AccountDraft draft);
-
-  /// Accounts are deactivated, never deleted: transactions point at them.
-  Future<void> setAccountActive(String id, {required bool active});
-
-  Future<void> saveHolder(HolderDraft draft);
-  Future<void> deleteHolder(String id);
-
-  Future<List<ImportBatch>> loadImportBatches();
-
-  Future<List<ShortcutToken>> loadShortcutTokens();
-
-  /// Issues a token. The secret comes back once and is never stored in full.
-  Future<IssuedShortcutToken> createShortcutToken(String name);
-
-  Future<void> revokeShortcutToken(String id);
-
-  Future<List<MerchantRule>> loadMerchantRules();
-  Future<void> saveMerchantRule(MerchantRuleDraft draft);
-  Future<void> deleteMerchantRule(String id);
-
-  /// Stores a receipt image and returns its object path.
-  ///
-  /// Uploading before the transaction is written is deliberate: the row can
-  /// then carry the path in the same insert, instead of depending on a second
-  /// call that could fail after the transaction already exists.
-  Future<String> uploadReceipt({
-    required Uint8List bytes,
-    required String fileName,
-    required String contentType,
-  });
-
-  /// A short-lived URL for viewing a stored receipt. The bucket is private, so
-  /// there is no permanent address to hand out.
-  Future<String> receiptUrl(String path);
-
-  Future<void> deleteReceipt(String path);
-}
-
-final financeRepositoryProvider = Provider<FinanceRepository>(
-  (ref) => throw UnimplementedError(
-    'FinanceRepository must be overridden at startup.',
-  ),
+final transactionRepositoryProvider = Provider<TransactionRepository>(
+  (ref) => _mustOverride(),
+);
+final catalogRepositoryProvider = Provider<CatalogRepository>(
+  (ref) => _mustOverride(),
+);
+final invoiceRepositoryProvider = Provider<InvoiceRepository>(
+  (ref) => _mustOverride(),
+);
+final reviewRepositoryProvider = Provider<ReviewRepository>(
+  (ref) => _mustOverride(),
+);
+final shortcutTokenRepositoryProvider = Provider<ShortcutTokenRepository>(
+  (ref) => _mustOverride(),
+);
+final receiptStorageProvider = Provider<ReceiptStorage>(
+  (ref) => _mustOverride(),
 );
 /// Overridden at start-up, beside the finance repository, so the two data
 /// paths are composed in the same place.
@@ -121,11 +56,31 @@ final shareServiceProvider = Provider<ShareService>(
   (ref) => const SystemShareService(),
 );
 
+/// Registers one object under all six contracts.
+///
+/// Both implementations satisfy all six, so composition names the object once.
+/// Without this, every test and the app itself would repeat six lines that can
+/// only ever be written together — and a seventh contract would mean editing
+/// all of them.
+// The return type cannot be written: Riverpod's `Override` is exported from
+// `package:riverpod/misc.dart`, and `riverpod` is a transitive dependency here
+// rather than a declared one. Declaring it to name one type is a worse trade
+// than this line.
+// ignore: strict_top_level_inference
+financeOverrides(FinanceRepository repository) => [
+  transactionRepositoryProvider.overrideWithValue(repository),
+  catalogRepositoryProvider.overrideWithValue(repository),
+  invoiceRepositoryProvider.overrideWithValue(repository),
+  reviewRepositoryProvider.overrideWithValue(repository),
+  shortcutTokenRepositoryProvider.overrideWithValue(repository),
+  receiptStorageProvider.overrideWithValue(repository),
+];
+
 final financeCatalogProvider = FutureProvider<FinanceCatalog>(
-  (ref) => ref.watch(financeRepositoryProvider).loadCatalog(),
+  (ref) => ref.watch(catalogRepositoryProvider).loadCatalog(),
 );
 final financeLedgerProvider = FutureProvider<FinanceLedger>(
-  (ref) => ref.watch(financeRepositoryProvider).loadLedger(),
+  (ref) => ref.watch(transactionRepositoryProvider).loadLedger(),
 );
 
 /// Composed from the two halves, so every screen keeps reading one object
@@ -139,16 +94,16 @@ final financeSnapshotProvider = FutureProvider<FinanceSnapshot>((ref) async {
 /// Loaded when its screen opens rather than folded into the snapshot, so the
 /// first paint does not wait on data most sessions never look at.
 final reviewQueueProvider = FutureProvider<List<ReviewItem>>(
-  (ref) => ref.watch(financeRepositoryProvider).loadReviewQueue(),
+  (ref) => ref.watch(reviewRepositoryProvider).loadReviewQueue(),
 );
 final merchantRulesProvider = FutureProvider<List<MerchantRule>>(
-  (ref) => ref.watch(financeRepositoryProvider).loadMerchantRules(),
+  (ref) => ref.watch(reviewRepositoryProvider).loadMerchantRules(),
 );
 final shortcutTokensProvider = FutureProvider<List<ShortcutToken>>(
-  (ref) => ref.watch(financeRepositoryProvider).loadShortcutTokens(),
+  (ref) => ref.watch(shortcutTokenRepositoryProvider).loadShortcutTokens(),
 );
 final importBatchesProvider = FutureProvider<List<ImportBatch>>(
-  (ref) => ref.watch(financeRepositoryProvider).loadImportBatches(),
+  (ref) => ref.watch(invoiceRepositoryProvider).loadImportBatches(),
 );
 
 /// Reloads the snapshot and completes only when the new data has arrived, so a

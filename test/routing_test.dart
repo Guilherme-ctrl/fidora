@@ -142,9 +142,7 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            financeRepositoryProvider.overrideWithValue(
-              DemoFinanceRepository(),
-            ),
+            ...financeOverrides(DemoFinanceRepository()),
           ],
           child: MaterialApp.router(
             theme: buildAppTheme(),

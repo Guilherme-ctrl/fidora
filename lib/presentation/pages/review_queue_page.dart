@@ -117,7 +117,7 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
 
   Future<void> _settleGroup(_Group group, String status) async {
     setState(() => _exit = status == 'resolved' ? 1 : -1);
-    final repository = ref.read(financeRepositoryProvider);
+    final repository = ref.read(reviewRepositoryProvider);
     try {
       for (final item in group.items) {
         await repository.settleReview(item.id, status: status);
@@ -158,9 +158,9 @@ class _ReviewQueuePageState extends ConsumerState<ReviewQueuePage> {
       snapshot: snapshot,
       existing: transaction,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveTransaction(draft);
+        await ref.read(transactionRepositoryProvider).saveTransaction(draft);
         await ref
-            .read(financeRepositoryProvider)
+            .read(reviewRepositoryProvider)
             .settleReview(item.id, status: 'resolved');
         await refreshLedger(ref);
         await refreshReviewQueue(ref);

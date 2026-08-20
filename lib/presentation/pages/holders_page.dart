@@ -124,7 +124,7 @@ class HoldersPage extends ConsumerWidget {
     if (draft == null || !context.mounted) return;
 
     try {
-      await ref.read(financeRepositoryProvider).saveHolder(draft);
+      await ref.read(catalogRepositoryProvider).saveHolder(draft);
       await refreshFinanceSnapshot(ref);
       if (context.mounted) _toast(context, 'Portador salvo.');
     } on Failure catch (failure) {
@@ -162,7 +162,7 @@ class HoldersPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(financeRepositoryProvider).deleteHolder(holder.id);
+      await ref.read(catalogRepositoryProvider).deleteHolder(holder.id);
       await refreshFinanceSnapshot(ref);
       if (context.mounted) _toast(context, 'Portador excluído.');
     } on Failure catch (failure) {

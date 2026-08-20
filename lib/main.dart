@@ -7,6 +7,7 @@ import 'package:financeiro_ai/data/fake_auth_repository.dart';
 import 'package:financeiro_ai/data/supabase_auth_repository.dart';
 import 'package:financeiro_ai/data/supabase_finance_repository.dart';
 import 'package:financeiro_ai/domain/auth_repository.dart';
+import 'package:financeiro_ai/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/presentation/router.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -41,7 +42,7 @@ Future<void> main() async {
   runApp(
     ProviderScope(
       overrides: [
-        financeRepositoryProvider.overrideWithValue(repository),
+        ...financeOverrides(repository),
         authRepositoryProvider.overrideWithValue(auth),
       ],
       child: FinanceiroApp(useSupabase: useSupabase),

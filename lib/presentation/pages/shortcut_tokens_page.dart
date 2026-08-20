@@ -97,7 +97,7 @@ class ShortcutTokensPage extends ConsumerWidget {
 
     try {
       final issued = await ref
-          .read(financeRepositoryProvider)
+          .read(shortcutTokenRepositoryProvider)
           .createShortcutToken(name);
       await refreshShortcutTokens(ref);
       if (context.mounted) await _showSecret(context, issued);
@@ -193,7 +193,7 @@ class ShortcutTokensPage extends ConsumerWidget {
     );
     if (confirmed != true) return;
     try {
-      await ref.read(financeRepositoryProvider).revokeShortcutToken(token.id);
+      await ref.read(shortcutTokenRepositoryProvider).revokeShortcutToken(token.id);
       await refreshShortcutTokens(ref);
       if (context.mounted) _toast(context, 'Token revogado.');
     } on Failure catch (failure) {

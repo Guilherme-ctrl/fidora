@@ -24,7 +24,7 @@ Future<void> editCard(
       existing: existing,
       holders: holders,
       onSave: (draft) async {
-        await ref.read(financeRepositoryProvider).saveCard(draft);
+        await ref.read(catalogRepositoryProvider).saveCard(draft);
         await refreshFinanceSnapshot(ref);
       },
     ),

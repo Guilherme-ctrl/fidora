@@ -390,7 +390,7 @@ class MorePage extends ConsumerWidget {
       _showLoading(context, 'Validando e conciliando…');
       loadingOpen = true;
       final preview = await ref
-          .read(financeRepositoryProvider)
+          .read(invoiceRepositoryProvider)
           .previewInvoiceImport(document);
       if (!context.mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
@@ -406,7 +406,7 @@ class MorePage extends ConsumerWidget {
       _showLoading(context, 'Conferindo revisão…');
       loadingOpen = true;
       final finalPreview = await ref
-          .read(financeRepositoryProvider)
+          .read(invoiceRepositoryProvider)
           .previewInvoiceImport(reviewedDocument);
       final missingCategoriesApproved =
           reviewedDocument.createMissingCategories &&
@@ -419,7 +419,7 @@ class MorePage extends ConsumerWidget {
       }
       if (!context.mounted) return;
       final result = await ref
-          .read(financeRepositoryProvider)
+          .read(invoiceRepositoryProvider)
           .importInvoice(reviewedDocument);
       ref.invalidate(financeSnapshotProvider);
       if (!context.mounted) return;

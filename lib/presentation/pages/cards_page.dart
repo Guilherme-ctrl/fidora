@@ -485,7 +485,7 @@ Future<void> _setPaid(
   Navigator.of(context).pop();
   try {
     await ref
-        .read(financeRepositoryProvider)
+        .read(invoiceRepositoryProvider)
         .setInvoicePaid(invoice.id, paid: paid);
     await refreshLedger(ref);
     if (context.mounted) {
