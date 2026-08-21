@@ -1,9 +1,9 @@
+import 'package:financeiro_ai/features/settings/presenter/cubits/shortcut_tokens_cubit.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/settings/domain/shortcut_token.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
-import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:financeiro_ai/core/design_system/loading.dart';

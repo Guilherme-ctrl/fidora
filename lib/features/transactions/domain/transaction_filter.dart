@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/ledger/domain/finance_rules.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';

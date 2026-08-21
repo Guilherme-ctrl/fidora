@@ -1,4 +1,5 @@
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/transactions/domain/transaction_draft.dart';

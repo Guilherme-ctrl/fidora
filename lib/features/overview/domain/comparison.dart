@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 

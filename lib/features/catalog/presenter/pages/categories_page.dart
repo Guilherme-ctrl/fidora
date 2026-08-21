@@ -2,6 +2,7 @@ import 'package:financeiro_ai/core/theme/breakpoints.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/core/theme/typography.dart';
 import 'package:financeiro_ai/core/theme/tokens.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/catalog/presenter/widgets/category_form_sheet.dart';

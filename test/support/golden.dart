@@ -1,7 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
-import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

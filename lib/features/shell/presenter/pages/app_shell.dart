@@ -1,11 +1,13 @@
 import 'package:clock/clock.dart';
+import 'package:financeiro_ai/features/transactions/presenter/filter_codec.dart';
+import 'package:financeiro_ai/features/shared/widgets/period_filter_bar.dart';
 import 'package:financeiro_ai/features/settings/presenter/cubits/appearance_cubit.dart';
 import 'package:financeiro_ai/features/reminders/infra/reminder_service.dart';
 import 'package:financeiro_ai/core/theme/breakpoints.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/core/theme/tokens.dart';
 import 'package:financeiro_ai/core/theme/typography.dart';
-import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/transactions/domain/transaction_filter.dart';

@@ -1,7 +1,7 @@
+import 'package:financeiro_ai/features/review/presenter/cubits/review_cubits.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
 import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
-import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

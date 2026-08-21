@@ -1,6 +1,8 @@
+import 'package:financeiro_ai/features/transactions/presenter/filter_codec.dart';
+import 'package:financeiro_ai/features/ledger/presenter/period_codec.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
-import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/transactions/domain/transaction_filter.dart';
 import 'package:financeiro_ai/core/routing/router.dart';

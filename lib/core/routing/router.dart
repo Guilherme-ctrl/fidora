@@ -1,4 +1,6 @@
-import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/transactions/presenter/filter_codec.dart';
+import 'package:financeiro_ai/features/ledger/presenter/period_codec.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/shell/presenter/pages/app_shell.dart';
 import 'package:financeiro_ai/features/auth/presenter/pages/auth_gate.dart';
 import 'package:clock/clock.dart';

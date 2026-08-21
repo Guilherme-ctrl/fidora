@@ -1,5 +1,6 @@
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
+import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
 import 'package:financeiro_ai/features/overview/domain/analytics.dart';
 import 'package:financeiro_ai/features/catalog/domain/catalog_drafts.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';

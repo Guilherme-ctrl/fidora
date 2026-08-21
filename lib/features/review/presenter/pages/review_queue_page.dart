@@ -1,3 +1,4 @@
+import 'package:financeiro_ai/features/review/presenter/cubits/review_cubits.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/review/domain/merchant_identity.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
@@ -11,7 +12,6 @@ import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:flutter/services.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
-import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';

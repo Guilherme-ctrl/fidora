@@ -1,3 +1,6 @@
+import 'package:financeiro_ai/features/settings/presenter/cubits/shortcut_tokens_cubit.dart';
+import 'package:financeiro_ai/features/review/presenter/cubits/review_cubits.dart';
+import 'package:financeiro_ai/features/imports/presenter/cubits/import_batches_cubit.dart';
 import 'package:financeiro_ai/features/transactions/infra/receipt_recognizer.dart';
 import 'package:financeiro_ai/features/reminders/infra/reminder_service.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
@@ -5,7 +8,6 @@ import 'package:financeiro_ai/core/platform/platform_services.dart';
 import 'package:financeiro_ai/features/auth/domain/repositories/auth_repository.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/features/settings/presenter/cubits/appearance_cubit.dart';
-import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
