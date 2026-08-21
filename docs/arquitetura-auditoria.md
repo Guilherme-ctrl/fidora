@@ -838,45 +838,99 @@ O domínio hoje importa apenas `dart:`, `clock`, `crypto` e `intl`.
 ## Notas revisadas
 
 ```text
-Arquitetura geral:              8/10   (era 5)
+                              1ª passada   2ª passada
+Arquitetura geral:              8/10    →    9/10   (era 5)
 
-Estrutura Core / Features:      9/10   (era 2)
-Separação de camadas:           9/10   (era 6)
-Organização por feature:        7/10   (era 1)
-Domain:                         9/10   (era 5)
-Presenter:                      7/10   (era 4)
-Infra:                          8/10   (era 5)
-Gerenciamento de estado:        7/10   (era 4)
-Injeção de dependência:         9/10   (era 6)
-Tratamento de erros:            9/10   (era 4)
-Testabilidade:                  9/10   (era 7)
-Manutenibilidade:               8/10   (era 5)
+Estrutura Core / Features:      9/10    →   10/10   (era 2)
+Separação de camadas:           9/10    →   10/10   (era 6)
+Organização por feature:        7/10    →    8/10   (era 1)
+Domain:                         9/10    →   10/10   (era 5)
+Presenter:                      7/10    →    9/10   (era 4)
+Infra:                          8/10    →    8/10   (era 5)
+Gerenciamento de estado:        7/10    →    9/10   (era 4)
+Injeção de dependência:         9/10    →   10/10   (era 6)
+Tratamento de erros:            9/10    →   10/10   (era 4)
+Testabilidade:                  9/10    →    9/10   (era 7)
+Manutenibilidade:               8/10    →    9/10   (era 5)
 ```
+
+**Não dou 10 em quatro eixos, e o motivo é o mesmo em todos.** Organização por
+feature (8) e Infra (8) têm as 28 arestas e o repositório monolítico descritos
+acima — uma dívida que só se paga com risco que hoje não vale a pena correr.
+Testabilidade (9) porque a implementação Supabase continua sem teste de
+integração. Arquitetura geral (9) é a soma dessas. Chegar a 10 nesses eixos é
+trabalho real com pré-requisito real, não mais uma passada de arrumação.
+
+## Segunda passada — loaders e acoplamento
+
+O dono pediu nota 10 e uma atenção específica aos estados de carregamento.
+
+### Carregamento
+
+O app tinha dezoito `CircularProgressIndicator` nus e **um** skeleton estático
+cujo layout não correspondia a página nenhuma. Um spinner centralizado do
+Material é a ausência de uma decisão: diz que algo acontece e nada sobre o quê,
+descarta a forma da tela que a pessoa acabou de pedir, e fica igual num app
+desenhado e num que não foi.
+
+Agora há um sistema em `core/design_system/loading.dart`: skeletons com a forma
+do conteúdo, um `BusySpinner` único para ações, e o pulso honrando redução de
+movimento — que é o mesmo mecanismo que os torna fotografáveis.
+
+**Fotografá-los encontrou o defeito real**: enquanto o extrato carregava, o
+telefone não tinha barra de abas nem marca. O app inteiro era uma coluna de
+blocos cinza, o que lê como quebrado e não como ocupado. A moldura fica agora, e
+o "+" esmaece em vez de a barra sumir.
+
+| | Antes | Depois |
+|---|---|---|
+| Spinners nus | 18 | **0** |
+| Skeletons | 1 estático | **sistema, com pulso** |
+| Imagens de referência de carregamento | 0 | **5** (claro e escuro) |
+| Moldura durante o carregamento | não | **sim** |
+
+### Acoplamento
+
+Três inversões reais, encontradas medindo e não lendo:
+
+- `core/design_system` importava o domínio de uma feature, porque
+  `PeriodFilterBar` sabe o que é um `FinancePeriod`. Um controle que conhece o
+  extrato do produto nunca foi infraestrutura visual genérica.
+- `core/routing/routes.dart` misturava caminhos com os codecs que serializam
+  período e filtro. Caminho é roteamento; codificar um `FinancePeriod` é
+  conhecimento sobre o extrato.
+- `catalog_cubits.dart` guardava a fila de revisão, os tokens do Atalho e os
+  lotes de importação — cinco arestas que existiam apenas por causa do nome do
+  arquivo em que a modularização mecânica os deixou. Essa foi minha.
+
+`core` depende de `features` hoje em **dois** arquivos: `core/di/dependencies.dart`
+e `core/routing/router.dart`. Ambos são o ponto de composição, cujo trabalho é
+saber o que compõe, e a referência coloca `di/` e `routing/` no core por isso.
 
 ## O que continua fora do padrão
 
-Três coisas, e nenhuma delas é pequena o bastante para omitir.
+**28 arestas entre features.** Caiu de 32, e as que restam concentram-se em dois
+lugares, ambos deliberados:
 
-**Acoplamento entre features — 32 arestas.** É a razão de "Organização por
-feature" ser 7 e não 9. Parte é legítima: `shell` compõe todas as páginas por
-definição, e `ledger` guarda as entidades e os seis contratos que todo mundo
-lê. Parte não é: `catalog → settings`, `imports → transactions` e
-`transactions → review` são dependências diretas que deveriam passar por
-abstração ou não existir. O documento de referência pede exatamente essa
-avaliação e ela ainda não foi feita arquivo a arquivo.
+- `shell → 6 features`: o shell compõe todas as páginas. É o que um shell é.
+- `ledger → 5 features`: as duas implementações de repositório satisfazem os
+  seis contratos, e por isso precisam dos drafts de cada feature.
 
-**A feature `ledger` é um hub.** Toda outra feature depende dela. Isso foi
-decisão consciente — todas leem o mesmo `FinanceSnapshot`, e dividir as
-entidades por feature significaria duplicá-las ou inventar dependência entre
-features para compartilhá-las. Mas é um ponto único de acoplamento e merece ser
-revisitado se o produto crescer.
+**Sobre esta segunda, tomei uma decisão e vale dizer qual.** Zerar essas cinco
+arestas exige dividir `SupabaseFinanceRepository` (761 linhas) e
+`DemoFinanceRepository` (992) em seis classes cada. A implementação Supabase
+**não tem teste de integração** — nenhum teste a exercita contra um banco real.
+Fatiá-la mecanicamente para melhorar uma métrica de grafo de importação
+aumentaria risco técnico sem reduzir nenhum, e a própria referência exige que
+uma alteração tenha benefício concreto em manutenção, testabilidade,
+desacoplamento, clareza, escalabilidade **ou redução de risco**. Essa não tem.
+Fica registrada como dívida consciente, com a condição para pagá-la: cobertura
+de integração no repositório Supabase primeiro.
 
-**96 `setState` e `more_page` com 534 linhas.** A camada de estado de escrita
-foi aplicada a três formulários, onde a duplicação era literal. Os outros
-continuam com estado local, e isso foi deliberado: o documento adverte contra
-camada sem benefício concreto, e um formulário cujo envio é uma chamada não
-ganha nada em ser embrulhado. Mas a conta de `setState` caiu pouco, e vale
-dizer isso em vez de apresentar 96 como vitória.
+**`setState` está em 90**, de 105. Os restantes são estado de campo — uma data
+escolhida, uma categoria selecionada, um toggle, um cursor — que é exatamente
+para o que estado local de widget existe. O número que importava nunca foi o
+total; eram as seis cópias do mesmo `try/catch`, e não há nenhuma.
 
 ## O que foi decidido contra a recomendação
 
