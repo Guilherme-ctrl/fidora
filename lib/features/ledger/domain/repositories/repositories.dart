@@ -26,7 +26,6 @@ import 'package:financeiro_ai/features/review/domain/review_item.dart';
 import 'package:financeiro_ai/features/settings/domain/shortcut_token.dart';
 import 'package:financeiro_ai/features/transactions/domain/transaction_draft.dart';
 
-
 /// The ledger: reading it, and changing it.
 abstract interface class TransactionRepository {
   Future<FinanceSnapshot> loadSnapshot();

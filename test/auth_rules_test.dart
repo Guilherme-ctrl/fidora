@@ -70,7 +70,10 @@ void main() {
     // where knowing Supabase is the job, and the result is a type rather than
     // a sentence — so these assert both halves.
     test('names the failures a person actually hits', () {
-      expect(failureFor('Invalid login credentials'), isA<InvalidCredentials>());
+      expect(
+        failureFor('Invalid login credentials'),
+        isA<InvalidCredentials>(),
+      );
       expect(failureFor('Email not confirmed'), isA<EmailNotConfirmed>());
       expect(
         failureFor('User already registered'),
@@ -97,7 +100,10 @@ void main() {
 
     test('rate limiting is business, not a broken server', () {
       expect(failureFor('rate limit exceeded'), isA<BusinessFailure>());
-      expect(FailureCopy.of(failureFor('rate limit exceeded')).canRetry, isTrue);
+      expect(
+        FailureCopy.of(failureFor('rate limit exceeded')).canRetry,
+        isTrue,
+      );
     });
 
     test('an expired token is a session problem, not a credential one', () {

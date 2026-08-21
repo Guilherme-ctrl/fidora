@@ -30,5 +30,4 @@ class ReviewItem {
     final value? when value.trim().isNotEmpty => value,
     _ => reason,
   };
-
 }

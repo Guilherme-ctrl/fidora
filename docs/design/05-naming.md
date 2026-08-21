@@ -1,5 +1,25 @@
 # 05 — Naming
 
+> **Decidido (20 ago 2026): o nome é Compasso.** O dono trouxe um board de marca
+> fechado — nome, símbolo, cores, tipografia e assinatura — e o produto foi
+> renomeado inteiro no mesmo dia. O documento abaixo fica como está: é o
+> raciocínio que existia *antes* da decisão, e a lista de alternativas que ele
+> gerou não incluía Compasso.
+>
+> Vale registrar que a recomendação que este documento fazia — *"não trocar
+> antes de aprovar a direção de design; nome é a última peça, ele deve caber no
+> visual"* — foi seguida na prática: o nome só mudou depois de o fúcsia sobre
+> escuro estar aprovado, e o símbolo do board é fúcsia sobre escuro.
+>
+> **O aviso do fim continua valendo, e agora vale mais**: nenhuma verificação de
+> INPI, domínio ou handle foi feita para "Compasso" — e é um substantivo comum,
+> o que costuma ser pior nesse quesito, não melhor.
+>
+> Pendências mecânicas que a troca deixou: `pubspec.yaml` ainda é
+> `financeiro_ai`, o repositório ainda é `fidora`, e o arquivo de configuração
+> de produção ainda é `finora.production.json`. Nenhuma delas é visível ao
+> usuário; todas são renomeações que quebram caminho e merecem passo próprio.
+
 ## Primeiro: existe uma inconsistência a resolver
 
 O produto tem três nomes vivos ao mesmo tempo:

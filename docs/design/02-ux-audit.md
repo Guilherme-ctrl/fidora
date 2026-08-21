@@ -176,7 +176,7 @@ Numeral proporcional significa que `R$ 1.111,00` e `R$ 8.888,00` têm larguras
 diferentes. Numa coluna de valores, os dígitos não alinham verticalmente — a
 diferença mais visível entre uma interface financeira e uma interface qualquer.
 
-**Correção:** família com numerais tabulares para valores (Archivo com
+**Correção:** família com numerais tabulares para valores (Sora com
 `font-feature-settings: "tnum"`, ou IBM Plex Sans). Texto em proporcional,
 **todo número financeiro em tabular**, alinhado à direita.
 

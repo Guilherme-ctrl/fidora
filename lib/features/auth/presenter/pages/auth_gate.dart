@@ -72,7 +72,7 @@ class _AuthPageState extends State<AuthPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text(
-                'Conta criada. Confirme o e-mail e depois entre no Finora.',
+                'Conta criada. Confirme o e-mail e depois entre no Compasso.',
               ),
             ),
           );
@@ -86,9 +86,9 @@ class _AuthPageState extends State<AuthPage> {
       }
     } on Failure catch (failure) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FailureCopy.of(failure).short)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(FailureCopy.of(failure).short)));
       }
     } finally {
       if (mounted) setState(() => _loading = false);
@@ -113,9 +113,9 @@ class _AuthPageState extends State<AuthPage> {
       await authRepository.sendPasswordRecovery(email);
     } on Failure catch (failure) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FailureCopy.of(failure).short)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(FailureCopy.of(failure).short)));
         setState(() => _loading = false);
       }
       return;
@@ -165,7 +165,7 @@ class _AuthPageState extends State<AuthPage> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        _createAccount ? 'Crie sua conta' : 'Entre no Finora',
+                        _createAccount ? 'Crie sua conta' : 'Entre no Compasso',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineSmall
                             ?.copyWith(fontWeight: FontWeight.w900),
@@ -287,9 +287,9 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
       }
     } on Failure catch (failure) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(FailureCopy.of(failure).short)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(FailureCopy.of(failure).short)));
       }
     } finally {
       if (mounted) setState(() => _loading = false);

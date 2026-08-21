@@ -14,7 +14,6 @@ import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/review/domain/review_item.dart';
 import 'package:financeiro_ai/features/settings/domain/shortcut_token.dart';
 
-
 DateTime parseReferenceMonth(String value) {
   // PostgreSQL `date` values arrive as YYYY-MM-DD. Keeping support for the
   // earlier YYYY-MM contract makes cached/demo payloads safe as well.
@@ -29,8 +28,7 @@ FinanceTransaction transactionFromRow(Map<String, dynamic> json) =>
       id: json['id'] as String,
       date: DateTime.parse(json['purchased_at'] as String).toLocal(),
       merchant:
-          (json['merchant_normalized'] ?? json['merchant_original'])
-              as String,
+          (json['merchant_normalized'] ?? json['merchant_original']) as String,
       amount: (json['amount'] as num).toDouble(),
       category: (json['categories']?['name'] ?? 'Sem categoria') as String,
       cardLastFour: (json['cards']?['last_four'] ?? '----') as String,

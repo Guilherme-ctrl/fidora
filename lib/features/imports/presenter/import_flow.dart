@@ -23,7 +23,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 /// `ImportInvoiceUseCase.mayImport`, which is where it can be tested.
 
 const _jsonType = FileTypeFilter(
-  label: 'JSON do Finora',
+  label: 'JSON do Compasso',
   extensions: ['json'],
   mimeTypes: ['application/json'],
   uniformTypeIdentifiers: ['public.json'],
@@ -179,7 +179,9 @@ void _say(BuildContext context, String message, {bool error = false}) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: Text(message),
-      backgroundColor: error ? context.palette.negative : context.palette.income,
+      backgroundColor: error
+          ? context.palette.negative
+          : context.palette.income,
     ),
   );
 }
@@ -195,7 +197,7 @@ String importErrorCopy(Object error) {
     return 'O cartão final informado no JSON não está cadastrado ou está inativo.';
   }
   if (text.contains('missing_categories')) {
-    return 'O JSON usa categorias que ainda não existem no Finora.';
+    return 'O JSON usa categorias que ainda não existem no Compasso.';
   }
   if (text.contains('reconciled_total_mismatch')) {
     return 'A conciliação não fechou com o total da fatura. Nada foi importado.';

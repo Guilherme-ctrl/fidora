@@ -1396,3 +1396,87 @@ de medição — não é descarte, é escolha.
 
 **Não mudou:** o nome e o logo. O dono levantou a possibilidade e não pediu na
 instrução seguinte; ficam como estão até ele decidir.
+
+---
+
+# Fase 9 — Compasso (20 ago 2026)
+
+O dono trouxe um board de marca fechado — nome, símbolo, quatro cores,
+tipografia e assinatura — com a instrução:
+
+> *"Sobre design system, acho que a home ainda está muito sem personalidade.
+> Vamos assumir essa posição de branding, essa logo, cores e etc."*
+
+As quatro correções anteriores foram o sistema procurando identidade por
+medição. Esta é a identidade chegando pronta, e o trabalho mudou de natureza:
+**encaixar o sistema nela sem afrouxar o rigor**. Os quatro valores do board
+entram literais; tudo que eles não cobrem é derivado e medido.
+
+## Onde a medição contrariou o board — e onde não
+
+| Valor do board | Onde ficou | Por quê |
+|---|---|---|
+| `#FF3D8A` | `action` nos dois temas | é a marca; já era a cor da ação desde a fase 8 |
+| `#111317` | `canvas` escuro, `ink` claro, `onAction` | 5,57:1 sob a ação — o rótulo escuro do botão agora é a cor da própria marca |
+| `#F2F3F5` | `canvas` claro, `ink` escuro | 16,75:1 contra o par — o eixo do tema claro |
+| `#6B6F76` | `ruleStrong` (**não** o metadado) | 4,55:1 sobre o fundo, mas **4,15:1 sobre a zebra** — reprova onde metadado vive |
+
+O último é a única divergência, e é pequena: a cor do board continua no produto,
+no papel em que ela passa com folga (borda de componente pede 3:1). O metadado
+escureceu para `#5F636A`, o mínimo para passar em AA nos três chãos.
+
+## Uma invariante caiu, e caiu com motivo
+
+`the ground is not tinted away from the surface` exigia menos de 5 pontos de
+luminância entre chão e superfície. Ela existia para impedir o bege — um chão
+**quente** que obrigava todo conteúdo a virar card para se destacar. O board
+pede `#F2F3F5`, que está 10 pontos abaixo do branco de propósito: cinza com card
+branco é a linguagem dele.
+
+Reescrita para o que sempre importou: o chão tem de ser **neutro** (saturação
+< 0,16, que é o que barra o bege e o creme) e estar a **um** passo da
+superfície, não a três. A regra ficou mais verdadeira, não mais frouxa.
+
+## A tipografia perdeu o mono
+
+Sora entra no lugar da Archivo, e a JetBrains Mono sai sem substituta. Versalete
+mono pequeno é a textura de leitura de instrumento por trás do *"parece um
+artigo científico"* de duas fases atrás. O que o mono comprava era alinhamento
+de coluna; Sora tem `tnum`, então o alinhamento sobrevive e o ar de terminal
+não. Uma família, **80 KB** em subset — contra 392 KB de duas e 2,2 MB dos
+arquivos originais.
+
+Perdi o eixo de largura da Archivo (Sora só tem `wght`). É uma perda real: o
+display virava largo *e* pesado com uma família só. A compensação é que a Sora
+já é larga de desenho.
+
+## A home
+
+A queixa era específica — *a home ainda está muito sem personalidade* — e a
+causa era estrutural: a tela abria em **prosa**. Cada frase era verdadeira e
+útil, e continua lá, embaixo. Mas quem abre um app de finanças duas vezes por
+dia não está lendo, está conferindo.
+
+Agora abre em: gasto acumulado no valor de manchete, com o anel do tempo
+decorrido ao lado (é o anel que diz se o número está adiantado); a barra contra
+as metas, ou contra a média de três meses quando não há metas — **com o rótulo
+dizendo qual dos dois**, porque barra sem referência é enfeite; a linha
+acumulada do período, parando em "hoje"; dois valores secundários; e a fila
+promovida a cartão, que é o lugar da única ação diária do produto.
+
+## A marca é código
+
+O símbolo é um `CustomPainter`, não um asset. Pega a cor da paleta, fica nítido
+de 20pt a 1024px, e a abertura do C é o mesmo arco do anel de progresso — a
+marca e o instrumento principal do produto ficam parentes em vez de vizinhos.
+Os quinze ícones de iOS, os quatro do PWA e o favicon saem do mesmo pincel por
+`flutter test tool/generate_icons.dart`, então não têm como divergir.
+
+Duas armadilhas apareceram aí: `toImage` fora de `tester.runAsync` **pendura** o
+teste em vez de falhar, e a primeira imagem de referência da marca saiu com o
+sublinhado amarelo de depuração, porque texto fora de um ancestral `Material`
+é desenhado assim.
+
+**654 testes passam. 40 imagens de referência, duas delas novas — a marca nos
+dois temas, que é o que impede um logo desenhado em código de mudar sem ninguém
+ver.**

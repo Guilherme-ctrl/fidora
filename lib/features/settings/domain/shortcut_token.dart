@@ -26,7 +26,6 @@ class ShortcutToken {
 
   bool get isActive => revokedAt == null;
   bool get everUsed => lastUsedAt != null;
-
 }
 
 /// A freshly issued token: the secret to show once, and the row that was saved.

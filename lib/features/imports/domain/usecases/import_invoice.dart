@@ -53,7 +53,8 @@ class ImportInvoiceUseCase {
   ) {
     if (preview.alreadyImported) return false;
     final missingCategoriesApproved =
-        document.createMissingCategories && preview.missingCategories.isNotEmpty;
+        document.createMissingCategories &&
+        preview.missingCategories.isNotEmpty;
     return preview.canImport || missingCategoriesApproved;
   }
 }

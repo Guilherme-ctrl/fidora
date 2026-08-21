@@ -6,7 +6,7 @@ import 'support/cvd.dart';
 
 /// The chart palette, checked rather than claimed.
 void main() {
-  const themes = {'light': FinoraPalette.light, 'dark': FinoraPalette.dark};
+  const themes = {'light': CompassoPalette.light, 'dark': CompassoPalette.dark};
 
   // Deuteranopia and protanopia together affect roughly 8% of men. Tritanopia
   // is about 0.01%. Optimising all three equally spends the whole budget on the
@@ -54,8 +54,8 @@ void main() {
     // Matched by hue and separated by lightness, so switching theme does not
     // renumber the legend.
     for (var i = 0; i < 6; i++) {
-      final light = HSLColor.fromColor(FinoraPalette.light.categorical[i]);
-      final dark = HSLColor.fromColor(FinoraPalette.dark.categorical[i]);
+      final light = HSLColor.fromColor(CompassoPalette.light.categorical[i]);
+      final dark = HSLColor.fromColor(CompassoPalette.dark.categorical[i]);
       final gap = (light.hue - dark.hue).abs();
       expect(
         gap < 12 || gap > 348,

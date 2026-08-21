@@ -1,11 +1,11 @@
 {
-    "name": "Finora",
-    "short_name": "Finora",
+    "name": "Compasso",
+    "short_name": "Compasso",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "Controle financeiro pessoal com captura via Apple Pay.",
+    "background_color": "#111317",
+    "theme_color": "#FF3D8A",
+    "description": "Seu dinheiro no ritmo certo. Controle financeiro pessoal com captura via Apple Pay.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

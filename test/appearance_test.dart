@@ -60,9 +60,7 @@ void main() {
       maxScrolls: 60,
     );
     await tester.pump(const Duration(milliseconds: 100));
-    return tester
-        .element(find.text('Aparência'))
-        .read<AppearanceCubit>();
+    return tester.element(find.text('Aparência')).read<AppearanceCubit>();
   }
 
   testWidgets('a phone can reach the theme, and it is named', (tester) async {

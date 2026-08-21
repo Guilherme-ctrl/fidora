@@ -94,7 +94,6 @@ class FinanceTransaction {
   }
 
   bool get affectsExpenses => expenseImpact != 0;
-
 }
 
 class FinanceCategory {
@@ -150,7 +149,6 @@ class CreditCard {
   /// Whether this card's spending is your own. A card can also be excluded by
   /// its holder — see `cardCountsInTotals`.
   final bool includeInTotals;
-
 }
 
 class Invoice {
@@ -172,9 +170,7 @@ class Invoice {
 
   /// When the invoice was settled; null while it is not.
   final DateTime? paidAt;
-
 }
-
 
 class Goal {
   const Goal({
@@ -200,7 +196,6 @@ class Goal {
   int? get daysLeft => targetDate?.difference(clock.now()).inDays;
 
   bool get isLate => (daysLeft ?? 1) < 0 && progress < 1;
-
 }
 
 /// One statement import: what came in, and what it produced.
@@ -224,7 +219,6 @@ class ImportBatch {
   final int rowsUpdated;
   final int rowsDuplicated;
   final int rowsToReview;
-
 }
 
 /// A place money sits: checking, savings, a wallet.
@@ -257,7 +251,6 @@ class Account {
     'investment' => 'Investimento',
     _ => 'Conta corrente',
   };
-
 }
 
 /// A person whose card spending may or may not belong to your own finances.
@@ -270,7 +263,6 @@ class Holder {
   final String id;
   final String name;
   final bool includeInTotals;
-
 }
 
 /// The parts of the ledger that change rarely.

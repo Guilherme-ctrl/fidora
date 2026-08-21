@@ -16,7 +16,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class MerchantRulesPage extends StatefulWidget {
   const MerchantRulesPage({super.key});
 
-
   @override
   State<MerchantRulesPage> createState() => _MerchantRulesPageState();
 }
@@ -56,59 +55,53 @@ class _MerchantRulesPageState extends State<MerchantRulesPage> {
             onRetry: () => context.read<MerchantRulesCubit>().reload(),
           ),
           LoadSuccess(data: final items) ||
-          LoadReloading(previous: final items) => items.isEmpty
-              ? _RulesMessage(
-                  icon: Icons.psychology_alt_rounded,
-                  color: context.palette.accent,
-                  title: 'Nenhuma regra ainda',
-                  body:
-                      'Uma regra diz “sempre que o nome contiver IFOOD, use Alimentação”. '
-                      'Ela decide a categoria na captura do Atalho quando você não '
-                      'escolhe uma na hora, poupando a correção depois.',
-                )
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
-                  itemCount: items.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          'Aplicadas na captura do Atalho, de cima para baixo: a '
-                          'primeira que casar decide a categoria. Se você escolher '
-                          'a categoria no próprio Atalho, sua escolha prevalece.',
-                          style: TextStyle(color: context.palette.inkMuted),
-                        ),
+          LoadReloading(previous: final items) =>
+            items.isEmpty
+                ? _RulesMessage(
+                    icon: Icons.psychology_alt_rounded,
+                    color: context.palette.accent,
+                    title: 'Nenhuma regra ainda',
+                    body:
+                        'Uma regra diz “sempre que o nome contiver IFOOD, use Alimentação”. '
+                        'Ela decide a categoria na captura do Atalho quando você não '
+                        'escolhe uma na hora, poupando a correção depois.',
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
+                    itemCount: items.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            'Aplicadas na captura do Atalho, de cima para baixo: a '
+                            'primeira que casar decide a categoria. Se você escolher '
+                            'a categoria no próprio Atalho, sua escolha prevalece.',
+                            style: TextStyle(color: context.palette.inkMuted),
+                          ),
+                        );
+                      }
+                      final rule = items[index - 1];
+                      return _RuleTile(
+                        rule: rule,
+                        matches: snapshot?.transactions
+                            .where((item) => rule.matches(item.merchant))
+                            .length,
+                        onEdit: snapshot == null
+                            ? null
+                            : () => editRule(context, snapshot, existing: rule),
+                        onDelete: () => _confirmDelete(context, rule),
                       );
-                    }
-                    final rule = items[index - 1];
-                    return _RuleTile(
-                      rule: rule,
-                      matches: snapshot?.transactions
-                          .where((item) => rule.matches(item.merchant))
-                          .length,
-                      onEdit: snapshot == null
-                          ? null
-                          : () => editRule(
-                              context,
-                              snapshot,
-                              existing: rule,
-                            ),
-                      onDelete: () => _confirmDelete(context, rule),
-                    );
-                  },
-                ),
+                    },
+                  ),
           _ => const SkeletonList(rows: 5),
         },
       ),
     );
   }
 
-  Future<void> _confirmDelete(
-    BuildContext context,
-    MerchantRule rule,
-  ) async {
+  Future<void> _confirmDelete(BuildContext context, MerchantRule rule) async {
     final review = context.read<ReviewRepository>();
     final merchantRules = context.read<MerchantRulesCubit>();
     final confirmed = await showDialog<bool>(
@@ -172,76 +165,75 @@ class _RuleTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) =>
-  Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          rule.pattern,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15.5,
-                          ),
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 12),
+    child: Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        rule.pattern,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15.5,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.arrow_forward_rounded, size: 15),
-                      const SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          rule.categoryName,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: context.palette.accent,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      if (!rule.active) ...[
-                        const SizedBox(width: 8),
-                        const Chip(
-                          label: Text('Inativa', style: TextStyle(fontSize: 11)),
-                          visualDensity: VisualDensity.compact,
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    matches == null
-                        ? 'Prioridade ${rule.priority}'
-                        : 'Prioridade ${rule.priority} • pega $matches ${matches == 1 ? 'lançamento' : 'lançamentos'} do histórico',
-                    style: TextStyle(
-                      color: context.palette.inkMuted,
-                      fontSize: 12.5,
                     ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.arrow_forward_rounded, size: 15),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        rule.categoryName,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: context.palette.accent,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    if (!rule.active) ...[
+                      const SizedBox(width: 8),
+                      const Chip(
+                        label: Text('Inativa', style: TextStyle(fontSize: 11)),
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 5),
+                Text(
+                  matches == null
+                      ? 'Prioridade ${rule.priority}'
+                      : 'Prioridade ${rule.priority} • pega $matches ${matches == 1 ? 'lançamento' : 'lançamentos'} do histórico',
+                  style: TextStyle(
+                    color: context.palette.inkMuted,
+                    fontSize: 12.5,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-            IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
-            IconButton(
-              onPressed: onDelete,
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: context.palette.negative,
-              ),
+          ),
+          IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
+          IconButton(
+            onPressed: onDelete,
+            icon: Icon(
+              Icons.delete_outline_rounded,
+              color: context.palette.negative,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
-    );
+    ),
+  );
 }
 
 class _RulesMessage extends StatelessWidget {
@@ -391,10 +383,11 @@ class _RuleFormState extends State<_RuleForm> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      BlocBuilder<SubmissionCubit, SubmissionState>(
-        bloc: _submission,
-        builder: (context, submission) {
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SubmissionCubit, SubmissionState>(
+    bloc: _submission,
+    builder: (context, submission) {
       final typed = _pattern.text.trim();
       final preview = typed.length < 3
           ? const <FinanceTransaction>[]
@@ -576,6 +569,6 @@ class _RuleFormState extends State<_RuleForm> {
           ),
         ),
       );
-        },
-      );
+    },
+  );
 }

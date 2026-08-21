@@ -54,11 +54,7 @@ class HoldersPage extends StatelessWidget {
     );
   }
 
-  Future<void> _edit(
-    BuildContext context,
-    {
-    Holder? existing,
-  }) async {
+  Future<void> _edit(BuildContext context, {Holder? existing}) async {
     final nameController = TextEditingController(text: existing?.name ?? '');
     var include = existing?.includeInTotals ?? true;
 
@@ -131,14 +127,13 @@ class HoldersPage extends StatelessWidget {
       await finance.reloadAll();
       if (context.mounted) _toast(context, 'Portador salvo.');
     } on Failure catch (failure) {
-      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
+      if (context.mounted) {
+        _toast(context, FailureCopy.of(failure).short, error: true);
+      }
     }
   }
 
-  Future<void> _delete(
-    BuildContext context,
-    Holder holder,
-  ) async {
+  Future<void> _delete(BuildContext context, Holder holder) async {
     final catalog = context.read<CatalogRepository>();
     final finance = context.read<FinanceCubit>();
     final confirmed = await showDialog<bool>(
@@ -170,7 +165,9 @@ class HoldersPage extends StatelessWidget {
       await finance.reloadAll();
       if (context.mounted) _toast(context, 'Portador excluído.');
     } on Failure catch (failure) {
-      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
+      if (context.mounted) {
+        _toast(context, FailureCopy.of(failure).short, error: true);
+      }
     }
   }
 

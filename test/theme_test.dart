@@ -12,7 +12,7 @@ import 'support/contrast.dart';
 /// 4.0:1. The Ledger palette added a third ground — `sunken`, the zebra row —
 /// and the first draft of `inkSubtle` failed against exactly that one at 4.34.
 void main() {
-  const themes = {'light': FinoraPalette.light, 'dark': FinoraPalette.dark};
+  const themes = {'light': CompassoPalette.light, 'dark': CompassoPalette.dark};
 
   group('Text clears AA on every ground', () {
     themes.forEach((name, palette) {
@@ -135,12 +135,26 @@ void main() {
         expect(palette.pending, isNot(palette.negative));
       });
 
-      test('$name: the ground is not tinted away from the surface', () {
-        // The beige canvas was 8 points of luminance below white, which is what
-        // made every piece of content need a card to lift off it.
+      test('$name: the ground is neutral, and it is one step from the surface', () {
+        // O que esta regra defendia era o bege: um chão *quente*, oito pontos de
+        // luminância abaixo do branco, que obrigava todo conteúdo a virar card
+        // para se destacar dele. A marca Compasso traz um chão cinza de
+        // propósito — `#F2F3F5` é um dos quatro valores do board — e cinza sobre
+        // branco é uma relação de dois níveis, não um degradê de tinta.
+        //
+        // Então o que se mede agora é o que sempre importou: o chão é
+        // **neutro** (não tem temperatura própria) e está a **um** passo da
+        // superfície, não a três.
+        final ground = HSLColor.fromColor(palette.canvas);
+        expect(
+          ground.saturation,
+          lessThan(0.16),
+          reason:
+              'o chão não pode ter cor própria — foi assim que o bege entrou',
+        );
         expect(
           (luminance(palette.canvas) - luminance(palette.surface)).abs(),
-          lessThan(0.05),
+          lessThan(0.15),
         );
       });
     });
@@ -150,8 +164,8 @@ void main() {
     test('both brightnesses carry both extensions', () {
       final light = buildAppTheme();
       final dark = buildAppTheme(brightness: Brightness.dark);
-      expect(light.extension<FinoraPalette>(), FinoraPalette.light);
-      expect(dark.extension<FinoraPalette>(), FinoraPalette.dark);
+      expect(light.extension<CompassoPalette>(), CompassoPalette.light);
+      expect(dark.extension<CompassoPalette>(), CompassoPalette.dark);
       expect(light.extension<LedgerText>(), LedgerText.standard);
       expect(dark.brightness, Brightness.dark);
     });
@@ -189,20 +203,20 @@ void main() {
       final theme = buildAppTheme();
       final border =
           theme.inputDecorationTheme.enabledBorder! as OutlineInputBorder;
-      expect(border.borderSide.color, FinoraPalette.light.ruleStrong);
+      expect(border.borderSide.color, CompassoPalette.light.ruleStrong);
     });
 
     test('the scaffold follows the palette canvas', () {
       expect(
         buildAppTheme(brightness: Brightness.dark).scaffoldBackgroundColor,
-        FinoraPalette.dark.canvas,
+        CompassoPalette.dark.canvas,
       );
     });
 
     testWidgets('context.palette and context.type resolve the active theme', (
       tester,
     ) async {
-      late FinoraPalette palette;
+      late CompassoPalette palette;
       late LedgerText type;
       await tester.pumpWidget(
         MaterialApp(
@@ -218,14 +232,14 @@ void main() {
           ),
         ),
       );
-      expect(palette, FinoraPalette.dark);
+      expect(palette, CompassoPalette.dark);
       expect(type, LedgerText.standard);
     });
 
     test('lerp stays on the palette type and mixes the chart hues', () {
-      final mixed = FinoraPalette.light.lerp(FinoraPalette.dark, 0.5);
-      expect(mixed, isA<FinoraPalette>());
-      expect(mixed.ink, isNot(FinoraPalette.light.ink));
+      final mixed = CompassoPalette.light.lerp(CompassoPalette.dark, 0.5);
+      expect(mixed, isA<CompassoPalette>());
+      expect(mixed.ink, isNot(CompassoPalette.light.ink));
       expect(mixed.categorical.length, 6);
     });
   });

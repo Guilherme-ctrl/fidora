@@ -268,8 +268,6 @@ class SupabaseFinanceRepository implements FinanceRepository {
     return userId;
   }
 
-
-
   @override
   Future<void> saveGoal(GoalDraft draft) async {
     final errors = draft.validate();
@@ -382,7 +380,8 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<List<ShortcutToken>> loadShortcutTokens() => _mapped(_loadShortcutTokens);
+  Future<List<ShortcutToken>> loadShortcutTokens() =>
+      _mapped(_loadShortcutTokens);
 
   Future<List<ShortcutToken>> _loadShortcutTokens() async {
     final rows = await _client
@@ -519,8 +518,7 @@ class SupabaseFinanceRepository implements FinanceRepository {
   }
 
   @override
-  Future<String> receiptUrl(String path) =>
-      _mapped(() => _receiptUrl(path));
+  Future<String> receiptUrl(String path) => _mapped(() => _receiptUrl(path));
 
   Future<String> _receiptUrl(String path) async {
     try {
@@ -543,8 +541,6 @@ class SupabaseFinanceRepository implements FinanceRepository {
       throw error.toFailure(stack);
     }
   }
-
-
 
   Future<Map<String, dynamic>> _loadCard(String cardId) async {
     final card = await _client
@@ -590,7 +586,6 @@ class SupabaseFinanceRepository implements FinanceRepository {
         .single();
     return created['id'] as String;
   }
-
 
   /// Every read passes through here.
   ///

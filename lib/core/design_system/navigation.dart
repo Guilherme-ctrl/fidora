@@ -346,6 +346,7 @@ class LedgerTabBar extends StatelessWidget {
   final List<Destination> items;
   final int selected;
   final ValueChanged<int> onSelected;
+
   /// Null while the ledger has not arrived: a new transaction needs the
   /// categories and cards to choose from. The tab stays, greyed, rather than
   /// the bar disappearing — a navigation that vanishes during a refresh is one

@@ -101,12 +101,9 @@ flutter:
   # `LedgerText` selects with `fontVariations` rather than bundling a file per
   # weight.
   fonts:
-    - family: Archivo
+    - family: Sora
       fonts:
-        - asset: assets/fonts/Archivo.ttf
-    - family: JetBrains Mono
-      fonts:
-        - asset: assets/fonts/JetBrainsMono.ttf
+        - asset: assets/fonts/Sora.ttf
 
   # To add assets to your application, add an assets section, like this:
   # assets:

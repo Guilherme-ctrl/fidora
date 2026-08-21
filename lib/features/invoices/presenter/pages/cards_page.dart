@@ -39,8 +39,7 @@ class CardsPage extends StatelessWidget {
           subtitle: 'Quanto ainda dá para usar, quando fecha e quando vence.',
           action: width > 560
               ? FilledButton.icon(
-                  onPressed: () =>
-                      editCard(context, holders: snapshot.holders),
+                  onPressed: () => editCard(context, holders: snapshot.holders),
                   icon: const Icon(Icons.add_card),
                   label: const Text('Adicionar cartão'),
                 )
@@ -364,20 +363,14 @@ class _InvoicesList extends StatelessWidget {
                           width: double.infinity,
                           child: state.isSettled
                               ? OutlinedButton.icon(
-                                  onPressed: () => _setPaid(
-                                    context,
-                                    invoice,
-                                    paid: false,
-                                  ),
+                                  onPressed: () =>
+                                      _setPaid(context, invoice, paid: false),
                                   icon: const Icon(Icons.undo_rounded),
                                   label: const Text('Reabrir fatura'),
                                 )
                               : FilledButton.icon(
-                                  onPressed: () => _setPaid(
-                                    context,
-                                    invoice,
-                                    paid: true,
-                                  ),
+                                  onPressed: () =>
+                                      _setPaid(context, invoice, paid: true),
                                   icon: const Icon(
                                     Icons.check_circle_outline_rounded,
                                   ),

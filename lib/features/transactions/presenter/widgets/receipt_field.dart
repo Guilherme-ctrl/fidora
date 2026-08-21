@@ -81,7 +81,7 @@ class _ReceiptFieldState extends State<ReceiptField> {
         if (pending == null && widget.existingPath == null)
           Text(
             recognizer.isSupported
-                ? 'Fotografe a nota e o Finora lê o valor, o estabelecimento e '
+                ? 'Fotografe a nota e o Compasso lê o valor, o estabelecimento e '
                       'a data. Você confere antes de qualquer coisa ser '
                       'preenchida.'
                 : 'Anexe a foto da nota. A leitura automática só funciona no '

@@ -1,4 +1,4 @@
-# Finora
+# Compasso
 
 Controle financeiro pessoal em Flutter para iOS e web. O projeto replica a captura rápida do Brim usando uma automação de Transação do Atalhos, acrescentando histórico, dashboards, categorias, cartões, faturas, parcelas, importações, revisões e metas.
 
@@ -15,7 +15,7 @@ Controle financeiro pessoal em Flutter para iOS e web. O projeto replica a captu
 - Schema com RLS e todas as entidades da planilha existente.
 - Payload da planilha reconciliado e preparado para importação automática da conta proprietária.
 - Edge Function `capture-transaction` pronta para receber o Atalho.
-- Importação de faturas no JSON Finora com prévia, conciliação do Atalho, idempotência e fila de revisão.
+- Importação de faturas no JSON Compasso com prévia, conciliação do Atalho, idempotência e fila de revisão.
 - Artefatos AIDLC em `docs/aidlc`.
 
 ## Executar em modo demonstrativo
@@ -36,6 +36,14 @@ flutter run -d <device-id>
 
 O projeto remoto **Finora** está criado em São Paulo e vinculado ao ref
 `ddmilzlinvpxfvzyigok`. As migrations e a Edge Function já estão publicadas.
+
+> O nome do produto virou **Compasso** em 20/08/2026, mas três coisas mantêm o
+> nome antigo de propósito, porque renomeá-las não é edição de marca: o projeto
+> no Supabase (renomear muda referências publicadas), as funções
+> `preview_finora_invoice_import` e `import_finora_invoice` (estão implantadas)
+> e o prefixo `finora-json:` das chaves de deduplicação — esse último está
+> **gravado em dado de produção**, e trocá-lo faria toda importação já feita
+> parecer nova.
 
 1. Crie seu arquivo local de configuração a partir do exemplo:
 
@@ -62,7 +70,7 @@ flutter run -d chrome \
 ## Importar uma fatura classificada pelo ChatGPT
 
 Na aba **Mais**, selecione **Importar JSON do ChatGPT** e escolha um arquivo no
-contrato Finora `1.0`. O app valida o total, apresenta novos lançamentos,
+contrato Compasso `1.0`. O app valida o total, apresenta novos lançamentos,
 conciliações, duplicidades, pagamentos e revisões. Antes da confirmação, cada
 item precisa ser validado: é possível corrigir categoria, subcategoria e tipo,
 ou retirar uma compra das finanças pessoais (por exemplo, cartão adicional).

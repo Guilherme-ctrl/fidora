@@ -1,4 +1,3 @@
-
 import 'package:financeiro_ai/core/theme/breakpoints.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/core/theme/tokens.dart';
@@ -156,7 +155,6 @@ class MorePage extends StatelessWidget {
       ],
     );
   }
-
 }
 
 class _AutomationCard extends StatelessWidget {
@@ -171,7 +169,7 @@ class _AutomationCard extends StatelessWidget {
           context,
           title: 'Automação Apple Pay',
           description:
-              'Depois do pagamento, o Atalho coleta os dados e envia à função segura do Finora.',
+              'Depois do pagamento, o Atalho coleta os dados e envia à função segura do Compasso.',
           child: const Column(
             children: [
               DetailValue(label: 'Captura', value: 'Atalhos do iOS'),

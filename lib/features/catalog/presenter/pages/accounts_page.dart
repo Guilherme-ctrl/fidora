@@ -69,8 +69,7 @@ class AccountsPage extends StatelessWidget {
                 ...balances.map(
                   (item) => _AccountTile(
                     balance: item,
-                    onEdit: () =>
-                        editAccount(context, existing: item.account),
+                    onEdit: () => editAccount(context, existing: item.account),
                     onArchive: () => _archive(context, item),
                   ),
                 ),
@@ -79,10 +78,7 @@ class AccountsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _archive(
-    BuildContext context,
-    AccountBalance item,
-  ) async {
+  Future<void> _archive(BuildContext context, AccountBalance item) async {
     final catalog = context.read<CatalogRepository>();
     final finance = context.read<FinanceCubit>();
     final confirmed = await showDialog<bool>(
@@ -269,11 +265,7 @@ class _Empty extends StatelessWidget {
   );
 }
 
-Future<void> editAccount(
-  BuildContext context,
-  {
-  Account? existing,
-}) async {
+Future<void> editAccount(BuildContext context, {Account? existing}) async {
   final saved = await showResponsiveSurface<bool>(
     context,
     builder: (context) => _AccountForm(
@@ -354,142 +346,142 @@ class _AccountFormState extends State<_AccountForm> {
     setState(() => _errors = errors);
     _submission.reset();
     if (!errors.isEmpty) return;
-    final ok = await _submission.run(
-      'saveAccount',
-      () => widget.onSave(draft),
-    );
+    final ok = await _submission.run('saveAccount', () => widget.onSave(draft));
     if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SubmissionCubit, SubmissionState>(
     bloc: _submission,
-    builder: (context, submission) =>
-    SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.existing == null ? 'Nova conta' : 'Editar conta',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+    builder: (context, submission) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                widget.existing == null ? 'Nova conta' : 'Editar conta',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w900,
                 ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _name,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    labelText: 'Nome',
-                    hintText: 'Conta corrente',
-                    prefixIcon: const Icon(Icons.account_balance_rounded),
-                    errorText: _errors.name,
-                  ),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.words,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  hintText: 'Conta corrente',
+                  prefixIcon: const Icon(Icons.account_balance_rounded),
+                  errorText: _errors.name,
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _bank,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(
-                    labelText: 'Banco',
-                    helperText: 'Opcional.',
-                    prefixIcon: Icon(Icons.business_rounded),
-                  ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _bank,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Banco',
+                  helperText: 'Opcional.',
+                  prefixIcon: Icon(Icons.business_rounded),
                 ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: _type,
-                  isExpanded: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Tipo',
-                    prefixIcon: Icon(Icons.category_outlined),
-                  ),
-                  items: accountTypes.entries
-                      .map(
-                        (entry) => DropdownMenuItem(
-                          value: entry.key,
-                          child: Text(entry.value),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _type = value ?? _type),
+              ),
+              const SizedBox(height: 14),
+              DropdownButtonFormField<String>(
+                initialValue: _type,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  labelText: 'Tipo',
+                  prefixIcon: Icon(Icons.category_outlined),
                 ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _opening,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Saldo antes do histórico',
-                    hintText: '0,00',
-                    prefixText: 'R\$ ',
-                    helperText:
-                        'Sem isso, o número mostrado é só a soma das movimentações.',
-                    prefixIcon: const Icon(Icons.savings_outlined),
-                    errorText: _errors.openingBalance,
-                  ),
+                items: accountTypes.entries
+                    .map(
+                      (entry) => DropdownMenuItem(
+                        value: entry.key,
+                        child: Text(entry.value),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) => setState(() => _type = value ?? _type),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _opening,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                  signed: true,
                 ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _includeInTotals,
-                  onChanged: (value) => setState(() => _includeInTotals = value),
-                  title: const Text(
-                    'Somar no total',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                decoration: InputDecoration(
+                  labelText: 'Saldo antes do histórico',
+                  hintText: '0,00',
+                  prefixText: 'R\$ ',
+                  helperText:
+                      'Sem isso, o número mostrado é só a soma das movimentações.',
+                  prefixIcon: const Icon(Icons.savings_outlined),
+                  errorText: _errors.openingBalance,
                 ),
-                if (submission.failure != null) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: context.palette.negative.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          color: context.palette.negative,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            FailureCopy.of(submission.failure!).short,
-                            style: TextStyle(
-                              color: context.palette.negative,
-                              fontWeight: FontWeight.w700,
-                            ),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _includeInTotals,
+                onChanged: (value) => setState(() => _includeInTotals = value),
+                title: const Text(
+                  'Somar no total',
+                  style: TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+              if (submission.failure != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: context.palette.negative.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: context.palette.negative,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          FailureCopy.of(submission.failure!).short,
+                          style: TextStyle(
+                            color: context.palette.negative,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: submission.isBusy ? null : _submit,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    child: submission.isBusy
-                        ? const BusySpinner(size: 20)
-                        : Text(
-                            widget.existing == null
-                                ? 'Cadastrar conta'
-                                : 'Salvar alterações',
-                          ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: submission.isBusy ? null : _submit,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  child: submission.isBusy
+                      ? const BusySpinner(size: 20)
+                      : Text(
+                          widget.existing == null
+                              ? 'Cadastrar conta'
+                              : 'Salvar alterações',
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    ),
   );
 }

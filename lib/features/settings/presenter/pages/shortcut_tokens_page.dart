@@ -14,7 +14,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 class ShortcutTokensPage extends StatefulWidget {
   const ShortcutTokensPage({super.key});
 
-
   @override
   State<ShortcutTokensPage> createState() => _ShortcutTokensPageState();
 }
@@ -50,36 +49,37 @@ class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
             onRetry: () => context.read<ShortcutTokensCubit>().reload(),
           ),
           LoadSuccess(data: final items) ||
-          LoadReloading(previous: final items) => items.isEmpty
-              ? _Message(
-                  icon: Icons.key_rounded,
-                  color: context.palette.accent,
-                  title: 'Nenhum token ainda',
-                  body:
-                      'O Atalho do iOS usa um token para enviar suas compras. '
-                      'Gere um aqui e cole no Atalho — ele aparece uma única vez.',
-                )
-              : ListView.builder(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
-                  itemCount: items.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == 0) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 16),
-                        child: Text(
-                          'Revogue um token se o aparelho for perdido. A revogação '
-                          'vale na próxima captura, e não apaga o que já foi enviado.',
-                          style: TextStyle(color: context.palette.inkMuted),
-                        ),
+          LoadReloading(previous: final items) =>
+            items.isEmpty
+                ? _Message(
+                    icon: Icons.key_rounded,
+                    color: context.palette.accent,
+                    title: 'Nenhum token ainda',
+                    body:
+                        'O Atalho do iOS usa um token para enviar suas compras. '
+                        'Gere um aqui e cole no Atalho — ele aparece uma única vez.',
+                  )
+                : ListView.builder(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
+                    itemCount: items.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == 0) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text(
+                            'Revogue um token se o aparelho for perdido. A revogação '
+                            'vale na próxima captura, e não apaga o que já foi enviado.',
+                            style: TextStyle(color: context.palette.inkMuted),
+                          ),
+                        );
+                      }
+                      return _TokenTile(
+                        token: items[index - 1],
+                        onRevoke: () => _revoke(context, items[index - 1]),
                       );
-                    }
-                    return _TokenTile(
-                      token: items[index - 1],
-                      onRevoke: () => _revoke(context, items[index - 1]),
-                    );
-                  },
-                ),
+                    },
+                  ),
           _ => const SkeletonList(rows: 3),
         },
       ),
@@ -118,10 +118,12 @@ class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
 
     try {
       final issued = await tokens.createShortcutToken(name);
- await shortcutTokens.reload();
+      await shortcutTokens.reload();
       if (context.mounted) await _showSecret(context, issued);
     } on Failure catch (failure) {
-      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
+      if (context.mounted) {
+        _toast(context, FailureCopy.of(failure).short, error: true);
+      }
     }
   }
 
@@ -182,10 +184,7 @@ class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
         ),
       );
 
-  Future<void> _revoke(
-    BuildContext context,
-    ShortcutToken token,
-  ) async {
+  Future<void> _revoke(BuildContext context, ShortcutToken token) async {
     final tokens = context.read<ShortcutTokenRepository>();
     final shortcutTokens = context.read<ShortcutTokensCubit>();
     final confirmed = await showDialog<bool>(
@@ -217,7 +216,9 @@ class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
       await shortcutTokens.reload();
       if (context.mounted) _toast(context, 'Token revogado.');
     } on Failure catch (failure) {
-      if (context.mounted) _toast(context, FailureCopy.of(failure).short, error: true);
+      if (context.mounted) {
+        _toast(context, FailureCopy.of(failure).short, error: true);
+      }
     }
   }
 

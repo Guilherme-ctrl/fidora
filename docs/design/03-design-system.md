@@ -1,4 +1,4 @@
-# 03 — Design System "Ledger"
+# 03 — Design System "Compasso"
 
 > **Correção de rota (19 ago 2026).** A primeira versão deste documento mandava
 > preservar a paleta de `lib/core/theme.dart`. Estava errado, e travava o remake
@@ -15,7 +15,19 @@
 > desta virada estão marcadas ao longo do documento; o método não mudou, e é por
 > isso que cada valor novo aqui foi medido antes de ser publicado.
 
-Nome do sistema: **Ledger** — o livro-razão: denso, alinhado e legível por definição.
+> **Quinta correção (20 ago 2026) — a marca chegou.** O dono trouxe um board de
+> marca fechado: nome **Compasso**, símbolo (um C aberto com agulha de bússola),
+> quatro cores (`#FF3D8A`, `#111317`, `#6B6F76`, `#F2F3F5`), tipografia **Sora**
+> e a linha *"Seu dinheiro no ritmo certo."*. Junto veio a avaliação de que a
+> home continuava sem personalidade. As quatro correções anteriores foram o
+> sistema procurando identidade por medição; esta é a identidade chegando
+> pronta, e o trabalho virou **encaixar o sistema nela sem afrouxar o rigor** —
+> os quatro valores entram literais, o resto é derivado e medido.
+
+Nome do sistema: **Compasso**, o mesmo do produto. Era "Ledger" — o livro-razão:
+denso, alinhado e legível por definição. Aquele nome descrevia bem o que o
+sistema fazia e mal o que o produto é; com marca de verdade, ter dois nomes é só
+mais uma coisa para explicar.
 
 ## O diagnóstico do "cara de Flutter"
 
@@ -25,7 +37,7 @@ framework:
 | Sintoma | Causa no código | O que o Ledger faz |
 |---|---|---|
 | Fundo bege com cards brancos boiando | `scaffoldBackgroundColor: canvas` + `cardTheme` | O fundo **é** a superfície. O que separa é pauta, não card |
-| Botão primário tonal na cor da marca | `ColorScheme.fromSeed` | A ação preenche com **a** cor da marca — uma só, escolhida, não gerada |
+| Botão primário tonal na cor da marca | `ColorScheme.fromSeed` | A ação preenche com **a** cor da marca — `#FF3D8A`, vinda do board, não gerada por semente |
 | Cantos de 22px em tudo | `cardTheme` radius 22 | Escala de raio própria (6 / 11 / 18 / 24), e superfície só em objeto de verdade |
 | Números iguais a texto | nenhuma fonte declarada no `pubspec.yaml` | Uma família variável no display e na interface, mono no metadado, tabular em toda coluna |
 | Barra e rail do Material | `NavigationBar` / `NavigationRail` | Componentes próprios |
@@ -50,6 +62,9 @@ visual.
 4. **O escuro é o padrão.** É onde o fúcsia tem o contraste que a marca precisa;
    o claro existe porque o dono pediu e é mantido no mesmo rigor, não é um
    descarte. Nenhum amarelo, ocre ou âmbar no sistema.
+7. **O número vem antes da frase.** Quem abre um app de finanças duas vezes por
+   dia não está lendo, está conferindo. A home abre em três valores e uma linha;
+   o texto — que continua correto e continua útil — vem depois deles.
 5. **A cor categórica trabalha.** Ela identifica a categoria numa barra de 3px na
    marca do lançamento — em vez de ícone genérico ou emoji.
 6. **Acessível por padrão.** AA (4.5:1) em texto normal, 3:1 em componente, alvo
@@ -59,22 +74,36 @@ visual.
 
 ### Papel e tinta
 
+**Em negrito, os quatro valores que vieram do board.** O resto é derivado deles.
+
 | Token | Claro | Escuro | Uso |
 |---|---|---|---|
-| `canvas` | `#FDFBFC` | `#0C0A0D` | o chão |
-| `surface` | `#FFFFFF` | `#151119` | **só** objeto discreto |
-| `sunken` | `#F5F1F4` | `#08070A` | zebra de linha e tabela |
-| `ink/strong` | `#140F14` | `#F3EFF4` | texto |
-| `ink/muted` | `#5A525E` | `#A8A0B0` | secundário, ≥ 4.5:1 |
-| `ink/subtle` | `#6B6270` | `#918A9B` | metadado, ≥ 4.5:1 |
-| `rule` | `#EAE4E8` | `#241E2B` | a pauta comum |
-| `rule/2` | `#7D7482` | `#6E6578` | borda de componente — WCAG 1.4.11 pede 3:1 |
-| `rule/heavy` | `#140F14` | `#F3EFF4` | pauta de cabeçalho, 2px |
+| `canvas` | **`#F2F3F5`** | **`#111317`** | o chão |
+| `surface` | `#FFFFFF` | `#191D23` | **só** objeto discreto |
+| `sunken` | `#E7E9EC` | `#0B0D10` | zebra de linha e tabela |
+| `ink/strong` | **`#111317`** | **`#F2F3F5`** | texto |
+| `ink/muted` | `#55595F` | `#9AA1AA` | secundário, ≥ 4.5:1 |
+| `ink/subtle` | `#5F636A` | `#8B929B` | metadado, ≥ 4.5:1 nos **três** chãos |
+| `rule` | `#DFE2E6` | `#262A31` | a pauta comum |
+| `rule/2` | **`#6B6F76`** | **`#6B6F76`** | borda de componente — WCAG 1.4.11 pede 3:1 |
+| `rule/heavy` | `#111317` | `#F2F3F5` | pauta de cabeçalho, 2px |
 
-O neutro não é cinza puro: os dois lados carregam um viés mínimo de magenta, o
-suficiente para o fúcsia parecer que nasceu ali em vez de ter sido colado por
-cima. É o mesmo movimento do bege ao contrário — quente sai, o viés escolhido
-entra.
+O viés de magenta dos neutros saiu: o board pede cinza-azulado neutro, e um chão
+neutro é o que deixa o fúcsia ser a única coisa colorida da tela.
+
+> **O cinza `#6B6F76` quase virou o metadado, e a medição não deixou.** Ele dá
+> 4,55:1 sobre o fundo claro — passa — mas 4,15:1 sobre a zebra, e metadado é
+> justamente o que aparece em linha zebrada. Então ele foi para onde de fato
+> serve, a borda de componente, onde 3:1 é a régua e ele sobra. O metadado
+> escureceu o mínimo necessário para passar nos três chãos.
+
+> **O chão claro deixou de ser branco, e uma invariante caiu junto.** O sistema
+> tinha uma regra dizendo que o chão não podia estar mais de 5 pontos de
+> luminância abaixo da superfície — ela existia para impedir o bege, que
+> obrigava todo conteúdo a virar card. `#F2F3F5` está 10 pontos abaixo do
+> branco, de propósito: cinza com card branco é a linguagem do board. A regra
+> foi **reescrita para o que sempre importou** — o chão tem de ser *neutro*
+> (saturação < 0,16) e estar a **um** passo da superfície, não a três.
 
 ### Tinta de caneta
 
@@ -164,6 +193,10 @@ Medido em `test/categorical_test.dart`, que roda a simulação a cada build:
 | ΔE mínimo sob tritanopia | 15,0 | 15,3 |
 | contraste mínimo com o fundo | 3,53:1 | 5,78:1 |
 
+Uma das seis escureceu na virada Compasso (`#5B9086` → `#4F7F76`): sobre a zebra
+do fundo cinza ela media 2,99:1, três centésimos abaixo dos 3:1 — e três
+centésimos abaixo é abaixo.
+
 Deuteranopia e protanopia somam ~8% dos homens; tritanopia, ~0,01%. Por isso o
 par comum carrega a barra mais alta e a tritanopia um piso — otimizar as três
 igualmente gasta todo o orçamento na mais rara.
@@ -176,9 +209,19 @@ por hash. Acima de seis, agrupar em "Outros".
 
 | Papel | Família | Onde |
 |---|---|---|
-| **Display** | Archivo variável, `wght` 640 + `wdth` 118 | valor dominante: saldo, total de fatura, valor em revisão |
-| **Interface** | Archivo com `fontFeatures: [FontFeature.tabularFigures()]` | corpo, títulos e **toda coluna numérica** |
-| **Metadado** | JetBrains Mono | rótulo em versalete, cartão, parcela, data, tag, atalho |
+| **Display** | Sora variável, `wght` 700 | valor dominante: saldo, total de fatura, valor em revisão |
+| **Interface** | Sora com `fontFeatures: [FontFeature.tabularFigures()]` | corpo, títulos e **toda coluna numérica** |
+| **Metadado** | Sora, `wght` 500 e 600 | rótulo em versalete, cartão, parcela, data, tag, atalho |
+
+> **Quinta correção (20 ago 2026).** Sora, do board, no lugar da Archivo — e
+> **o mono saiu**. A JetBrains Mono segurava o metadado desde que o sistema se
+> chamava Ledger e nunca esteve errada nos próprios termos, mas versalete mono
+> pequeno é exatamente a textura de leitura de instrumento que estava por trás
+> do *"parece um artigo científico"*. O que o mono comprava de verdade era
+> alinhamento de coluna, e a Sora traz `tnum` — o alinhamento sobrevive à troca,
+> o ar de terminal não. Sora tem um eixo só (`wght` 100–800): perdi o eixo de
+> largura da Archivo, e a compensação é que a Sora já é larga de desenho. Uma
+> família, **80 KB** em subset, contra 392 KB de duas.
 
 > **Quarta correção (20 ago 2026).** A serifa saiu e a Inter saiu junto. A
 > serifa no valor dominante é exatamente o que faz a tela parecer publicação, e
@@ -189,16 +232,17 @@ por hash. Acima de seis, agrupar em "Outros".
 
 | Token | Tamanho / linha | Eixos | Família |
 |---|---|---|---|
-| `display/hero` | 42 / 44 | `wght` 640, `wdth` 118 | Archivo |
-| `display/metric` | 26 / 30 | `wght` 640, `wdth` 118 | Archivo |
-| `title/lg` | 19 / 26 | `wght` 600 | Archivo |
-| `title/md` | 13 / 18 | `wght` 600 | Archivo |
-| `body/md` | 14 / 21 | `wght` 400 | Archivo |
-| `amount/column` | 14 / 20 | `wght` 500, tabular | Archivo |
-| `meta/mono` | 10.5 / 15, +0.02em | `wght` 500 | JetBrains Mono |
+| `display/hero` | 42 / 44 | `wght` 700 | Sora |
+| `display/metric` | 26 / 30 | `wght` 700 | Sora |
+| `title/lg` | 19 / 26 | `wght` 620 | Sora |
+| `title/md` | 13.5 / 18 | `wght` 620 | Sora |
+| `body/md` | 14 / 21 | `wght` 400 | Sora |
+| `amount/column` | 14 / 20 | `wght` 560, tabular | Sora |
+| `meta` | 11.5 / 16 | `wght` 400, tabular | Sora |
+| `label/caps` | 10.5 / 14, +0.9 | `wght` 600 | Sora |
 
-As duas famílias vão no bundle com subset (latino + pontuação + símbolo de
-moeda): **392 KB no total**, contra 2,2 MB dos arquivos originais.
+A família vai no bundle com subset (latino + pontuação + símbolo de moeda):
+**80 KB**, contra 392 KB das duas anteriores e 2,2 MB dos arquivos originais.
 | `label/caps` | 9.5 / 14, +0.16em, caixa alta | 600 | mono |
 
 Regras:
@@ -237,6 +281,26 @@ Regras:
 O resto do produto continua em elevação zero: o que separa uma seção da outra é
 pauta e zebra, não sombra.
 
+## A marca
+
+O símbolo é **código**, não asset: um `CustomPainter` em
+`lib/core/design_system/brand.dart`. Três coisas dependem disso e as três
+importam — ele pega a cor da paleta (fúcsia nos dois temas, sem segundo
+arquivo); fica nítido dos 20pt de uma barra de abas aos 1024px do ícone da App
+Store; e a abertura do C é o mesmo arco que o anel de progresso desenha, que é o
+que faz a marca e o instrumento principal do produto parecerem parentes em vez
+de vizinhos.
+
+Os ícones de iOS e do PWA saem do mesmo pincel, por
+`flutter test tool/generate_icons.dart` — quinze tamanhos para iOS, quatro para
+web, um favicon. Marca e ícone não têm como divergir porque são o mesmo desenho.
+
+| Peça | Onde |
+|---|---|
+| `CompassoMark` | símbolo sozinho — trilho recolhido, ícone, splash |
+| `CompassoWordmark` | símbolo + `compasso` em caixa baixa, com a linha opcional |
+| `goldens/marca-claro.png` · `marca-escuro.png` | as duas imagens que impedem o desenho de mudar sem ninguém ver |
+
 ## Componentes que substituem os do Material
 
 | Sai | Entra | Nota |
@@ -248,7 +312,9 @@ pauta e zebra, não sombra.
 | `NavigationBar` | `LedgerTabBar` | indicador é pauta de tinta no topo, não pílula |
 | `Chip` | `MonoTag` | mono, caixa alta, borda de 1px, `radius/xs` |
 | `FilledButton` | `InkButton` | fundo `action`, texto `on/action`, brilho na cor da ação |
-| — | `ProgressRing` | anel aberto: 26pt ao lado de um título, 38pt onde o progresso é o assunto |
+| — | `ProgressRing` | anel aberto: 26pt ao lado de um título, 38–44pt onde o progresso é o assunto |
+| — | `Sparkline` | a linha sem eixo nem grade: gasto **acumulado**, com a cabeça acesa em "hoje" |
+| — | `CompassoMark` / `CompassoWordmark` | a marca, desenhada em código |
 | `showModalBottomSheet` | `ResponsiveSheet` | sheet < 600 · dialog 600–1239 · painel lateral ≥ 1240 |
 | `LinearProgressIndicator` | `RuleBar` / `ProgressRing` | barra de 4px onde é medida; anel onde é conquista |
 

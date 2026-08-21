@@ -231,52 +231,57 @@ class _ReviewQueuePageState extends State<ReviewQueuePage> {
         child: Scaffold(
           appBar: AppBar(title: const Text('Revisões')),
           body: switch (queue) {
-          LoadFailed() => _QueueError(onRetry: () => context.read<ReviewQueueCubit>().reload()),
-          LoadSuccess(data: final _) ||
-          LoadReloading(previous: final _) => snapshot == null
-                ? const SkeletonList(rows: 4)
-                : Column(
-                    children: [
-                      _Progress(
-                        settled: _settled,
-                        remaining: items.length,
-                        total: _startedWith == 0 ? items.length : _startedWith,
-                        groups: groups.length,
-                      ),
-                      Expanded(
-                        child: groups.isEmpty
-                            ? _QueueDone(
-                                settled: _settled,
-                                decisions: _decisions,
-                                celebrate: _finished,
-                              )
-                            : _Deck(
-                                groups: groups,
-                                cursor: _cursor,
-                                exit: _exit,
-                                onKeep: (g) => _settleGroup(g, 'resolved'),
-                                onDismiss: (g) => _settleGroup(g, 'dismissed'),
-                                onCorrect: (g, t) => _correct(g, t, snapshot),
-                              ),
-                      ),
-                      if (Breakpoint.of(context).hasRail && groups.isNotEmpty)
-                        const Padding(
-                          padding: EdgeInsets.only(bottom: Space.lg),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              MonoTag('J K navegar'),
-                              SizedBox(width: Space.xxs),
-                              MonoTag('⏎ está certo'),
-                              SizedBox(width: Space.xxs),
-                              MonoTag('D descartar'),
-                            ],
-                          ),
+            LoadFailed() => _QueueError(
+              onRetry: () => context.read<ReviewQueueCubit>().reload(),
+            ),
+            LoadSuccess(data: final _) || LoadReloading(previous: final _) =>
+              snapshot == null
+                  ? const SkeletonList(rows: 4)
+                  : Column(
+                      children: [
+                        _Progress(
+                          settled: _settled,
+                          remaining: items.length,
+                          total: _startedWith == 0
+                              ? items.length
+                              : _startedWith,
+                          groups: groups.length,
                         ),
-                    ],
-                  ),
-          _ => const SkeletonList(rows: 4),
-        },
+                        Expanded(
+                          child: groups.isEmpty
+                              ? _QueueDone(
+                                  settled: _settled,
+                                  decisions: _decisions,
+                                  celebrate: _finished,
+                                )
+                              : _Deck(
+                                  groups: groups,
+                                  cursor: _cursor,
+                                  exit: _exit,
+                                  onKeep: (g) => _settleGroup(g, 'resolved'),
+                                  onDismiss: (g) =>
+                                      _settleGroup(g, 'dismissed'),
+                                  onCorrect: (g, t) => _correct(g, t, snapshot),
+                                ),
+                        ),
+                        if (Breakpoint.of(context).hasRail && groups.isNotEmpty)
+                          const Padding(
+                            padding: EdgeInsets.only(bottom: Space.lg),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                MonoTag('J K navegar'),
+                                SizedBox(width: Space.xxs),
+                                MonoTag('⏎ está certo'),
+                                SizedBox(width: Space.xxs),
+                                MonoTag('D descartar'),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
+            _ => const SkeletonList(rows: 4),
+          },
         ),
       ),
     );

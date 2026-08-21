@@ -1,4 +1,3 @@
-
 /// The address of every screen.
 ///
 /// Paths only. The codecs that put a period and a filter into the query string

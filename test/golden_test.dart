@@ -1,6 +1,7 @@
 @Tags(['golden'])
 library;
 
+import 'package:financeiro_ai/core/design_system/brand.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/ledger/infra/repositories/demo_finance_repository.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/finance_period.dart';
@@ -161,6 +162,56 @@ void main() {
           matchesGoldenFile('goldens/shell-${entry.key}.png'),
         );
       });
+    });
+  }
+
+  /// A marca, fotografada.
+  ///
+  /// O logo é código — um `CustomPainter`, não um asset — o que resolve o
+  /// problema de ter dois arquivos que discordam e cria outro: um desenho que
+  /// pode mudar sem ninguém ver. Estas duas imagens são o que impede isso.
+  for (final entry in {
+    'claro': Brightness.light,
+    'escuro': Brightness.dark,
+  }.entries) {
+    testWidgets('a marca — ${entry.key}', (tester) async {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = const Size(360, 220);
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          debugShowCheckedModeBanner: false,
+          theme: buildAppTheme(brightness: entry.value),
+          // `Material`, não um `ColoredBox` cru: fora de um ancestral Material
+          // o Flutter desenha todo texto com o sublinhado amarelo de depuração
+          // — e a primeira versão desta imagem registrou exatamente isso.
+          home: Builder(
+            builder: (context) => Material(
+              color: context.palette.canvas,
+              child: const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CompassoMark(size: 64),
+                      SizedBox(height: 20),
+                      CompassoWordmark(markSize: 30, tagline: true),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 60));
+      await expectLater(
+        find.byType(MaterialApp),
+        matchesGoldenFile('goldens/marca-${entry.key}.png'),
+      );
     });
   }
 

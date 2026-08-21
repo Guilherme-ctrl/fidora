@@ -209,7 +209,7 @@ class DemoFinanceRepository implements FinanceRepository {
   Future<InvoiceImportResult> importInvoice(
     InvoiceImportDocument document,
   ) => throw const InvoiceImportException(
-    'A importação somente grava dados quando o Finora está conectado ao Supabase.',
+    'A importação somente grava dados quando o Compasso está conectado ao Supabase.',
   );
 
   @override

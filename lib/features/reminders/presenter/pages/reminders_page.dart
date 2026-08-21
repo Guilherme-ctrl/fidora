@@ -73,7 +73,7 @@ class _RemindersPageState extends State<RemindersPage> {
                   if (_permissionDenied)
                     _Note(
                       text:
-                          'As notificações estão bloqueadas para o Finora. '
+                          'As notificações estão bloqueadas para o Compasso. '
                           'Libere em Ajustes › Notificações e volte aqui.',
                       color: context.palette.negative,
                     ),
@@ -201,7 +201,7 @@ class _Preview extends StatelessWidget {
     if (!settings.enabled) {
       return _Note(
         text:
-            'Com os lembretes ligados, o Finora avisa antes de cada fatura em '
+            'Com os lembretes ligados, o Compasso avisa antes de cada fatura em '
             'aberto vencer.',
         color: context.palette.inkMuted,
       );

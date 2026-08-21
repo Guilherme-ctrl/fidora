@@ -42,8 +42,8 @@ import 'package:flutter/material.dart';
 /// is a task, not a fault. Amber said "something is wrong" about the most
 /// ordinary state in the product.
 @immutable
-class FinoraPalette extends ThemeExtension<FinoraPalette> {
-  const FinoraPalette({
+class CompassoPalette extends ThemeExtension<CompassoPalette> {
+  const CompassoPalette({
     required this.ink,
     required this.inkMuted,
     required this.inkSubtle,
@@ -140,59 +140,67 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
   /// An ordinary spend. Ink, not red.
   Color get expense => ink;
 
-  static const light = FinoraPalette(
-    ink: Color(0xFF140F14),
-    inkMuted: Color(0xFF5A525E),
-    inkSubtle: Color(0xFF6B6270),
-    // Branco-quente com viés de magenta, não papel neutro: nenhum dos quatro
-    // concorrentes ocupa o neutro, e foi ele que deu a sensação de impresso.
-    canvas: Color(0xFFFDFBFC),
+  /// Os quatro valores do board da marca Compasso são `#FF3D8A`, `#111317`,
+  /// `#6B6F76` e `#F2F3F5`. Os quatro entram **literais**; o resto da paleta é
+  /// derivado deles e medido, porque um board de marca dá a identidade e não
+  /// tem como dar os doze tons que um produto de verdade precisa.
+  static const light = CompassoPalette(
+    ink: Color(0xFF111317),
+    inkMuted: Color(0xFF55595F),
+    // O cinza do board é `#6B6F76`, e ele passa em AA sobre o fundo — mas
+    // reprova sobre a zebra, a 4,15:1. Então ele fica onde de fato serve,
+    // como borda de componente (`ruleStrong`), e o metadado escurece o mínimo
+    // para passar nos três chãos.
+    inkSubtle: Color(0xFF5F636A),
+    canvas: Color(0xFFF2F3F5),
     surface: Color(0xFFFFFFFF),
-    sunken: Color(0xFFF5F1F4),
-    rule: Color(0xFFEAE4E8),
-    ruleStrong: Color(0xFF7D7482),
-    ruleHeavy: Color(0xFF140F14),
+    sunken: Color(0xFFE7E9EC),
+    rule: Color(0xFFDFE2E6),
+    ruleStrong: Color(0xFF6B6F76),
+    ruleHeavy: Color(0xFF111317),
     // O preenchimento é o mesmo fúcsia nos dois temas — é a marca. O que muda
     // é o fúcsia usado como *texto*, que precisa escurecer para passar em AA
     // sobre branco.
     action: Color(0xFFFF3D8A),
-    onAction: Color(0xFF14090E),
+    onAction: Color(0xFF111317),
     accent: Color(0xFFC2185B),
     accentSoft: Color(0xFFFDE7F0),
     income: Color(0xFF0B6B4F),
     negative: Color(0xFFB03A18),
     pending: Color(0xFFC2185B),
-    ignored: Color(0xFF6B6270),
+    ignored: Color(0xFF5F636A),
     categorical: [
       Color(0xFF553858),
       Color(0xFF7F3B3D),
       Color(0xFF3D5AA9),
       Color(0xFF5B7625),
       Color(0xFF3082A2),
-      Color(0xFF5B9086),
+      Color(0xFF4F7F76),
     ],
-    cardGradient: [Color(0xFF1A0F18), Color(0xFF3D1730)],
+    cardGradient: [Color(0xFF111317), Color(0xFF2C3039)],
     onCard: Color(0xFFFFFFFF),
   );
 
-  static const dark = FinoraPalette(
-    ink: Color(0xFFF3EFF4),
-    inkMuted: Color(0xFFA8A0B0),
-    inkSubtle: Color(0xFF918A9B),
-    canvas: Color(0xFF0C0A0D),
-    surface: Color(0xFF151119),
-    sunken: Color(0xFF08070A),
-    rule: Color(0xFF241E2B),
-    ruleStrong: Color(0xFF6E6578),
-    ruleHeavy: Color(0xFFF3EFF4),
+  static const dark = CompassoPalette(
+    ink: Color(0xFFF2F3F5),
+    inkMuted: Color(0xFF9AA1AA),
+    inkSubtle: Color(0xFF8B929B),
+    canvas: Color(0xFF111317),
+    surface: Color(0xFF191D23),
+    sunken: Color(0xFF0B0D10),
+    rule: Color(0xFF262A31),
+    // O cinza do board vira a borda de componente do tema escuro: 3,68:1
+    // sobre o fundo, acima dos 3:1 que a WCAG 1.4.11 pede.
+    ruleStrong: Color(0xFF6B6F76),
+    ruleHeavy: Color(0xFFF2F3F5),
     action: Color(0xFFFF3D8A),
-    onAction: Color(0xFF14090E),
+    onAction: Color(0xFF111317),
     accent: Color(0xFFFF3D8A),
-    accentSoft: Color(0xFF2A0F1D),
+    accentSoft: Color(0xFF2B1420),
     income: Color(0xFF3FD98A),
     negative: Color(0xFFFF7A4D),
     pending: Color(0xFFFF3D8A),
-    ignored: Color(0xFF918A9B),
+    ignored: Color(0xFF8B929B),
     categorical: [
       Color(0xFFA280A4),
       Color(0xFFD38785),
@@ -201,12 +209,12 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
       Color(0xFF8CD6F9),
       Color(0xFFB0E8DC),
     ],
-    cardGradient: [Color(0xFF1A0F18), Color(0xFF3D1730)],
+    cardGradient: [Color(0xFF15181D), Color(0xFF2C3039)],
     onCard: Color(0xFFFFFFFF),
   );
 
   @override
-  FinoraPalette copyWith({
+  CompassoPalette copyWith({
     Color? ink,
     Color? inkMuted,
     Color? inkSubtle,
@@ -227,7 +235,7 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
     List<Color>? categorical,
     List<Color>? cardGradient,
     Color? onCard,
-  }) => FinoraPalette(
+  }) => CompassoPalette(
     ink: ink ?? this.ink,
     inkMuted: inkMuted ?? this.inkMuted,
     inkSubtle: inkSubtle ?? this.inkSubtle,
@@ -251,13 +259,13 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
   );
 
   @override
-  FinoraPalette lerp(covariant FinoraPalette? other, double t) {
+  CompassoPalette lerp(covariant CompassoPalette? other, double t) {
     if (other == null) return this;
     Color mix(Color a, Color b) => Color.lerp(a, b, t)!;
     List<Color> mixAll(List<Color> a, List<Color> b) => [
       for (var i = 0; i < a.length; i++) mix(a[i], b[i]),
     ];
-    return FinoraPalette(
+    return CompassoPalette(
       ink: mix(ink, other.ink),
       inkMuted: mix(inkMuted, other.inkMuted),
       inkSubtle: mix(inkSubtle, other.inkSubtle),
@@ -282,14 +290,14 @@ class FinoraPalette extends ThemeExtension<FinoraPalette> {
   }
 }
 
-extension FinoraThemeAccess on BuildContext {
-  FinoraPalette get palette =>
-      Theme.of(this).extension<FinoraPalette>() ?? FinoraPalette.light;
+extension CompassoThemeAccess on BuildContext {
+  CompassoPalette get palette =>
+      Theme.of(this).extension<CompassoPalette>() ?? CompassoPalette.light;
 }
 
 ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
   final dark = brightness == Brightness.dark;
-  final palette = dark ? FinoraPalette.dark : FinoraPalette.light;
+  final palette = dark ? CompassoPalette.dark : CompassoPalette.light;
   final scheme =
       ColorScheme.fromSeed(
         seedColor: palette.accent,
@@ -320,7 +328,7 @@ ThemeData buildAppTheme({Brightness brightness = Brightness.light}) {
     // without this line each of them would fall back to the platform's default
     // face — the product would ship three considered families and still not be
     // set in them.
-    fontFamily: 'Archivo',
+    fontFamily: 'Sora',
     fontFamilyFallback: const ['.SF UI Text', 'Segoe UI', 'Roboto'],
     colorScheme: scheme,
     scaffoldBackgroundColor: palette.canvas,

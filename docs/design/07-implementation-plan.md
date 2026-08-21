@@ -127,7 +127,9 @@ Ficou de fora, e por quê:
       carregadas em `flutter_test_config.dart`, as imagens de referência passaram
       a registrar as letras, e a primeira coisa que fizeram foi reprovar a face
       do cartão a 2,0x. **Superado em 20 ago 2026**: a virada fúcsia tirou a
-      serifa e a Inter, e o bundle ficou em 392 KB com Archivo + JetBrains Mono.
+      serifa e a Inter, e o bundle ficou em 392 KB com Archivo + JetBrains Mono
+      — e a virada Compasso, no mesmo dia, trocou as duas por Sora sozinha,
+      80 KB.
       As letras nas imagens de referência cobraram de novo — desta vez mostraram
       que a face do cartão era a única superfície do app rodando na fonte do
       sistema, porque um `TextStyle` cru não herda a família do tema.

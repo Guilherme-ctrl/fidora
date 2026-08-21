@@ -68,7 +68,7 @@ class _FinanceiroAppState extends State<FinanceiroApp> {
 
   @override
   Widget build(BuildContext context) => MaterialApp.router(
-    title: 'Finora',
+    title: 'Compasso',
     debugShowCheckedModeBanner: false,
     // O produto é pt-BR desde a fundação e nunca declarou localização, então
     // todo widget do Material caía no inglês padrão — e os seletores de data,

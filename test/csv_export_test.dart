@@ -154,7 +154,7 @@ void main() {
 
   group('csvFileName', () {
     test('sorts chronologically and says what it is', () {
-      expect(csvFileName(DateTime(2026, 8, 19)), 'finora-2026-08-19.csv');
+      expect(csvFileName(DateTime(2026, 8, 19)), 'compasso-2026-08-19.csv');
     });
   });
 }

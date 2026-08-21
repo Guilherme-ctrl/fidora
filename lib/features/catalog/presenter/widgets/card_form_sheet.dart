@@ -14,8 +14,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 /// Opens the card editor and reloads the snapshot once something is saved.
 Future<void> editCard(
-  BuildContext context,
-  {
+  BuildContext context, {
   required List<Holder> holders,
   CreditCard? existing,
 }) async {
@@ -120,173 +119,179 @@ class _CardFormState extends State<_CardForm> {
     setState(() => _errors = errors);
     _submission.reset();
     if (!errors.isEmpty) return;
-    final ok = await _submission.run(
-      'saveCard',
-      () => widget.onSave(draft),
-    );
+    final ok = await _submission.run('saveCard', () => widget.onSave(draft));
     if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SubmissionCubit, SubmissionState>(
     bloc: _submission,
-    builder: (context, submission) =>
-    SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .88,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SheetHeader(
-                    title: widget.existing == null
-                        ? 'Novo cartão'
-                        : 'Editar cartão',
+    builder: (context, submission) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .88,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SheetHeader(
+                  title: widget.existing == null
+                      ? 'Novo cartão'
+                      : 'Editar cartão',
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'O final precisa bater com o que o Atalho envia — é por ele que '
+                  'a captura encontra o cartão.',
+                  style: TextStyle(color: context.palette.inkMuted),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Nome do cartão',
+                    hintText: 'Uniclass Black',
+                    prefixIcon: const Icon(Icons.credit_card_rounded),
+                    errorText: _errors.name,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'O final precisa bater com o que o Atalho envia — é por ele que '
-                    'a captura encontra o cartão.',
-                    style: TextStyle(color: context.palette.inkMuted),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _bank,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Banco',
+                    prefixIcon: const Icon(Icons.account_balance_rounded),
+                    errorText: _errors.bank,
                   ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _name,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: 'Nome do cartão',
-                      hintText: 'Uniclass Black',
-                      prefixIcon: const Icon(Icons.credit_card_rounded),
-                      errorText: _errors.name,
-                    ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _lastFour,
+                  keyboardType: TextInputType.number,
+                  maxLength: 4,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Final',
+                    counterText: '',
+                    prefixIcon: const Icon(Icons.tag_rounded),
+                    errorText: _errors.lastFour,
                   ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _bank,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: InputDecoration(
-                      labelText: 'Banco',
-                      prefixIcon: const Icon(Icons.account_balance_rounded),
-                      errorText: _errors.bank,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _lastFour,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: InputDecoration(
-                      labelText: 'Final',
-                      counterText: '',
-                      prefixIcon: const Icon(Icons.tag_rounded),
-                      errorText: _errors.lastFour,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _DayField(
-                          label: 'Fecha dia',
-                          value: _closingDay,
-                          error: _errors.closingDay,
-                          onChanged: (value) => setState(() => _closingDay = value),
-                        ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _DayField(
+                        label: 'Fecha dia',
+                        value: _closingDay,
+                        error: _errors.closingDay,
+                        onChanged: (value) =>
+                            setState(() => _closingDay = value),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DayField(
-                          label: 'Vence dia',
-                          value: _dueDay,
-                          error: _errors.dueDay,
-                          onChanged: (value) => setState(() => _dueDay = value),
-                        ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _DayField(
+                        label: 'Vence dia',
+                        value: _dueDay,
+                        error: _errors.dueDay,
+                        onChanged: (value) => setState(() => _dueDay = value),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  TextField(
-                    controller: _limit,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
                     ),
-                    decoration: InputDecoration(
-                      labelText: 'Limite',
-                      hintText: '0,00',
-                      prefixText: 'R\$ ',
-                      helperText:
-                          'Opcional. Sem limite, o cartão não mostra barra de uso.',
-                      prefixIcon: const Icon(Icons.speed_rounded),
-                      errorText: _errors.limit,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  DropdownButtonFormField<String?>(
-                    initialValue: _holderId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      labelText: 'Portador',
-                      helperText: 'Opcional. Cadastre portadores em Mais.',
-                      prefixIcon: Icon(Icons.person_outline_rounded),
-                    ),
-                    items: [
-                      const DropdownMenuItem<String?>(child: Text('Sem portador')),
-                      ...widget.holders.map(
-                        (item) => DropdownMenuItem<String?>(
-                          value: item.id,
-                          child: Text(
-                            item.includeInTotals
-                                ? item.name
-                                : '${item.name} — fora dos totais',
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) => setState(() => _holderId = value),
-                  ),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _includeInTotals,
-                    onChanged: (value) => setState(() => _includeInTotals = value),
-                    title: const Text(
-                      'Somar nas minhas finanças',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    subtitle: const Text(
-                      'Desligue para um adicional cujos gastos não são seus.',
-                    ),
-                  ),
-                  if (submission.failure != null) ...[
-                    const SizedBox(height: 12),
-                    _FailureBanner(message: FailureCopy.of(submission.failure!).short),
                   ],
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: submission.isBusy ? null : _submit,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      child: submission.isBusy
-                          ? const BusySpinner(size: 20)
-                          : Text(
-                              widget.existing == null
-                                  ? 'Cadastrar cartão'
-                                  : 'Salvar alterações',
-                            ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _limit,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Limite',
+                    hintText: '0,00',
+                    prefixText: 'R\$ ',
+                    helperText:
+                        'Opcional. Sem limite, o cartão não mostra barra de uso.',
+                    prefixIcon: const Icon(Icons.speed_rounded),
+                    errorText: _errors.limit,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String?>(
+                  initialValue: _holderId,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Portador',
+                    helperText: 'Opcional. Cadastre portadores em Mais.',
+                    prefixIcon: Icon(Icons.person_outline_rounded),
+                  ),
+                  items: [
+                    const DropdownMenuItem<String?>(
+                      child: Text('Sem portador'),
                     ),
+                    ...widget.holders.map(
+                      (item) => DropdownMenuItem<String?>(
+                        value: item.id,
+                        child: Text(
+                          item.includeInTotals
+                              ? item.name
+                              : '${item.name} — fora dos totais',
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                  onChanged: (value) => setState(() => _holderId = value),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _includeInTotals,
+                  onChanged: (value) =>
+                      setState(() => _includeInTotals = value),
+                  title: const Text(
+                    'Somar nas minhas finanças',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  subtitle: const Text(
+                    'Desligue para um adicional cujos gastos não são seus.',
+                  ),
+                ),
+                if (submission.failure != null) ...[
+                  const SizedBox(height: 12),
+                  _FailureBanner(
+                    message: FailureCopy.of(submission.failure!).short,
                   ),
                 ],
-              ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: submission.isBusy ? null : _submit,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: submission.isBusy
+                        ? const BusySpinner(size: 20)
+                        : Text(
+                            widget.existing == null
+                                ? 'Cadastrar cartão'
+                                : 'Salvar alterações',
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    ),
   );
 }
 

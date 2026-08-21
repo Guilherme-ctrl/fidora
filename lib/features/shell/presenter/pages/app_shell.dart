@@ -20,6 +20,7 @@ import 'package:financeiro_ai/features/overview/presenter/pages/today_page.dart'
 import 'package:financeiro_ai/features/transactions/presenter/pages/transactions_page.dart';
 import 'package:financeiro_ai/core/routing/router.dart';
 import 'package:financeiro_ai/core/routing/routes.dart';
+import 'package:financeiro_ai/core/design_system/brand.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/navigation.dart';
 import 'package:financeiro_ai/features/transactions/presenter/widgets/transaction_form_sheet.dart';
@@ -367,8 +368,7 @@ class _ShellFooter extends StatelessWidget {
           child: IconButton(
             iconSize: 18,
             visualDensity: VisualDensity.compact,
-            onPressed: () =>
-                context.read<AppearanceCubit>().set(mode.next),
+            onPressed: () => context.read<AppearanceCubit>().set(mode.next),
             icon: Icon(mode.icon),
           ),
         ),
@@ -451,23 +451,10 @@ class _SidebarBrand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final mark = Container(
-      width: 26,
-      height: 26,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: palette.action,
-        borderRadius: BorderRadius.circular(Radii.xs),
-      ),
-      child: Text(
-        'F',
-        style: context.type.titleMd.copyWith(color: palette.onAction),
-      ),
-    );
     if (compact) {
       return Column(
         children: [
-          mark,
+          const CompassoMark(size: 26),
           if (onSearch != null) ...[
             const SizedBox(height: Space.xs),
             IconButton(
@@ -484,20 +471,7 @@ class _SidebarBrand extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            mark,
-            const SizedBox(width: Space.xs),
-            Expanded(
-              child: Text(
-                'Finora',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: context.type.titleMd,
-              ),
-            ),
-          ],
-        ),
+        const CompassoWordmark(markSize: 24),
         if (onSearch != null) ...[
           const SizedBox(height: Space.sm),
           InkWell(
@@ -535,10 +509,9 @@ class _SidebarBrand extends StatelessWidget {
 
 /// The phone's top bar.
 ///
-/// It kept the pre-remake look — a rounded blue square with a chart glyph and
-/// "finora" in a heavy lowercase — through every one of the seven PRs, because
-/// the sidebar got its own mark in PR 3 and this one was only ever seen on a
-/// phone. It is the first thing on the screen there.
+/// It carried a placeholder mark for a long time — a rounded square with a
+/// single letter in it — because a letter in a box is what you draw when the
+/// product has no logo. It has one now.
 class _Brand extends StatelessWidget {
   const _Brand({required this.compact, this.onSignOut});
   final bool compact;
@@ -546,31 +519,9 @@ class _Brand extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final palette = context.palette;
     return Row(
       children: [
-        Container(
-          width: 26,
-          height: 26,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: palette.action,
-            borderRadius: BorderRadius.circular(Radii.xs),
-          ),
-          child: Text(
-            'F',
-            style: context.type.titleMd.copyWith(color: palette.onAction),
-          ),
-        ),
-        const SizedBox(width: Space.xs),
-        Expanded(
-          child: Text(
-            'Finora',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: context.type.titleMd,
-          ),
-        ),
+        const Expanded(child: CompassoWordmark(markSize: 24)),
         MonoTag(onSignOut == null ? 'demo' : 'online'),
         if (onSignOut != null) ...[
           const SizedBox(width: Space.xxs),

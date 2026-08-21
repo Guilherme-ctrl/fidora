@@ -87,10 +87,7 @@ void main() {
       // The promise the whole product rests on: a purchase is not counted
       // twice. This must hold even when every other signal says go — which is
       // the case the old inline condition got right and nothing verified.
-      expect(
-        mayImport(document(), preview(alreadyImported: true)),
-        isFalse,
-      );
+      expect(mayImport(document(), preview(alreadyImported: true)), isFalse);
     });
 
     test('and not even with categories approved', () {

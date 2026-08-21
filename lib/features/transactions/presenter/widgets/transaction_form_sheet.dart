@@ -166,12 +166,11 @@ class _TransactionFormState extends State<_TransactionForm> {
       var path = _receiptPath;
       final pending = _pendingReceipt;
       if (pending != null) {
-        path = await receipts
-            .uploadReceipt(
-              bytes: pending.bytes,
-              fileName: pending.fileName,
-              contentType: pending.contentType,
-            );
+        path = await receipts.uploadReceipt(
+          bytes: pending.bytes,
+          fileName: pending.fileName,
+          contentType: pending.contentType,
+        );
       }
       await widget.onSave(_buildDraft(receiptPath: path));
       if (mounted) Navigator.of(context).pop(true);

@@ -79,7 +79,7 @@ class AmountText extends StatelessWidget {
       ? (value >= 0 ? MoneyTone.income : MoneyTone.expense)
       : tone;
 
-  Color _colour(FinoraPalette palette) => switch (_resolved) {
+  Color _colour(CompassoPalette palette) => switch (_resolved) {
     MoneyTone.income => palette.income,
     MoneyTone.expense => palette.expense,
     MoneyTone.negative => palette.negative,
@@ -134,18 +134,18 @@ class AmountText extends StatelessWidget {
 }
 
 enum AmountSize {
-  /// The one figure a screen is about. Serif.
+  /// The one figure a screen is about.
   hero,
 
-  /// The value of a tile. Serif.
+  /// The value of a tile.
   metric,
 
-  /// Inside a list or a table. Sans, tabular — a column has to align, and that
-  /// is not the serif's job.
+  /// Inside a list or a table. Interface weight, tabular — a column has to
+  /// align, and that is not the display voice's job.
   row,
 }
 
-/// A section label: mono, small caps, spaced.
+/// A section label: small caps, lightly spaced.
 class SectionLabel extends StatelessWidget {
   const SectionLabel(this.text, {super.key, this.color});
   final String text;
@@ -708,7 +708,11 @@ class RuleBar extends StatelessWidget {
             Container(color: trackColor ?? palette.rule),
             Container(
               width: constraints.maxWidth * value.clamp(0.0, 1.0),
-              color: over ? palette.negative : (color ?? palette.ink),
+              // O preenchimento padrão passou a ser a marca. Era tinta preta,
+              // que é o que se usa quando o produto não tem cor — e uma barra
+              // de progresso preta é exatamente o tipo de coisa que faz a tela
+              // parecer relatório.
+              color: over ? palette.negative : (color ?? palette.accent),
             ),
           ],
         ),
@@ -719,7 +723,7 @@ class RuleBar extends StatelessWidget {
 
 /// The colour a category keeps everywhere.
 ///
-/// Resolved from the fixed order of [FinoraPalette.categorical] by hashing the
+/// Resolved from the fixed order of [CompassoPalette.categorical] by hashing the
 /// name into a slot — stable for a given name, and the same in the dashboard,
 /// the projection and the invoice. It is a fallback: a category that carries
 /// its own stored colour uses that instead.

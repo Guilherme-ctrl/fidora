@@ -152,8 +152,8 @@ void main() {
       addTearDown(router.dispose);
       await tester.pumpWidget(
         withDependencies(
-      repository: DemoFinanceRepository(),
-      child: MaterialApp.router(
+          repository: DemoFinanceRepository(),
+          child: MaterialApp.router(
             theme: buildAppTheme(),
             routerConfig: router,
           ),
@@ -200,7 +200,7 @@ void main() {
       for (final path in Routes.overlays) {
         final router = await pump(tester, at: path);
         expect(
-          find.textContaining('não existe no Finora'),
+          find.textContaining('não existe no Compasso'),
           findsNothing,
           reason: path,
         );
@@ -301,7 +301,7 @@ void main() {
     testWidgets('an unknown address explains itself', (tester) async {
       await withGoldenClock(() async {
         await pump(tester, at: '/inventado');
-        expect(find.textContaining('não existe no Finora'), findsOneWidget);
+        expect(find.textContaining('não existe no Compasso'), findsOneWidget);
       });
     });
   });

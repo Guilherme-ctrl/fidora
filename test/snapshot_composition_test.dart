@@ -4,7 +4,6 @@ import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dar
 import 'package:financeiro_ai/features/ledger/presenter/states/finance_state.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-
 /// Counts how often each half is fetched, which is the whole point of the
 /// split: a captured purchase must not refetch every card and category.
 ///

@@ -24,7 +24,7 @@ class DeveloperLogger implements Logger {
   void error(String context, Object cause, StackTrace stack) {
     developer.log(
       context,
-      name: 'finora',
+      name: 'compasso',
       error: cause,
       stackTrace: stack,
       level: 1000,

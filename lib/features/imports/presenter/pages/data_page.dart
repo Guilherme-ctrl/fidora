@@ -19,7 +19,6 @@ class DataPage extends StatefulWidget {
   const DataPage({super.key, required this.snapshot});
   final FinanceSnapshot snapshot;
 
-
   @override
   State<DataPage> createState() => _DataPageState();
 }
@@ -93,45 +92,46 @@ class _DataPageState extends State<DataPage> {
             ),
             const SizedBox(height: 12),
             switch (batches) {
-          LoadFailed() => _Message(
+              LoadFailed() => _Message(
                 text: 'Não foi possível carregar o histórico de importações.',
                 color: context.palette.negative,
               ),
-          LoadSuccess(data: final items) ||
-          LoadReloading(previous: final items) => items.isEmpty
-                  ? _Message(
-                      text:
-                          'Nenhuma importação registrada. Cada fatura importada '
-                          'aparece aqui com o que ela produziu.',
-                      color: context.palette.inkMuted,
-                    )
-                  : Column(
-                      // Without this the cards shrink to their content and sit
-                      // centred, while the export card above spans the width.
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ...items.map((item) => _BatchTile(batch: item)),
-                        const SizedBox(height: 12),
-                        // Being explicit beats a button that guesses: without a
-                        // link from each row to its batch, an undo would have to
-                        // match on a file name and could delete the wrong rows.
-                        Text(
-                          'Desfazer uma importação ainda não é possível: os '
-                          'lançamentos não guardam a qual lote pertencem, e '
-                          'apagar por nome de arquivo poderia atingir linhas '
-                          'erradas.',
-                          style: TextStyle(
-                            color: context.palette.inkSubtle,
-                            fontSize: 12.5,
-                            height: 1.4,
+              LoadSuccess(data: final items) ||
+              LoadReloading(previous: final items) =>
+                items.isEmpty
+                    ? _Message(
+                        text:
+                            'Nenhuma importação registrada. Cada fatura importada '
+                            'aparece aqui com o que ela produziu.',
+                        color: context.palette.inkMuted,
+                      )
+                    : Column(
+                        // Without this the cards shrink to their content and sit
+                        // centred, while the export card above spans the width.
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          ...items.map((item) => _BatchTile(batch: item)),
+                          const SizedBox(height: 12),
+                          // Being explicit beats a button that guesses: without a
+                          // link from each row to its batch, an undo would have to
+                          // match on a file name and could delete the wrong rows.
+                          Text(
+                            'Desfazer uma importação ainda não é possível: os '
+                            'lançamentos não guardam a qual lote pertencem, e '
+                            'apagar por nome de arquivo poderia atingir linhas '
+                            'erradas.',
+                            style: TextStyle(
+                              color: context.palette.inkSubtle,
+                              fontSize: 12.5,
+                              height: 1.4,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-          _ => const SkeletonList.inline(
+                        ],
+                      ),
+              _ => const SkeletonList.inline(
                 padding: EdgeInsets.symmetric(vertical: 8),
               ),
-        },
+            },
           ],
         ),
       ),
@@ -140,7 +140,10 @@ class _DataPageState extends State<DataPage> {
 
   Future<void> _export(BuildContext context) async {
     final shareService = context.read<ShareService>();
-    final csv = buildTransactionsCsv(widget.snapshot, widget.snapshot.transactions);
+    final csv = buildTransactionsCsv(
+      widget.snapshot,
+      widget.snapshot.transactions,
+    );
     try {
       await shareService.shareFile(
         bytes: utf8.encode(csv),

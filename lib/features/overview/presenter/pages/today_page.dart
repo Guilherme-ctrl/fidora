@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:financeiro_ai/features/review/presenter/cubits/review_cubits.dart';
 import 'package:financeiro_ai/core/theme/theme.dart';
@@ -11,6 +13,9 @@ import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/overview/domain/narrative.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
+import 'package:financeiro_ai/core/design_system/spark.dart';
+import 'package:financeiro_ai/features/overview/domain/analytics.dart';
+import 'package:financeiro_ai/features/overview/domain/comparison.dart';
 import 'package:financeiro_ai/core/routing/routes.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
@@ -47,7 +52,6 @@ class TodayPage extends StatefulWidget {
   final FinanceSnapshot snapshot;
   final FinancePeriod period;
   final VoidCallback onOpenInvoices;
-
 
   @override
   State<TodayPage> createState() => _TodayPageState();
@@ -90,18 +94,18 @@ class _TodayPageState extends State<TodayPage> {
           subtitle: quiet
               ? 'Nada exige sua atenção agora.'
               : 'O que precisa de você, em ordem.',
-          // Pequeno, ao lado do título: quanto do mês já passou. O anel só
-          // cresce na fila, onde progresso é o assunto da tela.
-          action: ProgressRing(
-            value: _monthProgress(widget.period),
-            child: Text(
-              '${(_monthProgress(widget.period) * 100).round()}',
-              style: context.type.labelCaps.copyWith(fontSize: 8),
-            ),
-          ),
         ),
         const SizedBox(height: Space.md),
-        if (reviews > 0) _ReviewCallout(count: reviews, first: true),
+        _Pulse(
+          snapshot: widget.snapshot,
+          period: widget.period,
+          onOpenInvoices: widget.onOpenInvoices,
+        ),
+        const SizedBox(height: Space.lg),
+        if (reviews > 0) ...[
+          _ReviewCallout(count: reviews, first: true),
+          const SizedBox(height: Space.lg),
+        ],
         for (final forecast in closing)
           _ClosingInvoice(
             forecast: forecast,
@@ -115,7 +119,11 @@ class _TodayPageState extends State<TodayPage> {
                 ? false
                 : reviews == 0 && closing.isEmpty && alert == alerts.first,
           ),
-        _Narrative(snapshot: widget.snapshot, period: widget.period, first: quiet),
+        _Narrative(
+          snapshot: widget.snapshot,
+          period: widget.period,
+          first: quiet,
+        ),
         if (quiet) ...[
           const SizedBox(height: Space.xl),
           Center(
@@ -130,6 +138,11 @@ class _TodayPageState extends State<TodayPage> {
   }
 }
 
+/// The queue, promoted.
+///
+/// It was a ruled section like any other, which put the product's one daily
+/// action in the same visual weight as the paragraph below it. On the home
+/// screen the queue is not information, it is the reason to be here.
 class _ReviewCallout extends StatelessWidget {
   const _ReviewCallout({required this.count, required this.first});
   final int count;
@@ -138,24 +151,66 @@ class _ReviewCallout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final type = context.type;
     final queue = context.watch<ReviewQueueCubit>().state;
-    final item = queue.dataOrNull?.isNotEmpty ?? false ? queue.dataOrNull!.first : null;
+    final item = queue.dataOrNull?.isNotEmpty ?? false
+        ? queue.dataOrNull!.first
+        : null;
 
-    return RuledSection(
-      first: first,
-      title: count == 1
-          ? '1 lançamento aguardando revisão'
-          : '$count lançamentos aguardando revisão',
-      trailing: MonoTag('fila', color: palette.accent),
+    return Container(
+      decoration: BoxDecoration(
+        color: palette.surface,
+        border: Border.all(color: palette.rule),
+        borderRadius: BorderRadius.circular(Radii.lg),
+        boxShadow: Depth.resting(palette.canvas),
+      ),
+      padding: const EdgeInsets.all(Space.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: palette.accentSoft,
+                  borderRadius: BorderRadius.circular(Radii.sm),
+                ),
+                child: Text(
+                  '$count',
+                  style: type.titleMd.copyWith(color: palette.accent),
+                ),
+              ),
+              const SizedBox(width: Space.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      count == 1
+                          ? '1 lançamento na fila'
+                          : '$count lançamentos na fila',
+                      style: type.titleMd,
+                    ),
+                    Text(
+                      'Precisam da sua atenção',
+                      style: type.meta.copyWith(color: palette.inkSubtle),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Space.md),
           if (item != null) ...[
-            Text(item.description ?? item.reason, style: context.type.bodyMd),
+            Text(item.description ?? item.reason, style: type.bodyMd),
             const SizedBox(height: Space.xxs),
             Text(
               item.suggestedAction ?? item.reason,
-              style: context.type.meta.copyWith(color: palette.inkSubtle),
+              style: type.meta.copyWith(color: palette.inkSubtle),
             ),
             const SizedBox(height: Space.md),
           ] else ...[
@@ -163,7 +218,7 @@ class _ReviewCallout extends StatelessWidget {
               'Cada item pergunta uma coisa e ensina uma regra: aprovar, '
               'corrigir a categoria, ou dizer "sempre assim" e nunca mais ver '
               'aquele estabelecimento na fila.',
-              style: context.type.bodySm.copyWith(color: palette.inkMuted),
+              style: type.bodySm.copyWith(color: palette.inkMuted),
             ),
             const SizedBox(height: Space.md),
           ],
@@ -311,6 +366,251 @@ class _Narrative extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// The top of the home screen: three numbers and a shape.
+///
+/// The screen used to open on prose. Every fact it stated was true and useful —
+/// and it still is, further down — but a person opening a finance app twice a
+/// day is not reading, they are checking, and checking wants figures and a
+/// line, not sentences. This is the block that answers "how am I doing" before
+/// the eye reaches any word.
+class _Pulse extends StatelessWidget {
+  const _Pulse({
+    required this.snapshot,
+    required this.period,
+    required this.onOpenInvoices,
+  });
+
+  final FinanceSnapshot snapshot;
+  final FinancePeriod period;
+  final VoidCallback onOpenInvoices;
+
+  /// Spend accumulated day by day across the period.
+  List<double> _cumulative() {
+    final analytics = analyzePeriod(snapshot, period);
+    final firstDay = DateTime(
+      period.start.year,
+      period.start.month,
+      period.start.day,
+    );
+    final span = math.max(2, period.endExclusive.difference(firstDay).inDays);
+    final daily = List<double>.filled(span, 0);
+    for (final transaction in analytics.transactions) {
+      if (transaction.expenseImpact <= 0) continue;
+      final date = analyticsDate(transaction);
+      final index = DateTime(
+        date.year,
+        date.month,
+        date.day,
+      ).difference(firstDay).inDays;
+      if (index < 0 || index >= span) continue;
+      daily[index] += transaction.expenseImpact;
+    }
+    var running = 0.0;
+    return [for (final value in daily) running += value];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final type = context.type;
+    final analytics = analyzePeriod(snapshot, period);
+    final elapsed = _monthProgress(period);
+    final average = trailingMonthlyAverage(snapshot, period);
+    final closing = forecastInvoices(snapshot).toList()
+      ..sort((a, b) => a.daysRemaining.compareTo(b.daysRemaining));
+
+    final budget = snapshot.categories
+        .map((category) => category.monthlyBudget ?? 0)
+        .fold<double>(0, (total, value) => total + value);
+    // Against the budget when there is one, against the recent average when
+    // there is not. The label says which, because a bar without its reference
+    // is a decoration.
+    final reference = budget > 0 ? budget : (average ?? 0);
+    final referenceLabel = budget > 0
+        ? 'de ${currency.format(budget)} em metas'
+        : average == null
+        ? 'sem base de comparação ainda'
+        : 'média de ${currency.format(average)} nos últimos 3 meses';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: palette.surface,
+            border: Border.all(color: palette.rule),
+            borderRadius: BorderRadius.circular(Radii.lg),
+            boxShadow: Depth.resting(palette.canvas),
+          ),
+          padding: const EdgeInsets.fromLTRB(
+            Space.lg,
+            Space.lg,
+            Space.lg,
+            Space.sm,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SectionLabel('gasto até aqui'),
+                        const SizedBox(height: Space.xxs),
+                        AmountText(
+                          analytics.expenses,
+                          tone: MoneyTone.expense,
+                          size: AmountSize.hero,
+                          sign: false,
+                          align: TextAlign.start,
+                        ),
+                        const SizedBox(height: Space.xxs),
+                        Text(
+                          referenceLabel,
+                          style: type.meta.copyWith(color: palette.inkSubtle),
+                        ),
+                      ],
+                    ),
+                  ),
+                  // O anel mede o *tempo*, não o dinheiro: é ele que diz se o
+                  // número ao lado está adiantado ou não.
+                  Tooltip(
+                    message:
+                        '${(elapsed * 100).round()}% de ${period.label} já passou',
+                    child: ProgressRing(
+                      value: elapsed,
+                      size: 44,
+                      stroke: 4,
+                      child: Text(
+                        '${(elapsed * 100).round()}%',
+                        style: type.labelCaps.copyWith(
+                          fontSize: 9,
+                          color: palette.inkMuted,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (reference > 0) ...[
+                const SizedBox(height: Space.sm),
+                RuleBar(
+                  value: analytics.expenses / reference,
+                  over: analytics.expenses > reference,
+                ),
+              ],
+              const SizedBox(height: Space.xs),
+              Sparkline(values: _cumulative(), progress: elapsed),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        Row(
+          children: [
+            Expanded(
+              child: _Stat(
+                label: 'entrou no período',
+                value: analytics.income,
+                tone: MoneyTone.income,
+                note: analytics.income <= 0
+                    ? 'nenhuma entrada lançada'
+                    : '${analytics.savingsRate.round()}% do que entrou sobrou',
+              ),
+            ),
+            const SizedBox(width: Space.sm),
+            Expanded(
+              child: closing.isEmpty
+                  ? _Stat(
+                      label: 'saldo do período',
+                      value: analytics.balance,
+                      tone: analytics.balance < 0
+                          ? MoneyTone.negative
+                          : MoneyTone.income,
+                      note: 'entradas menos saídas',
+                    )
+                  : _Stat(
+                      label: 'próxima fatura',
+                      value: closing.first.total,
+                      tone: MoneyTone.pending,
+                      note: closing.first.daysRemaining == 0
+                          ? '${closing.first.card.name} fecha hoje'
+                          : '${closing.first.card.name} fecha em ${closing.first.daysRemaining} dias',
+                      onTap: onOpenInvoices,
+                    ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({
+    required this.label,
+    required this.value,
+    required this.tone,
+    required this.note,
+    this.onTap,
+  });
+
+  final String label;
+  final double value;
+  final MoneyTone tone;
+  final String note;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final card = Container(
+      decoration: BoxDecoration(
+        color: palette.surface,
+        border: Border.all(color: palette.rule),
+        borderRadius: BorderRadius.circular(Radii.md),
+      ),
+      padding: const EdgeInsets.all(Space.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SectionLabel(label),
+          const SizedBox(height: Space.xxs),
+          // Duas colunas num telefone de 390pt deixam ~150pt para um valor que
+          // pode ter oito dígitos; sem isto, `R$ 9.800,00` quebra no meio do
+          // zero. Encolher é melhor que quebrar, e melhor que truncar: o valor
+          // continua inteiro.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: AmountText(
+              value,
+              tone: tone,
+              size: AmountSize.metric,
+              sign: false,
+              align: TextAlign.start,
+            ),
+          ),
+          const SizedBox(height: Space.xxs),
+          Text(
+            note,
+            style: context.type.meta.copyWith(color: palette.inkSubtle),
+          ),
+        ],
+      ),
+    );
+    if (onTap == null) return card;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(Radii.md),
+      child: card,
     );
   }
 }

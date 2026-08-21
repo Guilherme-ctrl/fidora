@@ -15,10 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  const families = {
-    'Archivo': 'assets/fonts/Archivo.ttf',
-    'JetBrains Mono': 'assets/fonts/JetBrainsMono.ttf',
-  };
+  const families = {'Sora': 'assets/fonts/Sora.ttf'};
 
   for (final entry in families.entries) {
     final file = File(entry.value);

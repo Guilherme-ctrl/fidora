@@ -13,8 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 Future<void> editCategory(
-  BuildContext context,
-  {
+  BuildContext context, {
   FinanceCategory? existing,
 }) async {
   final saved = await showResponsiveSurface<bool>(
@@ -109,158 +108,161 @@ class _CategoryFormState extends State<_CategoryForm> {
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SubmissionCubit, SubmissionState>(
     bloc: _submission,
-    builder: (context, submission) =>
-    SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * .88,
-            ),
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SheetHeader(
-                    title: widget.existing == null
-                        ? 'Nova categoria'
-                        : 'Editar categoria',
-                  ),
-                  const SizedBox(height: 20),
-                  // A live preview, because the colour and icon are what make a
-                  // category recognisable at a glance in every other screen.
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _color.withValues(alpha: .16),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Icon(categoryIconFor(_iconName), color: _color),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: TextField(
-                          controller: _name,
-                          textCapitalization: TextCapitalization.sentences,
-                          onChanged: (_) => setState(() {}),
-                          decoration: InputDecoration(
-                            labelText: 'Nome',
-                            errorText: _errors.name,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Cor', style: _labelStyle(context)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: categoryColors
-                        .map(
-                          (color) => _Swatch(
-                            color: color,
-                            selected: color.toARGB32() == _color.toARGB32(),
-                            onTap: () => setState(() => _color = color),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 20),
-                  Text('Ícone', style: _labelStyle(context)),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: categoryIcons.entries
-                        .map(
-                          (entry) => _IconChoice(
-                            icon: entry.value,
-                            color: _color,
-                            selected: entry.key == _iconName,
-                            onTap: () => setState(() => _iconName = entry.key),
-                          ),
-                        )
-                        .toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _hasBudget,
-                    onChanged: (value) => setState(() => _hasBudget = value),
-                    title: const Text(
-                      'Definir orçamento mensal',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                  ),
-                  if (_hasBudget)
-                    TextField(
-                      controller: _budget,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'Orçamento',
-                        hintText: '0,00',
-                        prefixText: 'R\$ ',
-                        prefixIcon: const Icon(Icons.flag_outlined),
-                        errorText: _errors.budget,
-                      ),
-                    ),
-                  if (submission.failure != null) ...[
-                    const SizedBox(height: 12),
+    builder: (context, submission) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.sizeOf(context).height * .88,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SheetHeader(
+                  title: widget.existing == null
+                      ? 'Nova categoria'
+                      : 'Editar categoria',
+                ),
+                const SizedBox(height: 20),
+                // A live preview, because the colour and icon are what make a
+                // category recognisable at a glance in every other screen.
+                Row(
+                  children: [
                     Container(
-                      padding: const EdgeInsets.all(14),
+                      padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: context.palette.negative.withValues(alpha: .12),
+                        color: _color.withValues(alpha: .16),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.error_outline_rounded,
-                            color: context.palette.negative,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              FailureCopy.of(submission.failure!).short,
-                              style: TextStyle(
-                                color: context.palette.negative,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
+                      child: Icon(categoryIconFor(_iconName), color: _color),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: TextField(
+                        controller: _name,
+                        textCapitalization: TextCapitalization.sentences,
+                        onChanged: (_) => setState(() {}),
+                        decoration: InputDecoration(
+                          labelText: 'Nome',
+                          errorText: _errors.name,
+                        ),
                       ),
                     ),
                   ],
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: submission.isBusy ? null : _submit,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 13),
-                      child: submission.isBusy
-                          ? const BusySpinner(size: 20)
-                          : Text(
-                              widget.existing == null
-                                  ? 'Criar categoria'
-                                  : 'Salvar alterações',
+                ),
+                const SizedBox(height: 20),
+                Text('Cor', style: _labelStyle(context)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: categoryColors
+                      .map(
+                        (color) => _Swatch(
+                          color: color,
+                          selected: color.toARGB32() == _color.toARGB32(),
+                          onTap: () => setState(() => _color = color),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 20),
+                Text('Ícone', style: _labelStyle(context)),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: categoryIcons.entries
+                      .map(
+                        (entry) => _IconChoice(
+                          icon: entry.value,
+                          color: _color,
+                          selected: entry.key == _iconName,
+                          onTap: () => setState(() => _iconName = entry.key),
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 8),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _hasBudget,
+                  onChanged: (value) => setState(() => _hasBudget = value),
+                  title: const Text(
+                    'Definir orçamento mensal',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (_hasBudget)
+                  TextField(
+                    controller: _budget,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Orçamento',
+                      hintText: '0,00',
+                      prefixText: 'R\$ ',
+                      prefixIcon: const Icon(Icons.flag_outlined),
+                      errorText: _errors.budget,
+                    ),
+                  ),
+                if (submission.failure != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: context.palette.negative.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: context.palette.negative,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            FailureCopy.of(submission.failure!).short,
+                            style: TextStyle(
+                              color: context.palette.negative,
+                              fontWeight: FontWeight.w700,
                             ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
-              ),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: submission.isBusy ? null : _submit,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: submission.isBusy
+                        ? const BusySpinner(size: 20)
+                        : Text(
+                            widget.existing == null
+                                ? 'Criar categoria'
+                                : 'Salvar alterações',
+                          ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
+    ),
   );
 
   TextStyle _labelStyle(BuildContext context) => TextStyle(

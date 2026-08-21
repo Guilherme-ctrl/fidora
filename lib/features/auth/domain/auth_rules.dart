@@ -38,4 +38,3 @@ AuthFieldErrors validateNewPassword(String password, String confirmation) =>
       password: validatePassword(password),
       confirmation: validateConfirmation(password, confirmation),
     );
-

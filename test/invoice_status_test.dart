@@ -142,7 +142,8 @@ void main() {
     test('a constraint violation is business, not technical', () {
       final failure = supabaseFailure(
         PostgrestException(
-          message: 'duplicate key value violates unique constraint '
+          message:
+              'duplicate key value violates unique constraint '
               '"transactions_user_id_dedup_key_key"',
           code: '23505',
         ),

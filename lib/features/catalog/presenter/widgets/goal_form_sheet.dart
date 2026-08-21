@@ -13,11 +13,7 @@ import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-Future<void> editGoal(
-  BuildContext context,
-  {
-  Goal? existing,
-}) async {
+Future<void> editGoal(BuildContext context, {Goal? existing}) async {
   final saved = await showResponsiveSurface<bool>(
     context,
     builder: (context) => _GoalForm(
@@ -110,145 +106,145 @@ class _GoalFormState extends State<_GoalForm> {
     setState(() => _errors = errors);
     _submission.reset();
     if (!errors.isEmpty) return;
-    final ok = await _submission.run(
-      'saveGoal',
-      () => widget.onSave(draft),
-    );
+    final ok = await _submission.run('saveGoal', () => widget.onSave(draft));
     if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+  Widget build(
+    BuildContext context,
+  ) => BlocBuilder<SubmissionCubit, SubmissionState>(
     bloc: _submission,
-    builder: (context, submission) =>
-    SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                SheetHeader(
-                  title: widget.existing == null ? 'Nova meta' : 'Editar meta',
+    builder: (context, submission) => SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.viewInsetsOf(context).bottom,
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SheetHeader(
+                title: widget.existing == null ? 'Nova meta' : 'Editar meta',
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: _name,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: InputDecoration(
+                  labelText: 'Nome',
+                  hintText: 'Reserva de emergência',
+                  prefixIcon: const Icon(Icons.flag_outlined),
+                  errorText: _errors.name,
                 ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _name,
-                  textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _target,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Quanto quer juntar',
+                  hintText: '0,00',
+                  prefixText: 'R\$ ',
+                  prefixIcon: const Icon(Icons.savings_outlined),
+                  errorText: _errors.target,
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: _current,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Quanto já tem',
+                  hintText: '0,00',
+                  prefixText: 'R\$ ',
+                  prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
+                  errorText: _errors.current,
+                ),
+              ),
+              const SizedBox(height: 14),
+              // The column has existed since the first migration and never
+              // reached the app: without a date a goal is a number with no
+              // deadline, and nothing can say whether it is on track.
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _pickDate,
+                child: InputDecorator(
                   decoration: InputDecoration(
-                    labelText: 'Nome',
-                    hintText: 'Reserva de emergência',
-                    prefixIcon: const Icon(Icons.flag_outlined),
-                    errorText: _errors.name,
+                    labelText: 'Prazo',
+                    prefixIcon: const Icon(Icons.event_rounded),
+                    suffixIcon: _targetDate == null
+                        ? null
+                        : IconButton(
+                            tooltip: 'Remover prazo',
+                            onPressed: () => setState(() => _targetDate = null),
+                            icon: const Icon(Icons.close_rounded),
+                          ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _target,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Quanto quer juntar',
-                    hintText: '0,00',
-                    prefixText: 'R\$ ',
-                    prefixIcon: const Icon(Icons.savings_outlined),
-                    errorText: _errors.target,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _current,
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  decoration: InputDecoration(
-                    labelText: 'Quanto já tem',
-                    hintText: '0,00',
-                    prefixText: 'R\$ ',
-                    prefixIcon: const Icon(Icons.account_balance_wallet_outlined),
-                    errorText: _errors.current,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                // The column has existed since the first migration and never
-                // reached the app: without a date a goal is a number with no
-                // deadline, and nothing can say whether it is on track.
-                InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: _pickDate,
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: 'Prazo',
-                      prefixIcon: const Icon(Icons.event_rounded),
-                      suffixIcon: _targetDate == null
-                          ? null
-                          : IconButton(
-                              tooltip: 'Remover prazo',
-                              onPressed: () => setState(() => _targetDate = null),
-                              icon: const Icon(Icons.close_rounded),
-                            ),
+                  child: Text(
+                    _targetDate == null
+                        ? 'Sem prazo'
+                        : longDate.format(_targetDate!),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _targetDate == null
+                          ? context.palette.inkSubtle
+                          : context.palette.ink,
                     ),
-                    child: Text(
-                      _targetDate == null
-                          ? 'Sem prazo'
-                          : longDate.format(_targetDate!),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: _targetDate == null
-                            ? context.palette.inkSubtle
-                            : context.palette.ink,
+                  ),
+                ),
+              ),
+              if (submission.failure != null) ...[
+                const SizedBox(height: 14),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: context.palette.negative.withValues(alpha: .12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline_rounded,
+                        color: context.palette.negative,
                       ),
-                    ),
-                  ),
-                ),
-                if (submission.failure != null) ...[
-                  const SizedBox(height: 14),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: context.palette.negative.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          color: context.palette.negative,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            FailureCopy.of(submission.failure!).short,
-                            style: TextStyle(
-                              color: context.palette.negative,
-                              fontWeight: FontWeight.w700,
-                            ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          FailureCopy.of(submission.failure!).short,
+                          style: TextStyle(
+                            color: context.palette.negative,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: submission.isBusy ? null : _submit,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    child: submission.isBusy
-                        ? const BusySpinner(size: 20)
-                        : Text(
-                            widget.existing == null
-                                ? 'Criar meta'
-                                : 'Salvar alterações',
-                          ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: submission.isBusy ? null : _submit,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  child: submission.isBusy
+                      ? const BusySpinner(size: 20)
+                      : Text(
+                          widget.existing == null
+                              ? 'Criar meta'
+                              : 'Salvar alterações',
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
+    ),
   );
 }

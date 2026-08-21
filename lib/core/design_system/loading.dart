@@ -20,10 +20,7 @@ import 'package:flutter/material.dart';
 /// value instead of animating. A reference image captures that frame, so these
 /// widgets can be photographed without the test fighting a running tween.
 class Skeleton extends StatefulWidget {
-  const Skeleton({
-    required this.child,
-    super.key,
-  });
+  const Skeleton({required this.child, super.key});
 
   /// Any subtree of [SkeletonBox]es. The pulse is driven once here and shared,
   /// so twenty rows breathe together rather than each on its own phase.
@@ -74,9 +71,7 @@ class _SkeletonPulse extends InheritedWidget {
   final double value;
 
   static double of(BuildContext context) =>
-      context
-          .dependOnInheritedWidgetOfExactType<_SkeletonPulse>()
-          ?.value ??
+      context.dependOnInheritedWidgetOfExactType<_SkeletonPulse>()?.value ??
       _restingPulse;
 
   @override
@@ -204,7 +199,10 @@ class SkeletonList extends StatelessWidget {
         child: _inline
             ? Padding(
                 padding: padding ?? EdgeInsets.zero,
-                child: Column(mainAxisSize: MainAxisSize.min, children: children),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: children,
+                ),
               )
             : ListView(
                 padding: padding ?? const EdgeInsets.fromLTRB(18, 20, 18, 32),

@@ -82,4 +82,4 @@ String _escape(String value, String separator) {
 
 /// A file name that sorts chronologically and says what it holds.
 String csvFileName(DateTime now) =>
-    'finora-${DateFormat('yyyy-MM-dd').format(now)}.csv';
+    'compasso-${DateFormat('yyyy-MM-dd').format(now)}.csv';

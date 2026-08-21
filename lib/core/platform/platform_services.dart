@@ -14,14 +14,11 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart' as picker;
 import 'package:share_plus/share_plus.dart' as share;
 
-
 class SystemFilePicker implements FilePicker {
   const SystemFilePicker();
 
   @override
-  Future<PickedFile?> pickFile({
-    required List<FileTypeFilter> accept,
-  }) async {
+  Future<PickedFile?> pickFile({required List<FileTypeFilter> accept}) async {
     final picked = await selector.openFile(
       acceptedTypeGroups: [
         for (final filter in accept)
@@ -50,8 +47,7 @@ class SystemImageCapture implements ImageCapture {
 
   /// The web can offer a file chooser for the gallery but has no camera here.
   @override
-  bool supports(ImageOrigin origin) =>
-      origin == ImageOrigin.gallery || !kIsWeb;
+  bool supports(ImageOrigin origin) => origin == ImageOrigin.gallery || !kIsWeb;
 
   @override
   Future<PickedFile?> pick(

@@ -148,7 +148,7 @@ class _UnknownRoute extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Esse endereço não existe no Finora.'),
+            const Text('Esse endereço não existe no Compasso.'),
             const SizedBox(height: 12),
             Text(location, textAlign: TextAlign.center),
             const SizedBox(height: 16),

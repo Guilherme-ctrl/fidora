@@ -61,7 +61,7 @@ String categoryIconName(IconData icon) => categoryIcons.entries
 
 /// The colours someone can pick for a category.
 ///
-/// Separate from `FinoraPalette.categorical`, which is the chart palette: this
+/// Separate from `CompassoPalette.categorical`, which is the chart palette: this
 /// one is **stored data** — `categories.color` has held a hex string since the
 /// first migration — so changing an entry only affects categories created from
 /// here on. Rows already in the database keep whatever they were given.
@@ -102,7 +102,6 @@ String categoryColorHex(Color color) {
   return '#${channel(color.r)}${channel(color.g)}${channel(color.b)}'
       .toUpperCase();
 }
-
 
 /// Resolves a stored category into the two Flutter types it draws as.
 ///

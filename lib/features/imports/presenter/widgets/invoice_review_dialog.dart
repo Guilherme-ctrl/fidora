@@ -423,8 +423,8 @@ class _CategoryCreationDialog extends StatelessWidget {
           children: [
             Text(
               missingCategories.length == 1
-                  ? 'Esta categoria veio no JSON e ainda não existe no Finora. Deseja cadastrá-la?'
-                  : 'Estas categorias vieram no JSON e ainda não existem no Finora. Deseja cadastrá-las?',
+                  ? 'Esta categoria veio no JSON e ainda não existe no Compasso. Deseja cadastrá-la?'
+                  : 'Estas categorias vieram no JSON e ainda não existem no Compasso. Deseja cadastrá-las?',
             ),
             const SizedBox(height: 18),
             Material(

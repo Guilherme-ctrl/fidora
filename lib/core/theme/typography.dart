@@ -36,8 +36,8 @@ class LedgerText extends ThemeExtension<LedgerText> {
   final TextStyle bodyMd;
   final TextStyle bodySm;
 
-  /// Any amount inside a list or a table. Never the serif — a column has to
-  /// align, and that is the sans's job.
+  /// Any amount inside a list or a table. Never the display voice — a column
+  /// has to align, and that is the interface weight's job.
   final TextStyle amount;
 
   /// Card, instalment, origin, date.
@@ -46,15 +46,22 @@ class LedgerText extends ThemeExtension<LedgerText> {
   /// Section label.
   final TextStyle labelCaps;
 
-  /// Two families, and the display voice stopped being a serif.
+  /// One family, and it is the brand's family.
   ///
-  /// The serif was the most "printed page" thing in the system, and a printed
-  /// page is exactly what the owner said this felt like. Archivo replaces both
-  /// it and Inter: one family with a **width axis**, so the headline figure can
-  /// be set wide and heavy while the interface stays at normal width. Same
-  /// voice, two postures, one file.
+  /// Sora comes from the Compasso brand board: geometric, open, with a tall
+  /// x-height that survives being set small on a phone. Everything is set in
+  /// it — display, interface and metadata alike.
   ///
-  /// JetBrains Mono stays for metadata — it was never the problem.
+  /// **The mono is gone.** JetBrains Mono held the metadata since the system
+  /// was called Ledger, and it was never wrong on its own terms — but small
+  /// uppercase mono is precisely the readout texture behind *"parece um artigo
+  /// científico"*. What the mono actually bought was column alignment, and Sora
+  /// ships `tnum`, so the alignment survives the change and the terminal look
+  /// does not.
+  ///
+  /// Sora has one axis, `wght` 100–800. The display voice is weight alone now:
+  /// Archivo's width axis was a real loss, but Sora is already wide by drawing,
+  /// which is the reason it reads as a display face at 40px.
   static const _sansFallback = <String>[
     '.SF UI Text',
     'Segoe UI',
@@ -62,24 +69,14 @@ class LedgerText extends ThemeExtension<LedgerText> {
     'sans-serif',
   ];
 
-  static const _monoFallback = <String>[
-    'SF Mono',
-    'Menlo',
-    'Consolas',
-    'monospace',
-  ];
-
   static const _tabular = <FontFeature>[FontFeature.tabularFigures()];
 
-  /// Wide and heavy: the posture of a number that is the point of the screen.
-  static const _display = <FontVariation>[
-    FontVariation('wght', 640),
-    FontVariation('wdth', 118),
-  ];
+  /// Heavy: the posture of a number that is the point of the screen.
+  static const _display = <FontVariation>[FontVariation('wght', 700)];
 
   static const standard = LedgerText(
     displayHero: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontVariations: _display,
       fontSize: 42,
@@ -88,7 +85,7 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontFeatures: _tabular,
     ),
     displayMetric: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontVariations: _display,
       fontSize: 26,
@@ -97,7 +94,7 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontFeatures: _tabular,
     ),
     titleLg: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontVariations: [FontVariation('wght', 620)],
       fontSize: 19,
@@ -105,7 +102,7 @@ class LedgerText extends ThemeExtension<LedgerText> {
       letterSpacing: -0.3,
     ),
     titleMd: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontVariations: [FontVariation('wght', 620)],
       fontSize: 13.5,
@@ -114,19 +111,19 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontWeight: FontWeight.w600,
     ),
     bodyMd: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontSize: 14,
       height: 1.45,
     ),
     bodySm: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontSize: 13,
       height: 1.4,
     ),
     amount: TextStyle(
-      fontFamily: 'Archivo',
+      fontFamily: 'Sora',
       fontFamilyFallback: _sansFallback,
       fontVariations: [FontVariation('wght', 560)],
       fontSize: 14,
@@ -135,21 +132,23 @@ class LedgerText extends ThemeExtension<LedgerText> {
       fontFeatures: _tabular,
     ),
     meta: TextStyle(
-      fontFamily: 'JetBrains Mono',
-      fontFamilyFallback: _monoFallback,
-      fontSize: 11,
-      height: 1.35,
-      letterSpacing: 0.2,
+      fontFamily: 'Sora',
+      fontFamilyFallback: _sansFallback,
+      fontSize: 11.5,
+      height: 1.4,
+      letterSpacing: 0,
       fontFeatures: _tabular,
     ),
     labelCaps: TextStyle(
-      fontFamily: 'JetBrains Mono',
-      fontFamilyFallback: _monoFallback,
+      fontFamily: 'Sora',
+      fontFamilyFallback: _sansFallback,
       fontVariations: [FontVariation('wght', 600)],
-      fontSize: 10,
+      fontSize: 10.5,
       height: 1.35,
       fontWeight: FontWeight.w600,
-      letterSpacing: 1.5,
+      // Menos espaçamento que a versão mono: a Sora já é larga, e 1.5 de track
+      // em caixa alta larga vira legenda de infográfico.
+      letterSpacing: 0.9,
     ),
   );
 

@@ -46,7 +46,9 @@ Future<void> signIn(
 }
 
 void main() {
-  testWidgets('a signed-out person lands on the sign-in screen', (tester) async {
+  testWidgets('a signed-out person lands on the sign-in screen', (
+    tester,
+  ) async {
     await pumpGate(tester, FakeAuthRepository());
     expect(find.byType(AuthPage), findsOneWidget);
   });
