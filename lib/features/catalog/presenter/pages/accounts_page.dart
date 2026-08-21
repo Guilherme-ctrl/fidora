@@ -6,11 +6,11 @@ import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/design_system/loading.dart';
+import 'package:financeiro_ai/core/state/submission_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -308,13 +308,13 @@ class _AccountForm extends StatefulWidget {
 }
 
 class _AccountFormState extends State<_AccountForm> {
+  final _submission = SubmissionCubit();
+
   late final TextEditingController _name;
   late final TextEditingController _bank;
   late final TextEditingController _opening;
   late String _type;
   late bool _includeInTotals;
-  bool _saving = false;
-  String? _failure;
   AccountDraftErrors _errors = const AccountDraftErrors();
 
   @override
@@ -334,6 +334,7 @@ class _AccountFormState extends State<_AccountForm> {
 
   @override
   void dispose() {
+    _submission.close();
     _name.dispose();
     _bank.dispose();
     _opening.dispose();
@@ -350,158 +351,145 @@ class _AccountFormState extends State<_AccountForm> {
       includeInTotals: _includeInTotals,
     );
     final errors = draft.validate();
-    setState(() {
-      _errors = errors;
-      _failure = null;
-    });
+    setState(() => _errors = errors);
+    _submission.reset();
     if (!errors.isEmpty) return;
-    setState(() => _saving = true);
-    try {
-      await widget.onSave(draft);
-      if (mounted) Navigator.of(context).pop(true);
-    } on Failure catch (failure) {
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.of(failure).short;
-          _saving = false;
-        });
-      }
-    } catch (error, stack) {
-      appLogger.error('saveAccount', error, stack);
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.from(error, stack).short;
-          _saving = false;
-        });
-      }
-    }
+    final ok = await _submission.run(
+      'saveAccount',
+      () => widget.onSave(draft),
+    );
+    if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) => SafeArea(
-    child: Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.existing == null ? 'Nova conta' : 'Editar conta',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _name,
-              textCapitalization: TextCapitalization.words,
-              decoration: InputDecoration(
-                labelText: 'Nome',
-                hintText: 'Conta corrente',
-                prefixIcon: const Icon(Icons.account_balance_rounded),
-                errorText: _errors.name,
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _bank,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Banco',
-                helperText: 'Opcional.',
-                prefixIcon: Icon(Icons.business_rounded),
-              ),
-            ),
-            const SizedBox(height: 14),
-            DropdownButtonFormField<String>(
-              initialValue: _type,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                labelText: 'Tipo',
-                prefixIcon: Icon(Icons.category_outlined),
-              ),
-              items: accountTypes.entries
-                  .map(
-                    (entry) => DropdownMenuItem(
-                      value: entry.key,
-                      child: Text(entry.value),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (value) => setState(() => _type = value ?? _type),
-            ),
-            const SizedBox(height: 14),
-            TextField(
-              controller: _opening,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-                signed: true,
-              ),
-              decoration: InputDecoration(
-                labelText: 'Saldo antes do histórico',
-                hintText: '0,00',
-                prefixText: 'R\$ ',
-                helperText:
-                    'Sem isso, o número mostrado é só a soma das movimentações.',
-                prefixIcon: const Icon(Icons.savings_outlined),
-                errorText: _errors.openingBalance,
-              ),
-            ),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _includeInTotals,
-              onChanged: (value) => setState(() => _includeInTotals = value),
-              title: const Text(
-                'Somar no total',
-                style: TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ),
-            if (_failure != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: context.palette.negative.withValues(alpha: .12),
-                  borderRadius: BorderRadius.circular(14),
+  Widget build(BuildContext context) => BlocBuilder<SubmissionCubit, SubmissionState>(
+    bloc: _submission,
+    builder: (context, submission) =>
+    SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  widget.existing == null ? 'Nova conta' : 'Editar conta',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
                 ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.error_outline_rounded,
-                      color: context.palette.negative,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        _failure!,
-                        style: TextStyle(
-                          color: context.palette.negative,
-                          fontWeight: FontWeight.w700,
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _name,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: InputDecoration(
+                    labelText: 'Nome',
+                    hintText: 'Conta corrente',
+                    prefixIcon: const Icon(Icons.account_balance_rounded),
+                    errorText: _errors.name,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _bank,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Banco',
+                    helperText: 'Opcional.',
+                    prefixIcon: Icon(Icons.business_rounded),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                DropdownButtonFormField<String>(
+                  initialValue: _type,
+                  isExpanded: true,
+                  decoration: const InputDecoration(
+                    labelText: 'Tipo',
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  items: accountTypes.entries
+                      .map(
+                        (entry) => DropdownMenuItem(
+                          value: entry.key,
+                          child: Text(entry.value),
                         ),
-                      ),
-                    ),
-                  ],
+                      )
+                      .toList(),
+                  onChanged: (value) => setState(() => _type = value ?? _type),
                 ),
-              ),
-            ],
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: _saving ? null : _submit,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                child: _saving
-                    ? const BusySpinner(size: 20)
-                    : Text(
-                        widget.existing == null
-                            ? 'Cadastrar conta'
-                            : 'Salvar alterações',
-                      ),
-              ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _opening,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  decoration: InputDecoration(
+                    labelText: 'Saldo antes do histórico',
+                    hintText: '0,00',
+                    prefixText: 'R\$ ',
+                    helperText:
+                        'Sem isso, o número mostrado é só a soma das movimentações.',
+                    prefixIcon: const Icon(Icons.savings_outlined),
+                    errorText: _errors.openingBalance,
+                  ),
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  value: _includeInTotals,
+                  onChanged: (value) => setState(() => _includeInTotals = value),
+                  title: const Text(
+                    'Somar no total',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+                if (submission.failure != null) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: context.palette.negative.withValues(alpha: .12),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline_rounded,
+                          color: context.palette.negative,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            FailureCopy.of(submission.failure!).short,
+                            style: TextStyle(
+                              color: context.palette.negative,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: submission.isBusy ? null : _submit,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 13),
+                    child: submission.isBusy
+                        ? const BusySpinner(size: 20)
+                        : Text(
+                            widget.existing == null
+                                ? 'Cadastrar conta'
+                                : 'Salvar alterações',
+                          ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
   );
 }

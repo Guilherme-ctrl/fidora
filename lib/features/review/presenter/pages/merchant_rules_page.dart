@@ -4,12 +4,12 @@ import 'package:financeiro_ai/features/review/domain/merchant_rule.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:financeiro_ai/core/errors/failure.dart';
-import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
 import 'package:financeiro_ai/core/design_system/loading.dart';
+import 'package:financeiro_ai/core/state/submission_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -172,75 +172,76 @@ class _RuleTile extends StatelessWidget {
   final VoidCallback onDelete;
 
   @override
-  Widget build(BuildContext context) => Card(
-    margin: const EdgeInsets.only(bottom: 12),
-    child: Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        rule.pattern,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 15.5,
+  Widget build(BuildContext context) =>
+  Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          rule.pattern,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15.5,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_rounded, size: 15),
-                    const SizedBox(width: 8),
-                    Flexible(
-                      child: Text(
-                        rule.categoryName,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: context.palette.accent,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (!rule.active) ...[
                       const SizedBox(width: 8),
-                      const Chip(
-                        label: Text('Inativa', style: TextStyle(fontSize: 11)),
-                        visualDensity: VisualDensity.compact,
+                      const Icon(Icons.arrow_forward_rounded, size: 15),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          rule.categoryName,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: context.palette.accent,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                       ),
+                      if (!rule.active) ...[
+                        const SizedBox(width: 8),
+                        const Chip(
+                          label: Text('Inativa', style: TextStyle(fontSize: 11)),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  matches == null
-                      ? 'Prioridade ${rule.priority}'
-                      : 'Prioridade ${rule.priority} • pega $matches ${matches == 1 ? 'lançamento' : 'lançamentos'} do histórico',
-                  style: TextStyle(
-                    color: context.palette.inkMuted,
-                    fontSize: 12.5,
                   ),
-                ),
-              ],
+                  const SizedBox(height: 5),
+                  Text(
+                    matches == null
+                        ? 'Prioridade ${rule.priority}'
+                        : 'Prioridade ${rule.priority} • pega $matches ${matches == 1 ? 'lançamento' : 'lançamentos'} do histórico',
+                    style: TextStyle(
+                      color: context.palette.inkMuted,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
-          IconButton(
-            onPressed: onDelete,
-            icon: Icon(
-              Icons.delete_outline_rounded,
-              color: context.palette.negative,
+            IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
+            IconButton(
+              onPressed: onDelete,
+              icon: Icon(
+                Icons.delete_outline_rounded,
+                color: context.palette.negative,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
-  );
+    );
 }
 
 class _RulesMessage extends StatelessWidget {
@@ -338,12 +339,12 @@ class _RuleForm extends StatefulWidget {
 }
 
 class _RuleFormState extends State<_RuleForm> {
+  final _submission = SubmissionCubit();
+
   late final TextEditingController _pattern;
   late final TextEditingController _priority;
   String? _categoryId;
   bool _active = true;
-  bool _saving = false;
-  String? _failure;
   MerchantRuleErrors _errors = const MerchantRuleErrors();
 
   @override
@@ -362,6 +363,7 @@ class _RuleFormState extends State<_RuleForm> {
 
   @override
   void dispose() {
+    _submission.close();
     _pattern.dispose();
     _priority.dispose();
     super.dispose();
@@ -378,215 +380,202 @@ class _RuleFormState extends State<_RuleForm> {
   Future<void> _submit() async {
     final draft = _buildDraft();
     final errors = draft.validate();
-    setState(() {
-      _errors = errors;
-      _failure = null;
-    });
+    setState(() => _errors = errors);
+    _submission.reset();
     if (!errors.isEmpty) return;
-    setState(() => _saving = true);
-    try {
-      await widget.onSave(draft);
-      if (mounted) Navigator.of(context).pop(true);
-    } on Failure catch (failure) {
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.of(failure).short;
-          _saving = false;
-        });
-      }
-    } catch (error, stack) {
-      appLogger.error('saveMerchantRule', error, stack);
-      if (mounted) {
-        setState(() {
-          _failure = FailureCopy.from(error, stack).short;
-          _saving = false;
-        });
-      }
-    }
+    final ok = await _submission.run(
+      'saveMerchantRule',
+      () => widget.onSave(draft),
+    );
+    if (ok && mounted) Navigator.of(context).pop(true);
   }
 
   @override
-  Widget build(BuildContext context) {
-    final typed = _pattern.text.trim();
-    final preview = typed.length < 3
-        ? const <FinanceTransaction>[]
-        : widget.snapshot.transactions
-              .where(
-                (item) =>
-                    item.merchant.toLowerCase().contains(typed.toLowerCase()),
-              )
-              .toList();
+  Widget build(BuildContext context) =>
+      BlocBuilder<SubmissionCubit, SubmissionState>(
+        bloc: _submission,
+        builder: (context, submission) {
+      final typed = _pattern.text.trim();
+      final preview = typed.length < 3
+          ? const <FinanceTransaction>[]
+          : widget.snapshot.transactions
+                .where(
+                  (item) =>
+                      item.merchant.toLowerCase().contains(typed.toLowerCase()),
+                )
+                .toList();
 
-    return SafeArea(
-      child: Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.viewInsetsOf(context).bottom,
-        ),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height * .88,
+      return SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(context).bottom,
           ),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.existing == null ? 'Nova regra' : 'Editar regra',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Quando o nome do estabelecimento contiver o trecho abaixo, a categoria escolhida é aplicada automaticamente.',
-                  style: TextStyle(color: context.palette.inkMuted),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _pattern,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    labelText: 'Trecho do nome',
-                    hintText: 'IFOOD',
-                    prefixIcon: const Icon(Icons.search_rounded),
-                    errorText: _errors.pattern,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                DropdownButtonFormField<String>(
-                  initialValue: _categoryId,
-                  isExpanded: true,
-                  decoration: InputDecoration(
-                    labelText: 'Categoria',
-                    prefixIcon: const Icon(Icons.label_outline_rounded),
-                    errorText: _errors.category,
-                  ),
-                  items: widget.snapshot.categories
-                      .map(
-                        (category) => DropdownMenuItem(
-                          value: category.id,
-                          child: Text(
-                            category.name,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (value) => setState(() => _categoryId = value),
-                ),
-                const SizedBox(height: 14),
-                TextField(
-                  controller: _priority,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: 'Prioridade',
-                    helperText:
-                        'O menor número decide primeiro quando duas regras casam.',
-                    prefixIcon: Icon(Icons.low_priority_rounded),
-                  ),
-                ),
-                SwitchListTile(
-                  contentPadding: EdgeInsets.zero,
-                  value: _active,
-                  onChanged: (value) => setState(() => _active = value),
-                  title: const Text(
-                    'Regra ativa',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
-                ),
-                // Shows the blast radius before the rule is saved.
-                if (typed.length >= 3)
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: context.palette.canvas,
-                      borderRadius: BorderRadius.circular(14),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height * .88,
+            ),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    widget.existing == null ? 'Nova regra' : 'Editar regra',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w900,
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          preview.isEmpty
-                              ? 'Nenhum lançamento do histórico casa com “$typed”.'
-                              : 'Casa com ${preview.length} ${preview.length == 1 ? 'lançamento' : 'lançamentos'} do histórico:',
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        ...preview
-                            .take(4)
-                            .map(
-                              (item) => Padding(
-                                padding: const EdgeInsets.only(top: 7),
-                                child: Text(
-                                  '• ${item.merchant} — ${item.category}',
-                                  style: TextStyle(
-                                    color: context.palette.inkMuted,
-                                    fontSize: 13,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Quando o nome do estabelecimento contiver o trecho abaixo, a categoria escolhida é aplicada automaticamente.',
+                    style: TextStyle(color: context.palette.inkMuted),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _pattern,
+                    textCapitalization: TextCapitalization.characters,
+                    decoration: InputDecoration(
+                      labelText: 'Trecho do nome',
+                      hintText: 'IFOOD',
+                      prefixIcon: const Icon(Icons.search_rounded),
+                      errorText: _errors.pattern,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  DropdownButtonFormField<String>(
+                    initialValue: _categoryId,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: 'Categoria',
+                      prefixIcon: const Icon(Icons.label_outline_rounded),
+                      errorText: _errors.category,
+                    ),
+                    items: widget.snapshot.categories
+                        .map(
+                          (category) => DropdownMenuItem(
+                            value: category.id,
+                            child: Text(
+                              category.name,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) => setState(() => _categoryId = value),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: _priority,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Prioridade',
+                      helperText:
+                          'O menor número decide primeiro quando duas regras casam.',
+                      prefixIcon: Icon(Icons.low_priority_rounded),
+                    ),
+                  ),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _active,
+                    onChanged: (value) => setState(() => _active = value),
+                    title: const Text(
+                      'Regra ativa',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  // Shows the blast radius before the rule is saved.
+                  if (typed.length >= 3)
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: context.palette.canvas,
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            preview.isEmpty
+                                ? 'Nenhum lançamento do histórico casa com “$typed”.'
+                                : 'Casa com ${preview.length} ${preview.length == 1 ? 'lançamento' : 'lançamentos'} do histórico:',
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          ...preview
+                              .take(4)
+                              .map(
+                                (item) => Padding(
+                                  padding: const EdgeInsets.only(top: 7),
+                                  child: Text(
+                                    '• ${item.merchant} — ${item.category}',
+                                    style: TextStyle(
+                                      color: context.palette.inkMuted,
+                                      fontSize: 13,
+                                    ),
                                   ),
                                 ),
                               ),
+                          if (preview.length > 4)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 7),
+                              child: Text(
+                                'e mais ${preview.length - 4}.',
+                                style: TextStyle(
+                                  color: context.palette.inkSubtle,
+                                  fontSize: 13,
+                                ),
+                              ),
                             ),
-                        if (preview.length > 4)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 7),
+                        ],
+                      ),
+                    ),
+                  if (submission.failure != null) ...[
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: context.palette.negative.withValues(alpha: .12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            color: context.palette.negative,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
                             child: Text(
-                              'e mais ${preview.length - 4}.',
+                              FailureCopy.of(submission.failure!).short,
                               style: TextStyle(
-                                color: context.palette.inkSubtle,
-                                fontSize: 13,
+                                color: context.palette.negative,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                if (_failure != null) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: context.palette.negative.withValues(alpha: .12),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          color: context.palette.negative,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            _failure!,
-                            style: TextStyle(
-                              color: context.palette.negative,
-                              fontWeight: FontWeight.w700,
+                  ],
+                  const SizedBox(height: 22),
+                  FilledButton(
+                    onPressed: submission.isBusy ? null : _submit,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      child: submission.isBusy
+                          ? const BusySpinner(size: 20)
+                          : Text(
+                              widget.existing == null
+                                  ? 'Criar regra'
+                                  : 'Salvar alterações',
                             ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
-                const SizedBox(height: 22),
-                FilledButton(
-                  onPressed: _saving ? null : _submit,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 13),
-                    child: _saving
-                        ? const BusySpinner(size: 20)
-                        : Text(
-                            widget.existing == null
-                                ? 'Criar regra'
-                                : 'Salvar alterações',
-                          ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ),
-      ),
-    );
-  }
+      );
+        },
+      );
 }
