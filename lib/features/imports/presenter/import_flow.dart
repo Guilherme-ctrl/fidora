@@ -10,6 +10,7 @@ import 'package:financeiro_ai/features/imports/presenter/widgets/statement_conte
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -155,11 +156,7 @@ void _showLoading(BuildContext context, String label) {
     builder: (_) => AlertDialog(
       content: Row(
         children: [
-          const SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(strokeWidth: 3),
-          ),
+          const BusySpinner(size: 24, onAction: false),
           const SizedBox(width: 18),
           Expanded(
             child: Text(

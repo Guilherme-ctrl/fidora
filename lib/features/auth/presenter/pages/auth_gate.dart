@@ -4,6 +4,7 @@ import 'package:financeiro_ai/features/auth/domain/repositories/auth_repository.
 import 'package:financeiro_ai/features/auth/domain/auth_rules.dart';
 import 'package:financeiro_ai/features/shell/presenter/pages/app_shell.dart';
 import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -213,12 +214,7 @@ class _AuthPageState extends State<AuthPage> {
                         child: Padding(
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           child: _loading
-                              ? const SizedBox.square(
-                                  dimension: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
+                              ? const BusySpinner()
                               : Text(_createAccount ? 'Criar conta' : 'Entrar'),
                         ),
                       ),
@@ -363,12 +359,7 @@ class _NewPasswordPageState extends State<NewPasswordPage> {
                       child: Padding(
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         child: _loading
-                            ? const SizedBox.square(
-                                dimension: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
+                            ? const BusySpinner()
                             : const Text('Salvar senha'),
                       ),
                     ),

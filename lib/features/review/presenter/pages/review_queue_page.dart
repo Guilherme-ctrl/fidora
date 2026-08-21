@@ -15,6 +15,7 @@ import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.d
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -233,7 +234,7 @@ class _ReviewQueuePageState extends State<ReviewQueuePage> {
           LoadFailed() => _QueueError(onRetry: () => context.read<ReviewQueueCubit>().reload()),
           LoadSuccess(data: final _) ||
           LoadReloading(previous: final _) => snapshot == null
-                ? const Center(child: CircularProgressIndicator())
+                ? const SkeletonList(rows: 4)
                 : Column(
                     children: [
                       _Progress(
@@ -274,7 +275,7 @@ class _ReviewQueuePageState extends State<ReviewQueuePage> {
                         ),
                     ],
                   ),
-          _ => const Center(child: CircularProgressIndicator()),
+          _ => const SkeletonList(rows: 4),
         },
         ),
       ),

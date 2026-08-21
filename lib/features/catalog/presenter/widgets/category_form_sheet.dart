@@ -8,6 +8,7 @@ import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/submission_cubit.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -246,10 +247,7 @@ class _CategoryFormState extends State<_CategoryForm> {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(vertical: 13),
                       child: submission.isBusy
-                          ? const SizedBox.square(
-                              dimension: 20,
-                              child: CircularProgressIndicator(strokeWidth: 2),
-                            )
+                          ? const BusySpinner(size: 20)
                           : Text(
                               widget.existing == null
                                   ? 'Criar categoria'

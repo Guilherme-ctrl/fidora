@@ -6,6 +6,7 @@ import 'package:financeiro_ai/features/shared/widgets/failure_copy.dart';
 import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -79,7 +80,7 @@ class _ShortcutTokensPageState extends State<ShortcutTokensPage> {
                     );
                   },
                 ),
-          _ => const Center(child: CircularProgressIndicator()),
+          _ => const SkeletonList(rows: 3),
         },
       ),
     );

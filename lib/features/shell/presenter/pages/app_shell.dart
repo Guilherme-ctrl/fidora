@@ -26,6 +26,7 @@ import 'package:flutter/services.dart';
 import 'package:financeiro_ai/core/design_system/ledger.dart';
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/presenter/states/finance_state.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -198,7 +199,19 @@ class _AppShellState extends State<AppShell> {
         failure: FailureCopy.of(state.failure!),
         onRetry: () => context.read<FinanceCubit>().reloadAll(),
       ),
-      (null, false) => const _SnapshotSkeleton(),
+      // The frame stays. Before this, a phone loading the ledger had no tab
+      // bar and no brand — the whole app was a bare column of grey blocks,
+      // which reads as broken rather than as busy. Only the content waits.
+      (null, false) => Column(
+        children: [
+          if (layout.isPhone)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 10, 12, 2),
+              child: _Brand(compact: true, onSignOut: widget.onSignOut),
+            ),
+          const Expanded(child: _SnapshotSkeleton()),
+        ],
+      ),
       (final data?, _) => Column(
         children: [
           if (layout.isPhone)
@@ -313,13 +326,18 @@ class _AppShellState extends State<AppShell> {
                 ),
               ],
             ),
-            bottomNavigationBar: layout.hasRail || snapshot == null
+            // Shown while loading too: the destinations are known before the
+            // ledger is, and a tab bar that disappears during a refresh is a
+            // navigation that cannot be trusted.
+            bottomNavigationBar: layout.hasRail
                 ? null
                 : LedgerTabBar(
                     items: [for (final slot in _phone) items[slot]],
                     selected: _phone.indexOf(index),
                     onSelected: (value) => _goTo(_phone[value]),
-                    onCreate: () => createTransaction(context, snapshot),
+                    onCreate: snapshot == null
+                        ? null
+                        : () => createTransaction(context, snapshot),
                   ),
           ),
         ),
@@ -640,44 +658,57 @@ class _ErrorState extends StatelessWidget {
 /// Shown only on the very first load, when there is no previous snapshot to
 /// keep on screen. A shape of the dashboard reads as "almost there" in a way a
 /// centred spinner does not.
+/// The ledger, before it has arrived.
+///
+/// It used to be static grey blocks that matched nothing on the screen: two
+/// squares and two rectangles, in a layout no page actually has. A skeleton
+/// that does not match its content is a second layout to maintain, and the
+/// page still jumps when the data lands.
+///
+/// This one is Hoje: a heading with a progress ring beside it, a callout, and
+/// the rows of the queue — which is the screen the app opens on.
 class _SnapshotSkeleton extends StatelessWidget {
   const _SnapshotSkeleton();
 
   @override
-  Widget build(BuildContext context) {
-    Widget block(double height, {double width = double.infinity}) => Container(
-      height: height,
-      width: width,
-      decoration: BoxDecoration(
-        color: context.palette.rule,
-        borderRadius: BorderRadius.circular(14),
-      ),
-    );
-
-    return Semantics(
+  Widget build(BuildContext context) => Skeleton(
+    child: Semantics(
       label: 'Carregando seus dados',
+      excludeSemantics: true,
       child: ListView(
-        padding: const EdgeInsets.fromLTRB(18, 28, 18, 36),
+        padding: EdgeInsets.fromLTRB(
+          Breakpoint.of(context).gutter,
+          Space.xl,
+          Breakpoint.of(context).gutter,
+          Space.xxxl,
+        ),
         children: [
-          block(28, width: 220),
-          const SizedBox(height: 12),
-          block(16, width: 150),
-          const SizedBox(height: 26),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: block(96)),
-              const SizedBox(width: 14),
-              Expanded(child: block(96)),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SkeletonBox(height: 30, width: 96),
+                    SizedBox(height: Space.sm),
+                    SkeletonBox.text(width: 232),
+                  ],
+                ),
+              ),
+              const SkeletonBox(height: 26, width: 26, radius: Radii.full),
             ],
           ),
-          const SizedBox(height: 14),
-          block(210),
-          const SizedBox(height: 14),
-          block(150),
+          const SizedBox(height: Space.xl),
+          const SkeletonBox(height: 84, radius: Radii.md),
+          const SizedBox(height: Space.xl),
+          const SkeletonBox.text(width: 188),
+          const SizedBox(height: Space.md),
+          for (var i = 0; i < 4; i++) SkeletonRow(first: i == 0, seed: i),
         ],
       ),
-    );
-  }
+    ),
+  );
 }
 
 /// Says out loud that the ledger on screen is not all of it.

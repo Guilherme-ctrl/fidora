@@ -15,6 +15,8 @@ import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.
 import 'package:financeiro_ai/features/overview/presenter/pages/today_page.dart';
 import 'package:financeiro_ai/features/transactions/presenter/pages/transactions_page.dart';
 import 'package:financeiro_ai/features/shell/presenter/pages/app_shell.dart';
+import 'dart:async';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -161,6 +163,109 @@ void main() {
       });
     });
   }
+
+  /// Waiting, photographed.
+  ///
+  /// These are the states nobody ever screenshots, which is exactly why they
+  /// were eighteen bare spinners and one skeleton that matched no page on the
+  /// screen — nothing was ever looking at them. They are photographable at all
+  /// because the pulse honours reduced motion: under `disableAnimations` it
+  /// renders at its resting value rather than mid-tween.
+  group('carregando', () {
+    for (final entry in {
+      '390': const Size(390, 900),
+      '1440': const Size(1440, 1000),
+    }.entries) {
+      // Dark as well as light, because dark is what the app opens in. The
+      // shell goldens were light-only, and the project has already been caught
+      // once shipping a defect that only the unphotographed surface had.
+      for (final brightness in Brightness.values) {
+        final tone = brightness == Brightness.dark ? 'dark' : 'light';
+        testWidgets('shell skeleton at ${entry.key} — $tone', (tester) async {
+          await withGoldenClock(() async {
+            SharedPreferences.setMockInitialValues(<String, Object>{});
+            await _pumpLoading(tester, entry.value, brightness);
+            await expectLater(
+              find.byType(MaterialApp),
+              matchesGoldenFile(
+                'goldens/carregando-shell-${entry.key}-$tone.png',
+              ),
+            );
+          });
+        });
+      }
+    }
+
+    testWidgets('a list waiting for its rows', (tester) async {
+      await withGoldenClock(() async {
+        await _pumpWidget(
+          tester,
+          const Size(390, 560),
+          const Scaffold(body: SkeletonList()),
+        );
+        await expectLater(
+          find.byType(MaterialApp),
+          matchesGoldenFile('goldens/carregando-lista-390.png'),
+        );
+      });
+    });
+  });
+}
+
+/// The shell before the ledger arrives.
+///
+/// A repository that never answers, so the first paint is held still. The demo
+/// one resolves in milliseconds, which is why this state had no reference
+/// image: no test could stop on it.
+class _NeverAnswers extends DemoFinanceRepository {
+  @override
+  Future<FinanceCatalog> loadCatalog() => Completer<FinanceCatalog>().future;
+
+  @override
+  Future<FinanceLedger> loadLedger() => Completer<FinanceLedger>().future;
+}
+
+Future<void> _pumpLoading(
+  WidgetTester tester,
+  Size size, [
+  Brightness brightness = Brightness.light,
+]) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    withDependencies(
+      repository: _NeverAnswers(),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: buildAppTheme(brightness: brightness),
+        home: MediaQuery(
+          data: MediaQueryData(size: size, disableAnimations: true),
+          child: const AppShell(),
+        ),
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 50));
+}
+
+Future<void> _pumpWidget(WidgetTester tester, Size size, Widget child) async {
+  tester.view.devicePixelRatio = 1;
+  tester.view.physicalSize = size;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(
+    MaterialApp(
+      debugShowCheckedModeBanner: false,
+      theme: buildAppTheme(),
+      home: MediaQuery(
+        data: MediaQueryData(size: size, disableAnimations: true),
+        child: child,
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 50));
 }
 
 /// The shell itself, which the page goldens cannot see.

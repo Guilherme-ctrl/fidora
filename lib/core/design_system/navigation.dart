@@ -340,13 +340,17 @@ class LedgerTabBar extends StatelessWidget {
     required this.items,
     required this.selected,
     required this.onSelected,
-    required this.onCreate,
+    this.onCreate,
   });
 
   final List<Destination> items;
   final int selected;
   final ValueChanged<int> onSelected;
-  final VoidCallback onCreate;
+  /// Null while the ledger has not arrived: a new transaction needs the
+  /// categories and cards to choose from. The tab stays, greyed, rather than
+  /// the bar disappearing — a navigation that vanishes during a refresh is one
+  /// that cannot be trusted.
+  final VoidCallback? onCreate;
 
   @override
   Widget build(BuildContext context) {
@@ -444,14 +448,16 @@ class _Tab extends StatelessWidget {
 
 class _CreateTab extends StatelessWidget {
   const _CreateTab({required this.onTap});
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final enabled = onTap != null;
     return Expanded(
       child: Semantics(
         button: true,
+        enabled: enabled,
         label: 'Novo lançamento',
         child: InkWell(
           onTap: onTap,
@@ -469,10 +475,17 @@ class _CreateTab extends StatelessWidget {
                 width: 40,
                 height: 28,
                 decoration: BoxDecoration(
-                  color: palette.action,
+                  // Dimmed rather than hidden while the ledger loads: the
+                  // action still exists, it just has nothing to choose from
+                  // yet.
+                  color: enabled ? palette.action : palette.rule,
                   borderRadius: BorderRadius.circular(Radii.sm),
                 ),
-                child: Icon(Icons.add, size: 18, color: palette.onAction),
+                child: Icon(
+                  Icons.add,
+                  size: 18,
+                  color: enabled ? palette.onAction : palette.inkSubtle,
+                ),
               ),
             ),
           ),

@@ -9,6 +9,7 @@ import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.d
 import 'package:financeiro_ai/features/ledger/presenter/cubits/finance_cubit.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -98,7 +99,7 @@ class _MerchantRulesPageState extends State<MerchantRulesPage> {
                     );
                   },
                 ),
-          _ => const Center(child: CircularProgressIndicator()),
+          _ => const SkeletonList(rows: 5),
         },
       ),
     );
@@ -573,10 +574,7 @@ class _RuleFormState extends State<_RuleForm> {
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     child: _saving
-                        ? const SizedBox.square(
-                            dimension: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
+                        ? const BusySpinner(size: 20)
                         : Text(
                             widget.existing == null
                                 ? 'Criar regra'

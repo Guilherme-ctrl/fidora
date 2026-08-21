@@ -9,6 +9,7 @@ import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/features/catalog/presenter/cubits/catalog_cubits.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
 import 'package:financeiro_ai/core/state/load_state.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -127,9 +128,8 @@ class _DataPageState extends State<DataPage> {
                         ),
                       ],
                     ),
-          _ => const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()),
+          _ => const SkeletonList.inline(
+                padding: EdgeInsets.symmetric(vertical: 8),
               ),
         },
           ],

@@ -6,6 +6,7 @@ import 'package:financeiro_ai/features/transactions/domain/receipt_scan.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
 import 'package:financeiro_ai/core/logging/logger.dart';
 import 'package:financeiro_ai/features/ledger/domain/repositories/repositories.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:financeiro_ai/core/platform/file_access.dart';
@@ -135,11 +136,7 @@ class _ReceiptFieldState extends State<ReceiptField> {
           const SizedBox(height: 10),
           Row(
             children: [
-              const SizedBox(
-                width: 14,
-                height: 14,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
+              const BusySpinner(size: 14, onAction: false),
               const SizedBox(width: 10),
               Text(
                 'Lendo a nota…',
@@ -344,10 +341,9 @@ class _StoredReceiptState extends State<_StoredReceipt> {
       if (snapshot.hasError) return _unavailable(context);
       final url = snapshot.data;
       if (url == null) {
-        return const SizedBox(
-          height: 160,
-          child: Center(child: CircularProgressIndicator()),
-        );
+        // The preview is a fixed-height image, so the placeholder is one
+        // block of exactly that height rather than a spinner in empty space.
+        return const Skeleton(child: SkeletonBox(height: 160));
       }
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),

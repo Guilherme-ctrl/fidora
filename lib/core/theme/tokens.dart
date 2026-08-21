@@ -103,4 +103,11 @@ abstract final class Motion {
 
   /// Only the headline figure counts up, and only on the dashboard.
   static const count = Duration(milliseconds: 400);
+
+  /// One breath of a skeleton.
+  ///
+  /// Slow on purpose. A fast pulse reads as an error state and makes a screen
+  /// that is merely waiting look like a screen that is failing; this is closer
+  /// to breathing than to blinking.
+  static const pulse = Duration(milliseconds: 1100);
 }

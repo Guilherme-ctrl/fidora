@@ -15,6 +15,7 @@ import 'package:financeiro_ai/features/review/presenter/pages/merchant_rules_pag
 import 'package:financeiro_ai/features/review/presenter/pages/review_queue_page.dart';
 import 'package:financeiro_ai/features/settings/presenter/pages/shortcut_tokens_page.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
@@ -107,9 +108,7 @@ class _WithSnapshot extends StatelessWidget {
   Widget build(BuildContext context) {
     final snapshot = context.watch<FinanceCubit>().state.snapshot;
     if (snapshot == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: SkeletonList());
     }
     return builder(context, snapshot);
   }

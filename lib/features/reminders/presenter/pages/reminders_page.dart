@@ -3,6 +3,7 @@ import 'package:financeiro_ai/core/theme/theme.dart';
 import 'package:financeiro_ai/features/ledger/domain/entities/models.dart';
 import 'package:financeiro_ai/features/reminders/domain/reminders.dart';
 import 'package:financeiro_ai/core/design_system/common.dart';
+import 'package:financeiro_ai/core/design_system/loading.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -42,7 +43,7 @@ class _RemindersPageState extends State<RemindersPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Lembretes')),
       body: settings == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonList(rows: 4)
           : ListView(
               padding: const EdgeInsets.fromLTRB(18, 18, 18, 36),
               children: [
